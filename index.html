@@ -1,0 +1,3858 @@
+<!DOCTYPE html>
+<!--
+  =========================================================================
+  Smart Class — Ultra Pro Max (Frontend) — Index.html
+  =========================================================================
+  หน้าเว็บแอปฝั่งผู้ใช้ทั้งหมด (นักเรียน/ครู) เป็นไฟล์เดียว รวม CSS + HTML + JS
+
+  โครงสร้างไฟล์:
+    <head>
+      - โหลดฟอนต์ / ไอคอน / ไลบรารีภายนอก (QR code, SweetAlert2, Chart.js)
+      - <style>  ...........  CSS ทั้งหมด (จัดกลุ่มด้วยคอมเมนต์ในแต่ละส่วน)
+      - <script> ...........  ชั้นจำลอง google.script.run ด้วย fetch ปกติ
+                               (ไฟล์นี้ไม่ได้รันผ่าน HtmlService โดยตรง แต่เรียก
+                               Apps Script Web App ผ่าน GAS_API_URL แทน)
+    <body>
+      - LOGIN                 หน้าล็อกอิน เลือกบทบาทนักเรียน/ครู
+      - STUDENT APP SHELL      แท็บ: หน้าหลัก / ฉายา / การเรียน / บัตร
+      - TEACHER APP SHELL      แท็บ: สแกน / ประวัติเช็คชื่อ / คะแนน / ประวัติกิจกรรม / รายชื่อ
+      - MODALS                 หน้าต่างป๊อปอัปต่างๆ (ดูคะแนน, แลกแต้ม, วงล้อคู่หู ฯลฯ)
+      - <script>               โค้ด JS หลักของแอป (ล็อกอิน, สแกน, คะแนน, คู่หู ฯลฯ)
+  =========================================================================
+-->
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
+  <title>Smart Class — Ultra Pro Max</title>
+
+  <!-- ── PWA / เพิ่มลงหน้าจอหลัก ─────────────────────────── -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <meta name="theme-color" content="#123C69">
+  <meta name="apple-mobile-web-app-title" content="Smart Class">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800;900&family=Sarabun:wght@400;500;600;700&family=Mitr:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDaEqUTYzY-Tn0f35qN9Y18w7XlQ-UbUhw&libraries=geometry"></script>
+
+  <style>
+    :root {
+      /* ชื่อตัวแปรเดิมคงไว้ (ให้ CSS ส่วนที่เหลือใช้ var() แบบเดิมได้หมด) แต่เปลี่ยนค่าเป็นธีมใหม่:
+         --navy* กลายเป็นน้ำเงินเข้ม (โทนหลักพื้นเข้ม), --teal* กลายเป็นชมพู (สีหลัก), --amber* กลายเป็นเหลือง */
+      --navy:    #123C69;
+      --navy2:   #17518C;
+      --navy3:   #1D63A8;
+      --teal:    #FF5C97;
+      --teal2:   #E63D7A;
+      --amber:   #FFC93C;
+      --amber2:  #E0A800;
+      --coral:   #E0245E;
+      --cloud:   #F5FAFF;
+      --mist:    #E4F1FC;
+      --slate:   #6E88A3;
+      --white:   #FFFFFF;
+
+      /* ชื่อเรียกใหม่ (alias เดียวกับด้านบน) ใช้ในส่วนที่เขียนเพิ่มจากนี้ ให้อ่านง่ายขึ้น */
+      --grape:   var(--navy);
+      --grape2:  var(--navy2);
+      --grape3:  var(--navy3);
+      --grass:   var(--teal);
+      --grass2:  var(--teal2);
+      --tang:    var(--amber);
+      --tang2:   var(--amber2);
+      --berry:   var(--coral);
+      --sky:     #2AABEE;
+      --sky2:    #1C86C4;
+      --sun:     #FFD23F;
+      --cream:   #FFFBF0;
+
+      --r-sm:    14px;
+      --r-md:    22px;
+      --r-lg:    30px;
+      --r-xl:    38px;
+      --shadow-sm: 0 2px 8px rgba(18,60,105,0.10);
+      --shadow-md: 0 6px 24px rgba(18,60,105,0.14);
+      --shadow-lg: 0 16px 48px rgba(18,60,105,0.22);
+      --shadow-teal: 0 6px 24px rgba(255,92,151,0.30);
+      --shadow-amber: 0 6px 20px rgba(255,201,60,0.35);
+
+      /* ── โทเค็นใหม่: ปุ่ม/การ์ดสไตล์เกม 3 มิติ (ขอบล่างหนา กดแล้วยุบ) ── */
+      --bevel-grass:  #C42862;
+      --bevel-tang:   #C68A00;
+      --bevel-sky:    #16739E;
+      --bevel-berry:  #B01248;
+      --bevel-grape:  #0B2847;
+      --border-ink:   rgba(11,40,71,0.28);
+
+      /* ── โหมดมืด: โทเค็นใหม่แยกต่างหาก ── */
+      /* --white คงที่เสมอ (ใช้กับตัวหนังสือขาวบนพื้นเข้ม/กรอบ QR) ส่วน --surface คือพื้นการ์ด/ช่องกรอกที่จะสลับเป็นเข้มได้ */
+      --surface: #FFFFFF;
+      --ink:     var(--navy);
+    }
+
+    /* โหมดมืด: สลับเฉพาะพื้นผิว/ตัวหนังสือ/เส้นขอบ — สีธีมหลัก (ชมพู/ฟ้า/เหลือง) และพื้นเข้ม hero/login คงเดิมทั้งสองโหมด */
+    body.dark-mode {
+      --cloud:   #0F1B2E;
+      --mist:    #24354F;
+      --slate:   #93A6BF;
+      --surface: #1B2A44;
+      --ink:     #E8F0FB;
+    }
+
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color: var(--ink); min-height: 100vh; -webkit-tap-highlight-color: transparent; overflow-x: hidden; max-width: 100vw; }
+    h1,h2,h3,h4,h5,h6,.display { font-family: 'Mitr', 'Prompt', sans-serif; font-weight: 700; }
+    .hero-display { font-family: 'Mitr', 'Prompt', sans-serif; font-weight: 700; }
+    .hidden { display: none !important; }
+    button { font-family: inherit; cursor: pointer; border: none; }
+    input, select, textarea { font-family: inherit; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--mist); border-radius: 99px; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 13px 22px; border-radius: 999px; font-weight: 800; font-size: 0.92rem;
+      font-family: 'Mitr', 'Prompt', sans-serif; letter-spacing: 0.01em;
+      border: none; position: relative; top: 0;
+      transition: transform .12s, box-shadow .12s, top .12s, background .15s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-block  { width: 100%; }
+    .btn-teal   { background: linear-gradient(180deg, #FF8FB8 0%, var(--grass) 55%, var(--grass) 100%); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.2); box-shadow: 0 5px 0 var(--bevel-grass), 0 8px 18px rgba(196,40,98,0.35); }
+    .btn-teal:hover { filter: brightness(1.05); }
+    .btn-teal:active { top: 4px; box-shadow: 0 1px 0 var(--bevel-grass), 0 2px 6px rgba(196,40,98,0.3); }
+    .btn-amber  { background: linear-gradient(180deg, #FFDD7A 0%, var(--tang) 55%, var(--tang) 100%); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.2); box-shadow: 0 5px 0 var(--bevel-tang), 0 8px 18px rgba(198,138,0,0.35); }
+    .btn-amber:hover { filter: brightness(1.05); }
+    .btn-amber:active { top: 4px; box-shadow: 0 1px 0 var(--bevel-tang), 0 2px 6px rgba(198,138,0,0.3); }
+    .btn-navy   { background: linear-gradient(180deg, #3D82C4 0%, var(--grape) 55%, var(--grape) 100%); color: var(--white); box-shadow: 0 5px 0 var(--bevel-grape), 0 8px 18px rgba(11,40,71,0.4); }
+    .btn-navy:hover { filter: brightness(1.08); }
+    .btn-navy:active { top: 4px; box-shadow: 0 1px 0 var(--bevel-grape), 0 2px 6px rgba(11,40,71,0.35); }
+    .btn-glass  { background: rgba(255,255,255,0.14); color: var(--white); border: 2px solid rgba(255,255,255,0.24); backdrop-filter: blur(8px); }
+    .btn-ghost  { background: var(--cream); color: var(--grape); border: 2.5px solid var(--mist); box-shadow: 0 3px 0 var(--mist); }
+    .btn-ghost:hover { background: var(--cloud); }
+    .btn-ghost:active { top: 3px; box-shadow: none; }
+    .btn-danger-soft { background: #FFE0EC; color: var(--coral); border: 2px solid #FFC2D6; }
+    .btn-danger-soft:hover { background: var(--coral); color: #fff; border-color: var(--coral); }
+    .btn-sm { padding: 8px 16px; font-size: 0.80rem; }
+    .btn-icon { width: 44px; height: 44px; padding: 0; border-radius: 50%; }
+    .btn[disabled] { opacity: 0.5; pointer-events: none; }
+
+    /* ── RIBBON BANNER (signature shape, reusable) ──────── */
+    .ribbon-title {
+      display: inline-block; position: relative;
+      font-family: 'Mitr','Prompt',sans-serif; font-weight: 700; color: #fff;
+      padding: 9px 28px; border-radius: 999px;
+      background: linear-gradient(180deg, #FF8FB8 0%, var(--grass) 100%);
+      border: 3px solid rgba(255,255,255,0.4);
+      box-shadow: 0 4px 0 var(--bevel-grass), 0 8px 18px rgba(196,40,98,0.35);
+      text-shadow: 0 2px 0 rgba(0,0,0,0.2);
+    }
+    .ribbon-title::before, .ribbon-title::after {
+      content: ''; position: absolute; top: 50%; transform: translateY(-50%);
+      width: 0; height: 0; border-top: 13px solid transparent; border-bottom: 13px solid transparent;
+    }
+    .ribbon-title::before { left: -11px; border-right: 13px solid var(--bevel-grass); }
+    .ribbon-title::after  { right: -11px; border-left: 13px solid var(--bevel-grass); }
+    .ribbon-title.tang { background: linear-gradient(180deg, #FFDD7A 0%, var(--tang) 100%); box-shadow: 0 4px 0 var(--bevel-tang), 0 8px 18px rgba(198,138,0,0.35); }
+    .ribbon-title.tang::before { border-right-color: var(--bevel-tang); }
+    .ribbon-title.tang::after  { border-left-color: var(--bevel-tang); }
+    .ribbon-title.sky  { background: linear-gradient(180deg, #6CC8F5 0%, var(--sky) 100%); box-shadow: 0 4px 0 var(--bevel-sky), 0 8px 18px rgba(22,115,158,0.35); }
+    .ribbon-title.sky::before { border-right-color: var(--bevel-sky); }
+    .ribbon-title.sky::after  { border-left-color: var(--bevel-sky); }
+
+    /* ── CONFETTI DOT TEXTURE (for dark/purple backgrounds) ─ */
+    .confetti-bg { position: relative; }
+    .confetti-bg::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
+      background-image:
+        radial-gradient(rgba(255,255,255,0.5) 2px, transparent 2.5px),
+        radial-gradient(rgba(255,255,255,0.35) 1.5px, transparent 2px);
+      background-size: 46px 46px, 64px 64px;
+      background-position: 0 0, 22px 30px;
+    }
+
+    .field {
+      width: 100%; border-radius: var(--r-sm); padding: 13px 16px;
+      border: 2.5px solid var(--mist); background: var(--surface); color: var(--ink);
+      font-size: 0.94rem; transition: border-color .2s, box-shadow .2s;
+    }
+    .field:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(255,92,151,0.15); }
+    .field-label { font-size: 0.75rem; font-weight: 700; color: var(--slate); margin-bottom: 6px; display: block; letter-spacing: 0.04em; text-transform: uppercase; }
+
+    /* LOGIN */
+    .login-wrap {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 20px; position: relative; overflow: hidden;
+      background: linear-gradient(160deg, #17518C 0%, #123C69 55%, #0B2847 100%);
+    }
+    .login-orb { position: absolute; border-radius: 50%; filter: blur(60px); pointer-events: none; }
+    .login-orb-1 { width: 300px; height: 300px; background: rgba(255,92,151,0.22); top: -80px; right: -60px; }
+    .login-orb-2 { width: 260px; height: 260px; background: rgba(255,201,60,0.18); bottom: -80px; left: -60px; }
+    .login-orb-3 { width: 180px; height: 180px; background: rgba(42,171,238,0.16); top: 40%; left: 30%; }
+    .login-box {
+      position: relative; width: 100%; max-width: 400px;
+      background: rgba(255,255,255,0.06); backdrop-filter: blur(24px);
+      border: 3px solid rgba(255,255,255,0.16);
+      border-radius: var(--r-xl); padding: 36px 28px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+    }
+    .login-mark {
+      width: 68px; height: 68px; border-radius: 22px;
+      background: linear-gradient(180deg, #FF8FB8 0%, var(--teal) 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.7rem; color: #fff; margin: 0 auto 16px;
+      box-shadow: 0 5px 0 var(--bevel-grass), var(--shadow-teal);
+      transform: rotate(-4deg);
+    }
+    .login-title { font-family: 'Mitr','Prompt',sans-serif; font-weight: 700; font-size: 1.7rem; color: var(--white); text-align: center; }
+    .login-sub   { font-size: 0.82rem; color: rgba(255,255,255,0.5); text-align: center; margin-bottom: 28px; margin-top: 4px; }
+    .role-pill {
+      display: flex; background: rgba(255,255,255,0.08); border-radius: 999px;
+      padding: 4px; margin-bottom: 22px; border: 2px solid rgba(255,255,255,0.12);
+    }
+    .role-pill button {
+      flex: 1; background: transparent; color: rgba(255,255,255,0.55); border-radius: 999px;
+      padding: 10px 8px; font-weight: 700; font-size: 0.85rem; transition: all .2s;
+    }
+    .role-pill button.active { background: var(--teal); color: #fff; box-shadow: 0 3px 0 var(--bevel-grass); }
+    .login-field {
+      background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.16);
+      border-radius: var(--r-sm); padding: 14px 16px; color: var(--white);
+      font-size: 0.94rem; width: 100%; margin-bottom: 10px;
+      transition: border-color .2s, background .2s;
+    }
+    .login-field::placeholder { color: rgba(255,255,255,0.35); }
+    .login-field:focus { outline: none; border-color: var(--teal); background: rgba(255,255,255,0.12); }
+
+    /* APP SHELL */
+    .app-shell { max-width: 540px; margin: 0 auto; padding: 0 0 88px; position: relative; min-height: 100vh; }
+
+    /* HERO */
+    .hero-header {
+      background: linear-gradient(160deg, var(--navy) 0%, var(--navy2) 60%, #17518C 100%);
+      padding: 52px 22px 80px; position: relative; overflow: hidden;
+    }
+    .hero-header::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(circle at 80% 20%, rgba(255,92,151,0.12) 0%, transparent 55%),
+                  radial-gradient(circle at 10% 80%, rgba(255,201,60,0.08) 0%, transparent 50%);
+    }
+    .hero-tag { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; color: var(--teal); text-transform: uppercase; margin-bottom: 6px; position: relative; }
+    .hero-name { font-family: 'Mitr', 'Prompt', sans-serif; font-weight: 700; font-size: 1.55rem; color: var(--white); line-height: 1.3; position: relative; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .hero-sub  { font-size: 0.85rem; color: rgba(255,255,255,0.5); margin-top: 6px; position: relative; }
+    .hero-icon-row { position: absolute; top: 20px; right: 18px; display: flex; gap: 8px; z-index: 5; }
+    .hero-logout { position: relative; width: 40px; height: 40px; border-radius: 999px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); color: rgba(255,255,255,0.6); font-size: 0.9rem; display: flex; align-items: center; justify-content: center; transition: background .2s; }
+    .hero-logout:hover { background: rgba(224,36,94,0.25); color: var(--coral); }
+    .hero-logout .notif-dot { position: absolute; top: 6px; right: 7px; width: 8px; height: 8px; border-radius: 50%; background: var(--amber); border: 2px solid var(--navy); display: none; }
+    .hero-logout .notif-dot.show { display: block; }
+
+    /* POINTS CARD */
+    .points-card {
+      margin: -44px 16px 0; position: relative; z-index: 10;
+      background: linear-gradient(160deg, #FFDD7A 0%, #FFC93C 100%);
+      border: 3px solid rgba(255,255,255,0.35);
+      border-radius: var(--r-lg); padding: 18px 20px;
+      box-shadow: 0 6px 0 var(--bevel-tang), 0 12px 36px rgba(255,201,60,0.35);
+    }
+    .points-card .lbl { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; color: var(--navy); opacity: 0.72; text-transform: uppercase; }
+    .points-card .val { font-family: 'Mitr','Prompt',sans-serif; font-weight: 700; font-size: 2.1rem; color: var(--navy); line-height: 1.2; }
+    .points-card .val small { font-size: 0.9rem; font-weight: 500; opacity: 0.7; }
+    .points-card .actions { display: flex; gap: 8px; margin-top: 12px; }
+    .points-card .actions button { flex: 1; background: rgba(18,60,105,0.14); color: var(--navy); border-radius: 999px; padding: 9px 12px; font-size: 0.80rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background .2s; }
+    .points-card .actions button:hover { background: rgba(18,60,105,0.22); }
+
+    /* CONTENT */
+    .content-pad { padding: 20px 16px; }
+    .section-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--slate); margin-bottom: 10px; }
+    .divider { height: 2px; background: var(--mist); margin: 20px 0; border-radius: 2px; }
+    .card { background: var(--surface); border-radius: var(--r-md); box-shadow: 0 4px 0 var(--mist), var(--shadow-sm), inset 0 0 0 3px #fff; border: 3px solid var(--mist); }
+    .card-pad { padding: 18px; }
+
+    /* TEACHER */
+    .teacher-hero {
+      background: linear-gradient(160deg, var(--navy) 0%, #17518C 100%);
+      padding: 52px 22px 32px; position: relative; overflow: hidden;
+    }
+    .teacher-hero::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(circle at 85% 15%, rgba(255,92,151,0.15) 0%, transparent 50%),
+                  radial-gradient(circle at 5% 90%, rgba(224,36,94,0.08) 0%, transparent 50%);
+    }
+    .teacher-stat-grid {
+      display: flex; gap: 10px; flex-wrap: wrap;
+      padding: 14px 16px; background: var(--surface);
+      border-bottom: 2px solid var(--mist);
+    }
+    .t-stat-chip {
+      background: var(--cloud); border-radius: var(--r-sm); padding: 10px 16px;
+      display: flex; align-items: center; gap: 8px; border: 2px solid var(--mist); flex: 1; min-width: 100px;
+    }
+    .t-stat-chip .icon { font-size: 1.1rem; }
+    .t-stat-chip .info .n { font-family: 'Mitr','Prompt',sans-serif; font-size: 1.3rem; font-weight: 800; color: var(--ink); line-height: 1; }
+    .t-stat-chip .info .l { font-size: 0.68rem; color: var(--slate); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* BOTTOM NAV */
+    .bottom-nav {
+      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+      width: calc(100% - 32px); max-width: 508px; z-index: 900;
+      background: rgba(18,60,105,0.92); backdrop-filter: blur(20px);
+      border-radius: 999px; padding: 8px;
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+      display: flex; align-items: center; justify-content: space-around;
+    }
+    .nav-btn {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 3px; padding: 8px 6px; border-radius: 999px; background: transparent;
+      color: rgba(255,255,255,0.45); transition: all .2s; font-size: 0.62rem; font-weight: 700;
+    }
+    .nav-btn i { font-size: 1.1rem; }
+    .nav-btn.active { background: var(--teal); color: #fff; box-shadow: 0 3px 0 var(--bevel-grass); }
+
+    /* TAB PANELS */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* SCAN ACTION CARDS */
+    .action-card {
+      border-radius: var(--r-md); padding: 18px; border: 2.5px solid var(--mist);
+      background: var(--surface); display: flex; align-items: center; gap: 16px;
+      transition: transform .2s, box-shadow .2s, border-color .2s;
+      cursor: pointer; margin-bottom: 10px;
+      box-shadow: 0 3px 0 var(--mist);
+    }
+    .action-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .action-card:active { transform: scale(0.98); }
+    .action-card .icon {
+      width: 58px; height: 58px; border-radius: var(--r-sm);
+      display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0;
+    }
+    .action-card.mode-att { border-color: rgba(255,92,151,0.35); }
+    .action-card.mode-att .icon { background: rgba(255,92,151,0.14); color: var(--teal2); }
+    .action-card.mode-att:hover { border-color: var(--teal); }
+    .action-card.mode-work { border-color: rgba(255,201,60,0.35); }
+    .action-card.mode-work .icon { background: rgba(255,201,60,0.14); color: var(--amber2); }
+    .action-card.mode-work:hover { border-color: var(--amber); }
+    .action-card.mode-exam { border-color: rgba(224,36,94,0.35); }
+    .action-card.mode-exam .icon { background: rgba(224,36,94,0.14); color: var(--coral); }
+    .action-card.mode-exam:hover { border-color: var(--coral); }
+    .action-card.mode-deduct { border-color: rgba(176,18,72,0.4); }
+    .action-card.mode-deduct .icon { background: rgba(176,18,72,0.14); color: var(--bevel-berry); }
+    .action-card.mode-deduct:hover { border-color: var(--bevel-berry); }
+    .action-card.mode-award { border-color: rgba(255,92,151,0.4); }
+    .action-card.mode-award .icon { background: rgba(255,92,151,0.14); color: var(--teal2); }
+    .action-card.mode-award:hover { border-color: var(--teal); }
+    .action-card.mode-review { border-color: rgba(42,171,238,0.4); }
+    .action-card.mode-review .icon { background: rgba(42,171,238,0.14); color: var(--sky2); }
+    .action-card.mode-review:hover { border-color: var(--sky); }
+    .action-card.mode-exam-ctrl { border-color: rgba(255,201,60,0.5); }
+    .action-card.mode-exam-ctrl .icon { background: rgba(255,201,60,0.18); color: var(--amber2); }
+    .action-card.mode-exam-ctrl:hover { border-color: var(--amber); }
+    .action-card .info h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 3px; }
+    .action-card .info p  { font-size: 0.78rem; color: var(--slate); line-height: 1.4; }
+    .action-card .arrow   { margin-left: auto; color: var(--mist); font-size: 0.85rem; flex-shrink: 0; }
+
+    /* STAT CHIPS */
+    .stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .stat-chip { background: var(--surface); border-radius: var(--r-md); padding: 16px; box-shadow: 0 3px 0 var(--mist); border: 2.5px solid var(--mist); text-align: center; }
+    .stat-chip .n { font-family: 'Mitr','Prompt',sans-serif; font-size: 1.8rem; font-weight: 800; line-height: 1; }
+    .stat-chip .l { font-size: 0.72rem; color: var(--slate); margin-top: 3px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-chip.teal .n { color: var(--teal2); }
+    .stat-chip.amber .n { color: var(--amber2); }
+    .stat-chip.coral .n { color: var(--coral); }
+    .stat-chip.navy  .n { color: var(--ink); }
+
+    /* GRADE SUMMARY CARD */
+    .grade-summary-card {
+      background: var(--surface); border-radius: var(--r-md); border: 2.5px solid var(--mist);
+      box-shadow: 0 3px 0 var(--mist); margin-bottom: 14px; overflow: hidden;
+    }
+    .grade-summary-card .gsc-head {
+      background: linear-gradient(135deg, var(--navy), var(--navy3));
+      color: var(--white); padding: 14px 18px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .grade-summary-card .gsc-head .subj-name { font-weight: 700; font-size: 1rem; }
+    .grade-summary-card .gsc-head .grade-big {
+      background: var(--amber); color: #fff; font-weight: 800; font-family: 'Mitr','Prompt',sans-serif;
+      font-size: 1.1rem; padding: 6px 16px; border-radius: 999px; box-shadow: 0 3px 0 var(--bevel-tang);
+    }
+    .grade-summary-card .gsc-body { padding: 14px 18px; }
+    .grade-summary-card .score-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1.5px solid var(--mist); font-size: 0.85rem;
+    }
+    .grade-summary-card .score-row:last-child { border-bottom: none; }
+    .grade-summary-card .score-row .label { color: var(--slate); }
+    .grade-summary-card .score-row .val { font-weight: 700; }
+    .grade-summary-card .progress-bar {
+      height: 10px; background: var(--mist); border-radius: 999px; overflow: hidden; margin-top: 4px;
+    }
+    .grade-summary-card .progress-bar .fill { height: 100%; border-radius: 999px; transition: width .5s; }
+
+    /* NICKNAME */
+    .nickname-section { margin-bottom: 18px; }
+    .nickname-card { background: var(--surface); border: 2.5px solid var(--mist); border-radius: var(--r-md); padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 3px 0 var(--mist); }
+    .nickname-card .nc-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .nickname-card .nc-icon { font-size: 1.4rem; }
+    .nickname-card .nc-title { font-weight: 700; font-size: 0.9rem; }
+    .nickname-card .nc-desc { font-size: 0.75rem; color: var(--slate); }
+    .nickname-card .nc-ranking { display: flex; flex-direction: column; gap: 6px; }
+    .nc-rank-row { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 10px; background: var(--cloud); }
+    .nc-rank-row .rank-badge { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 900; flex-shrink: 0; }
+    .rank-1 { background: #FFD700; color: #6B4F00; }
+    .rank-2 { background: #C0C0C0; color: #3A3A3A; }
+    .rank-3 { background: #CD7F32; color: #fff; }
+    .nc-rank-row .rank-name { font-size: 0.82rem; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nc-rank-row .rank-val { font-size: 0.78rem; color: var(--teal2); font-weight: 700; }
+
+    /* CHECKIN STATS */
+    .checkin-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .checkin-stat-card { background: var(--surface); border: 2.5px solid var(--mist); border-radius: var(--r-md); padding: 14px; text-align: center; box-shadow: 0 3px 0 var(--mist); }
+    .checkin-stat-card .cs-icon { font-size: 1.4rem; margin-bottom: 4px; }
+    .checkin-stat-card .cs-num { font-family: 'Mitr','Prompt',sans-serif; font-size: 1.6rem; font-weight: 800; line-height: 1; }
+    .checkin-stat-card .cs-label { font-size: 0.7rem; color: var(--slate); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 3px; }
+    .checkin-stat-card.teal .cs-num { color: var(--teal2); }
+    .checkin-stat-card.amber .cs-num { color: var(--amber2); }
+
+    /* METER */
+    .meter-row { margin-bottom: 14px; }
+    .meter-head { display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 600; margin-bottom: 7px; }
+
+    /* GRADE BADGES */
+    .grade-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-weight: 800; font-size: 0.78rem; }
+    .g-hi  { background: rgba(255,92,151,0.15); color: var(--teal2); }
+    .g-mid { background: rgba(255,201,60,0.18); color: var(--amber2); }
+    .g-lo  { background: rgba(224,36,94,0.15); color: var(--coral); }
+
+    /* TABLES */
+    .tbl-wrap { overflow-x: auto; border-radius: var(--r-md); border: 2.5px solid var(--mist); }
+    table.dt { width: 100%; border-collapse: collapse; background: var(--surface); font-size: 0.83rem; }
+    table.dt th { background: var(--cloud); text-align: center; padding: 10px 8px; font-weight: 700; white-space: nowrap; color: var(--slate); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    table.dt td { text-align: center; padding: 9px 8px; border-top: 1.5px solid var(--mist); vertical-align: middle; }
+    table.dt td.name-cell { text-align: left; font-weight: 600; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+    table.dt td.name-cell:hover { color: var(--teal2); }
+    .cell-input { width: 52px; text-align: center; border: 2px solid var(--mist); border-radius: 9px; padding: 5px 2px; font-size: 0.82rem; background: var(--cloud); }
+    .cell-input:focus { outline: none; border-color: var(--teal); }
+    .score-legend { font-size: 0.70rem; color: var(--slate); margin-bottom: 8px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .score-legend span { display: inline-flex; align-items: center; gap: 4px; }
+
+    /* ROSTER */
+    .roster-row { display: flex; align-items: center; justify-content: space-between; padding: 11px 4px; border-bottom: 1.5px solid var(--mist); gap: 10px; }
+    .roster-name { font-weight: 600; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .status-btns { display: flex; gap: 5px; }
+    .status-btns button { width: 38px; height: 38px; border-radius: 12px; border: 2px solid var(--mist); background: var(--cloud); font-size: 0.95rem; transition: all .15s; }
+    .status-btns button.sel-present { background: var(--teal); border-color: var(--teal); }
+    .status-btns button.sel-late    { background: var(--amber); border-color: var(--amber); }
+    .status-btns button.sel-leave   { background: var(--slate); border-color: var(--slate); }
+    .status-btns button.sel-absent  { background: var(--coral); border-color: var(--coral); }
+
+    /* FILTER BAR */
+    .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .filter-bar select, .filter-bar input { flex: 1; min-width: 110px; }
+
+    /* GRID */
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* [Fix] SweetAlert2 ค่าเริ่มต้น z-index ต่ำกว่า #wheelModal เดิม (3000) มาก ทำให้ Swal.fire() ที่เรียกตอนมี full-page view เปิดอยู่
+       (เช่นกำลังเรียนออนไลน์/หมุนวงล้อ/วิ่งแลกแต้ม/สแกน QR) render ไปอยู่ "หลัง" มองไม่เห็นและกดไม่โดน ต้องบังคับให้ Swal ลอยอยู่บนสุดเสมอ */
+    .swal2-container { z-index: 4000 !important; }
+
+    /* FULL-SCREEN VIEW — ใช้แทน popup เดิมของทุกฟีเจอร์ที่เคยเป็น modal (เรียนออนไลน์, วิ่งแลกแต้ม, วงล้อคู่หู, ตรวจงานส่ง, คุมสอบท้ายบท, สแกน QR)
+       ต่างจาก popup ตรงที่ไม่มีฉากมืดคลุมพื้นหลัง ไม่ลอยเป็นการ์ดกลางจอ แต่เต็มจอเหมือนเปิดหน้าใหม่ (เลื่อนเข้าจากขวา)
+       ลด layer ซ้อนกันให้เหลือน้อยที่สุด และให้ความรู้สึกเหมือนนำทางไปหน้าอื่น ไม่ใช่ popup ลอยทับ */
+    .fullpage-view {
+      position: fixed; inset: 0; z-index: 1500;
+      background: var(--cloud);
+      display: flex; flex-direction: column;
+      transform: translateX(100%);
+      transition: transform .28s ease;
+    }
+    .fullpage-view.show { transform: translateX(0); }
+    .fullpage-view.hidden { display: none; }
+    .fullpage-head {
+      flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 16px; padding-top: max(16px, env(safe-area-inset-top));
+      background: var(--surface); border-bottom: 2px solid var(--mist);
+    }
+    .fullpage-body { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+
+    /* PILL */
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+    #sClassDisplay {
+      font-size: 0.95rem; padding: 7px 20px;
+      font-family: 'Mitr','Prompt',sans-serif; font-weight: 800;
+      background: var(--teal); color: #fff;
+      box-shadow: 0 3px 0 var(--bevel-grass);
+    }
+    .credit-bank-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.95rem; padding: 7px 20px; border: none; cursor: pointer;
+      font-family: 'Mitr','Prompt',sans-serif; font-weight: 800;
+      border-radius: 999px;
+      background: var(--sky); color: #fff;
+      box-shadow: 0 3px 0 var(--bevel-sky);
+      transition: transform .12s;
+    }
+    .credit-bank-btn:active { transform: scale(0.96); }
+    .pill-teal  { background: rgba(255,92,151,0.12); color: var(--teal2); }
+    .pill-amber { background: rgba(255,201,60,0.15); color: var(--amber2); }
+
+    /* HISTORY */
+    .history-item { background: var(--surface); border: 2px solid var(--mist); border-radius: var(--r-md); padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+    .history-item .hi-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .history-item .hi-body { flex: 1; min-width: 0; }
+    .history-item .hi-name { font-weight: 700; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .history-item .hi-meta { font-size: 0.75rem; color: var(--slate); margin-top: 2px; }
+    .history-item .hi-pts { font-weight: 900; font-size: 0.9rem; flex-shrink: 0; }
+    .history-item .hi-pts.plus { color: var(--teal2); }
+    .history-item .hi-pts.minus { color: var(--coral); }
+    .history-type-checkin { border-left: 4px solid var(--teal); }
+    .history-type-coupon  { border-left: 4px solid var(--amber); }
+    .history-type-buy     { border-left: 4px solid var(--coral); }
+    .history-type-deduct  { border-left: 4px solid var(--bevel-berry); background: rgba(176,18,72,0.04); }
+    .history-type-award   { border-left: 4px solid var(--teal); background: rgba(255,92,151,0.04); }
+
+    /* STUDENT ID CARD */
+    .student-id-card {
+      background: linear-gradient(160deg, var(--navy) 0%, var(--navy3) 100%);
+      border-radius: var(--r-xl); padding: 24px 20px;
+      margin-bottom: 14px; box-shadow: var(--shadow-lg);
+      border: 3px solid rgba(255,255,255,0.14);
+      position: relative; overflow: hidden;
+    }
+    .student-id-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(circle at 80% 15%, rgba(255,92,151,0.18) 0%, transparent 50%),
+                  radial-gradient(circle at 10% 85%, rgba(255,201,60,0.10) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .id-brand { position: relative; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; color: var(--teal); text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .id-name  { position: relative; font-size: 1.35rem; font-weight: 700; color: var(--white); font-family: 'Mitr','Prompt', sans-serif; line-height: 1.3; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .id-class { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,92,151,0.18); color: var(--teal); padding: 4px 14px; border-radius: 999px; font-size: 0.82rem; font-weight: 700; border: 2px solid rgba(255,92,151,0.35); position: relative; margin-bottom: 20px; }
+    .id-qr-box { display: flex; flex-direction: column; align-items: center; gap: 10px; position: relative; margin-bottom: 20px; }
+    .id-qr-frame { background: var(--white); border-radius: 18px; padding: 16px; box-shadow: 0 8px 28px rgba(0,0,0,0.35); }
+    .id-scan-hint { font-size: 0.72rem; color: rgba(255,255,255,0.45); display: flex; align-items: center; gap: 5px; }
+    .id-stats { position: relative; display: grid; grid-template-columns: 1fr 1fr 1fr; border-radius: 14px; overflow: hidden; gap: 1px; background: rgba(255,255,255,0.08); margin-bottom: 14px; }
+    .id-stat-cell { background: rgba(18,60,105,0.45); padding: 12px 6px; text-align: center; }
+    .id-stat-n { font-size: 1.3rem; font-weight: 800; color: var(--teal); font-family: 'Mitr','Prompt', sans-serif; line-height: 1; }
+    .id-stat-l { font-size: 0.60rem; color: rgba(255,255,255,0.45); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 3px; }
+    .id-footer { position: relative; text-align: center; font-size: 0.72rem; color: rgba(255,255,255,0.3); }
+    .id-card-hint { text-align: center; color: var(--slate); font-size: 0.78rem; margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+
+    .section-title { font-weight: 700; font-size: 0.9rem; color: var(--ink); display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .section-title i { color: var(--teal); }
+
+    @keyframes pulse-ring {
+      0%   { box-shadow: 0 0 0 0 rgba(255,92,151,0.4); }
+      70%  { box-shadow: 0 0 0 16px rgba(255,92,151,0); }
+      100% { box-shadow: 0 0 0 0 rgba(255,92,151,0); }
+    }
+    .pulse { animation: pulse-ring 1.8s infinite; }
+
+    @media (min-width: 540px) { .app-shell { background: var(--cloud); } }
+
+  /* ── COMPANION CARD ─────────────────────────────────── */
+  .cp-card {
+    background: linear-gradient(160deg, #123C69 0%, #1D63A8 100%);
+    border-radius: 24px; padding: 22px 18px 18px;
+    position: relative; overflow: hidden;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.55);
+    margin-bottom: 12px;
+  }
+  .cp-card::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(circle at 75% 18%, rgba(255,92,151,0.14) 0%, transparent 50%),
+      radial-gradient(circle at 18% 80%, rgba(255,201,60,0.10) 0%, transparent 50%);
+  }
+
+  /* ── TICKET BADGE ───────────────────────────────────── */
+  .cp-ticket {
+    position: absolute; top: 14px; right: 16px;
+    background: rgba(255,201,60,0.16); border: 1px solid #FFC93C;
+    border-radius: 999px; padding: 4px 13px;
+    font-size: 12px; font-weight: 800; color: #FFC93C; z-index: 2;
+  }
+
+  /* ── EMOJI (LARGE, IN CARD) ─────────────────────────── */
+  .cp-emoji-wrap {
+    position: relative; text-align: center;
+    margin: 8px 0 12px; height: 110px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cp-emoji-wrap.is3d {
+    height: 190px; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .cp-emoji-wrap.is3d canvas {
+    display: block; margin: 0 auto;
+  }
+  .cp-emoji {
+    font-size: 90px; line-height: 1;
+    display: inline-block; position: relative; z-index: 2;
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,0.5));
+    cursor: pointer;
+  }
+  .cp-emoji.alive {
+    animation: cpBounce 2.2s ease-in-out infinite;
+  }
+  .cp-emoji.hungry {
+    animation: cpWobble 1.4s ease-in-out infinite;
+  }
+  .cp-emoji.poked {
+    animation: cpPoke 0.35s ease !important;
+  }
+  @keyframes cpBounce {
+    0%,100% { transform: translateY(0) scale(1); }
+    50%      { transform: translateY(-8px) scale(1.04); }
+  }
+  @keyframes cpWobble {
+    0%,100% { transform: rotate(0deg); }
+    25%     { transform: rotate(-4deg); }
+    75%     { transform: rotate(4deg); }
+  }
+  @keyframes cpPoke {
+    0%   { transform: scale(1) rotate(0deg); }
+    30%  { transform: scale(0.85) rotate(-8deg); }
+    60%  { transform: scale(1.18) rotate(6deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+
+  /* ── TAP REACTION (FLOATING EMOJI) ──────────────────── */
+  .cp-float-emoji {
+    position: absolute; top: 50%; left: 50%;
+    font-size: 28px; pointer-events: none; z-index: 5;
+    animation: cpFloatUp 1s ease-out forwards;
+  }
+  @keyframes cpFloatUp {
+    0%   { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    15%  { opacity: 1; }
+    100% { transform: translate(-50%, -170%) scale(1.3); opacity: 0; }
+  }
+
+  /* ── SPEECH BUBBLE (DIALOGUE) ───────────────────────── */
+  .cp-bubble {
+    background: rgba(255,255,255,0.09);
+    border: 1.5px solid rgba(255,255,255,0.22);
+    border-radius: 16px; padding: 10px 16px;
+    text-align: center; font-size: 13px; font-weight: 600;
+    color: rgba(255,255,255,0.88); min-height: 40px;
+    position: relative; margin-bottom: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    line-height: 1.5;
+  }
+  .cp-bubble::after {
+    content: ''; position: absolute;
+    top: -9px; left: 50%; transform: translateX(-50%);
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 9px solid rgba(255,255,255,0.22);
+  }
+  .cp-bubble::before {
+    content: ''; position: absolute;
+    top: -7px; left: 50%; transform: translateX(-50%);
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 8px solid #123C69;
+    z-index: 1;
+  }
+
+  /* ── NAME + STAGE ───────────────────────────────────── */
+  .cp-name  { text-align: center; font-size: 20px; font-weight: 900; color: #fff; margin-bottom: 2px; position: relative; }
+  .cp-stage { text-align: center; font-size: 11px; color: #FF5C97; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 14px; position: relative; }
+
+  /* ── STAT BARS ──────────────────────────────────────── */
+  .cp-bar-row   { margin-bottom: 9px; }
+  .cp-bar-head  { display: flex; justify-content: space-between; font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 5px; font-weight: 700; }
+  .cp-bar-track { height: 9px; background: rgba(255,255,255,0.1); border-radius: 99px; overflow: hidden; }
+  .cp-bar-fill  { height: 100%; border-radius: 99px; transition: width .6s ease; }
+
+  /* ── ACTION BUTTONS ─────────────────────────────────── */
+  .cp-actions { display: flex; gap: 8px; margin-top: 16px; position: relative; }
+  .cp-btn {
+    flex: 1; border-radius: 16px; padding: 11px 6px;
+    text-align: center; cursor: pointer; border: 2px solid;
+    transition: transform .15s, opacity .15s;
+  }
+  .cp-btn:active { transform: scale(0.94); }
+  .cp-btn-emoji { font-size: 22px; margin-bottom: 4px; }
+  .cp-btn-label { font-size: 11px; color: #fff; font-weight: 800; }
+  .cp-btn-cost  { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+  .cp-btn.off   { opacity: 0.35; pointer-events: none; }
+
+  .cp-btn-hatch {
+    width: 100%; border-radius: 16px; padding: 14px;
+    background: rgba(255,92,151,0.16); border: 2px solid #FF5C97;
+    cursor: pointer; text-align: center; position: relative;
+  }
+  .cp-btn-hatch-label { font-family: 'Mitr','Prompt',sans-serif; font-size: 15px; font-weight: 800; color: #FF5C97; }
+  .cp-btn-hatch-sub   { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 4px; }
+
+  /* ── LOW TICKET WARNING ─────────────────────────────── */
+  .cp-low-tk {
+    text-align: center; font-size: 11px; color: rgba(255,255,255,0.25);
+    margin-top: 10px; padding: 0 4px; position: relative;
+  }
+
+  /* ─────────────────────────────────────────────────────
+     WHEEL MODAL (ใช้ .fullpage-view ร่วมกับ course/run — ดูคำอธิบายที่นิยาม .fullpage-view)
+     ───────────────────────────────────────────────────── */
+  .wheel-sheet {
+    background: #17518C; border-radius: 32px;
+    padding: 24px 20px; width: min(340px, 92vw);
+    margin: auto; /* จัดกึ่งกลางทั้งแนวตั้ง-นอนภายใน .fullpage-body ที่เป็น flex column */
+    text-align: center; position: relative;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+    border: 3px solid rgba(255,255,255,0.14);
+  }
+  .wheel-title {
+    display: inline-block; position: relative;
+    font-family: 'Mitr','Prompt',sans-serif; font-weight: 700; font-size: 15px; color: #fff;
+    margin: -6px auto 22px; padding: 9px 30px;
+    background: linear-gradient(180deg, #FFDD7A 0%, var(--tang) 100%);
+    border: 3px solid rgba(255,255,255,0.4); border-radius: 999px;
+    box-shadow: 0 4px 0 var(--bevel-tang), 0 8px 18px rgba(198,138,0,0.4);
+    text-shadow: 0 2px 0 rgba(0,0,0,0.2);
+  }
+  .wheel-title::before, .wheel-title::after {
+    content: ''; position: absolute; top: 50%; transform: translateY(-50%);
+    width: 0; height: 0; border-top: 13px solid transparent; border-bottom: 13px solid transparent;
+  }
+  .wheel-title::before { left: -11px; border-right: 13px solid var(--bevel-tang); }
+  .wheel-title::after  { right: -11px; border-left: 13px solid var(--bevel-tang); }
+  .wheel-close {
+    position: absolute; top: 14px; right: 16px;
+    background: rgba(255,255,255,0.08); border: none;
+    color: rgba(255,255,255,0.5); border-radius: 50%;
+    width: 32px; height: 32px; cursor: pointer;
+    font-size: 14px; display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Wheel */
+  .wheel-wrap {
+    position: relative; width: 220px; height: 220px;
+    margin: 0 auto 20px;
+  }
+  .wheel-pointer {
+    position: absolute; top: -14px; left: 50%;
+    transform: translateX(-50%);
+    color: #FFC93C; font-size: 22px; z-index: 10;
+    filter: drop-shadow(0 2px 6px rgba(255,201,60,0.7));
+  }
+  #wheelEl {
+    width: 220px; height: 220px; border-radius: 50%;
+    position: relative; border: 4px solid rgba(255,255,255,0.16);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  /* [Fix] หมุนไปพลางๆ ทันทีที่กดปุ่ม ไม่ต้องรอผลจาก backend ก่อนถึงจะเห็นวงล้อขยับ (กันความรู้สึกว่ากดแล้วค้าง) */
+  @keyframes wheelBlindSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .wheel-blind-spin { animation: wheelBlindSpin 0.9s linear infinite; }
+  .wheel-center {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 48px; height: 48px;
+    background: #123C69; border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.2);
+    z-index: 10; display: flex; align-items: center;
+    justify-content: center; font-size: 18px;
+  }
+
+  /* Spin button */
+  .wheel-spin-btn {
+    width: 100%; padding: 14px; border: none;
+    background: linear-gradient(180deg, #FF8FB8 0%, #FF5C97 60%);
+    color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    font-family: 'Mitr','Prompt',sans-serif; font-weight: 800; font-size: 15px;
+    border-radius: 16px; cursor: pointer; position: relative; top: 0;
+    box-shadow: 0 5px 0 var(--bevel-grass), 0 8px 20px rgba(196,40,98,0.4);
+    transition: transform .15s, opacity .15s, top .12s, box-shadow .12s;
+  }
+  .wheel-spin-btn:active  { top: 4px; box-shadow: 0 1px 0 var(--bevel-grass); }
+  .wheel-spin-btn:disabled { opacity: 0.5; pointer-events: none; }
+
+  .wheel-result-view {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 12px 0 0;
+  }
+  .wheel-result-view.hidden { display: none; }
+  .wheel-result-emoji { font-size: 4rem; margin: 8px 0 14px; }
+  .wheel-result-text {
+    font-family: 'Mitr','Prompt',sans-serif; font-size: 17px; font-weight: 800; margin-bottom: 18px; text-align: center;
+  }
+
+  </style>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       GAS RUNTIME SHIM — จำลอง google.script.run ด้วย fetch ธรรมดา
+       เพราะไฟล์นี้ deploy แยกนอก HtmlService แล้วเรียก Web App ผ่าน URL
+       ═══════════════════════════════════════════════════════════ -->
+  <script>
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxaUgRHgJQbIGs6rAnVFqv-PeREbeiyi3Ylk-ddIgIT8leh92rISh4bKsFjGeTm8k5x/exec";
+
+    // [Fix] ต้อง merge ใส่ window.google ที่มีอยู่แล้ว ไม่ใช่ทับทั้งก้อน — เพราะ Google Maps JS API (โหลดก่อนหน้านี้ใน <head>)
+    // ก็ใช้ window.google namespace เดียวกัน (window.google.maps) ถ้าเขียนทับ (window.google = {...}) จะลบ .maps ที่ Maps SDK เพิ่งตั้งไว้ทิ้งไปเงียบๆ
+    // ทำให้แผนที่วิ่งไม่ขึ้นเลยโดยไม่มี error ใดๆ ให้เห็น
+    window.google = window.google || {};
+    window.google.script = {
+      run: new Proxy({}, {
+        get: (t, funcName) => {
+          if (funcName === 'withSuccessHandler') return (fn) => createRunner(fn, null);
+          if (funcName === 'withFailureHandler') return (fn) => createRunner(null, fn);
+          return (...args) => executeGasCall(funcName, args, null, null);
+        }
+      })
+    };
+
+    // สร้าง Proxy จำลอง chain .withSuccessHandler().withFailureHandler().funcName(...) ให้เหมือน google.script.run ของจริง
+    function createRunner(onSuccess, onFail) {
+      return new Proxy({}, {
+        get: (t, prop) => {
+          if (prop === 'withSuccessHandler') return (fn) => createRunner(fn, onFail);
+          if (prop === 'withFailureHandler') return (fn) => createRunner(onSuccess, fn);
+          return (...args) => executeGasCall(prop, args, onSuccess, onFail);
+        }
+      });
+    }
+
+    // ยิง fetch แบบ POST ไปยัง Apps Script Web App (GAS_API_URL) แล้วเรียก callback สำเร็จ/ผิดพลาดตามผลลัพธ์
+    function executeGasCall(funcName, args, onSuccess, onFail) {
+      fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ func: funcName, args: args }) })
+        .then(r => r.json()).then(d => {
+          if (d.status === 'success') { if (onSuccess) onSuccess(d.response); }
+          else { if (onFail) onFail(d.message); else console.error("GAS Error:", d.message); }
+        }).catch(err => { if (onFail) onFail(err.toString()); else console.error("GAS Network Error:", funcName, err); });
+    }
+  </script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     LOGIN
+     ═══════════════════════════════════════════════════════════ -->
+<div id="loginSection" class="login-wrap confetti-bg">
+  <div class="login-orb login-orb-1"></div>
+  <div class="login-orb login-orb-2"></div>
+  <div class="login-orb login-orb-3"></div>
+  <div class="login-box">
+    <div class="login-mark"><i class="fa-solid fa-chalkboard-user"></i></div>
+    <div class="login-title">Smart Class</div>
+    <div class="login-sub">ระบบจัดการชั้นเรียน Ultra Pro Max</div>
+    <div class="role-pill" id="roleTabs">
+      <button class="active" onclick="setRole('student', this)">
+        <i class="fa-solid fa-user-graduate"></i> นักเรียน
+      </button>
+      <button onclick="setRole('teacher', this)">
+        <i class="fa-solid fa-chalkboard"></i> ครูผู้สอน
+      </button>
+    </div>
+    <input type="text"     id="username" class="login-field" placeholder="รหัสผู้ใช้งาน">
+    <input type="password" id="password" class="login-field" placeholder="รหัสผ่าน (PIN)">
+    <button class="btn btn-teal btn-block" style="margin-top:6px;" onclick="login()">
+      เข้าสู่ระบบ <i class="fa-solid fa-arrow-right"></i>
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     STUDENT SECTION
+     ═══════════════════════════════════════════════════════════ -->
+<div id="studentSection" class="hidden">
+  <div class="app-shell">
+    <div class="hero-header confetti-bg">
+      <div class="hero-icon-row">
+        <button class="hero-logout" onclick="openNotificationCenter()" title="การแจ้งเตือน">
+          <i class="fa-solid fa-bell"></i><span class="notif-dot" id="studentNotifDot"></span>
+        </button>
+        <button class="hero-logout" onclick="toggleDarkMode()" title="โหมดมืด"><i class="fa-solid fa-moon" id="darkModeIcon1"></i></button>
+        <button class="hero-logout" onclick="logout()" title="ออกจากระบบ"><i class="fa-solid fa-power-off"></i></button>
+      </div>
+      <div class="hero-tag"><i class="fa-solid fa-graduation-cap"></i> Smart Class</div>
+      <div class="hero-name" id="sNameDisplay">สวัสดี</div>
+      <div class="hero-sub" style="margin-bottom:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <span class="pill pill-teal" id="sClassDisplay">ชั้นเรียน</span>
+        <button class="credit-bank-btn" onclick="window.open('https://script.google.com/macros/s/AKfycbz7Qkemj78qK4_tQXQgBUqv1r4xMfFybf925gQssMhWYSl3PkcKt_xB2zztot1p5IM/exec','_blank')">
+          <i class="fa-solid fa-building-columns"></i> ธนาคารหน่วยกิต
+        </button>
+      </div>
+    </div>
+
+    <div class="points-card">
+      <div class="lbl">✨ แต้มสะสมพิเศษ</div>
+      <div class="val" id="stdPointsDisplay">0 <small>แต้ม</small></div>
+      <div class="actions">
+        <button onclick="tryGpsCheckin()"><i class="fa-solid fa-location-dot"></i> เช็คอิน GPS</button>
+        <button onclick="tryRedeemCouponUI()"><i class="fa-solid fa-ticket"></i> คูปอง</button>
+        <button onclick="openScoreExchangeModal()"><i class="fa-solid fa-rotate"></i> แลกคะแนน</button>
+      </div>
+    </div>
+
+    <div class="content-pad">
+
+      <!-- แท็บ: หน้าหลัก -->
+      <div id="sTab-overview" class="tab-panel active">
+        <div class="section-label" style="margin-bottom:10px;">สถิติการเช็คอิน</div>
+        <div class="checkin-stats-grid">
+          <div class="checkin-stat-card teal">
+            <div class="cs-icon">📍</div>
+            <div class="cs-num" id="csCheckinCount">—</div>
+            <div class="cs-label">วันที่เช็คอิน (จ-ศ)</div>
+          </div>
+          <div class="checkin-stat-card amber">
+            <div class="cs-icon">🔥</div>
+            <div class="cs-num" id="csStreakCount">—</div>
+            <div class="cs-label">วันต่อเนื่องสะสม</div>
+          </div>
+        </div>
+
+        <div class="card card-pad" style="margin-bottom:16px; cursor:pointer;" onclick="openRunModal()">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div style="width:52px; height:52px; border-radius:16px; background:rgba(255,201,60,0.18); display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:var(--amber2); flex-shrink:0;">
+              <i class="fa-solid fa-person-running"></i>
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:700; font-size:0.95rem;">กิจกรรมวิ่งแลกแต้มวิ่ง</div>
+              <div style="font-size:0.78rem; color:var(--slate);" id="runSummaryText">สะสม — เมตร · — ก้าว · — แต้มวิ่ง</div>
+            </div>
+            <i class="fa-solid fa-chevron-right" style="color:var(--mist); flex-shrink:0;"></i>
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-top:4px;">วิเคราะห์ศักยภาพ</div>
+        <div class="card card-pad" style="margin-bottom:18px;">
+          <div id="skillMetersContainer" style="display:flex; flex-direction:column; gap:16px;"></div>
+        </div>
+      </div>
+
+      <!-- แท็บ: ฉายา -->
+      <div id="sTab-title" class="tab-panel">
+        <div class="section-label" style="margin-bottom:10px;">ฉายาประจำห้อง</div>
+        <div id="nicknameContainer" class="nickname-section"></div>
+      </div>
+
+      <!-- แท็บ: การเรียน -->
+      <div id="sTab-grades" class="tab-panel">
+        <div class="card card-pad" style="margin-bottom:16px; cursor:pointer;" onclick="openOnlineCourseModal()">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div style="width:52px; height:52px; border-radius:16px; background:rgba(255,92,151,0.12); display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:var(--teal2); flex-shrink:0;">
+              <i class="fa-solid fa-play"></i>
+            </div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:700; font-size:0.95rem;">เรียนออนไลน์</div>
+              <div style="font-size:0.78rem; color:var(--slate);">ดูวิดีโอ · ส่งแบบฝึกหัด · สอบท้ายบท</div>
+            </div>
+            <i class="fa-solid fa-chevron-right" style="color:var(--mist); flex-shrink:0;"></i>
+          </div>
+        </div>
+
+        <div class="section-label">ผลการเรียนทุกรายวิชา</div>
+        <div id="gradeCardsContainer"></div>
+      </div>
+
+      <!-- แท็บ: บัตร -->
+      <div id="sTab-card" class="tab-panel">
+        <div class="student-id-card">
+          <div class="id-brand"><i class="fa-solid fa-graduation-cap"></i> Smart Class · Ultra Pro Max</div>
+          <div class="id-name" id="cardName">ชื่อนักเรียน</div>
+          <div class="id-class" id="cardClass"><i class="fa-solid fa-school"></i> ชั้นเรียน</div>
+          <div class="id-qr-box">
+            <div class="id-qr-frame"><div id="qrcode"></div></div>
+            <div class="id-scan-hint"><i class="fa-solid fa-camera-rotate"></i> ให้ครูสแกน QR นี้เพื่อบันทึกข้อมูล</div>
+          </div>
+          <div class="id-stats">
+            <div class="id-stat-cell">
+              <div class="id-stat-n" id="cardPoints">—</div>
+              <div class="id-stat-l">แต้มสะสม</div>
+            </div>
+            <div class="id-stat-cell">
+              <div class="id-stat-n" id="cardCheckin">—</div>
+              <div class="id-stat-l">เช็คอิน GPS</div>
+            </div>
+            <div class="id-stat-cell">
+              <div class="id-stat-n" id="cardStreak">—</div>
+              <div class="id-stat-l">วันต่อเนื่อง 🔥</div>
+            </div>
+          </div>
+          <div id="cardNickname" style="position:relative; display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:14px;"></div>
+          <div class="id-footer" id="cardStudentId">รหัส: —</div>
+        </div>
+        <div class="id-card-hint">
+          <i class="fa-solid fa-camera"></i> แคปหน้าจอเพื่อแชร์ หรือเปิดโชว์ครูสแกนได้เลย
+        </div>
+      </div>
+
+<div id="sTab-companion" class="tab-panel">
+  <div id="companionContainer">
+    <div style="text-align:center;color:var(--slate);padding:40px 0;">
+      <div style="font-size:48px;margin-bottom:8px;">🥚</div>
+      กำลังโหลดคู่หู...
+    </div>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="switchStudentTab('overview', this)">
+      <i class="fa-solid fa-house"></i> หน้าหลัก
+    </button>
+    <button class="nav-btn" onclick="switchStudentTab('title', this)">
+      <i class="fa-solid fa-crown"></i> ฉายา
+    </button>
+    <button class="nav-btn" onclick="switchStudentTab('grades', this)">
+      <i class="fa-solid fa-book-open"></i> การเรียน
+    </button>
+    <button class="nav-btn" onclick="switchStudentTab('card', this)">
+      <i class="fa-solid fa-id-card"></i> บัตร
+    </button>
+    <button class="nav-btn" onclick="switchStudentTab('companion', this)">
+      <i class="fa-solid fa-paw"></i> คู่หู
+    </button>
+  </nav>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TEACHER SECTION
+     ═══════════════════════════════════════════════════════════ -->
+<div id="teacherSection" class="hidden">
+  <div class="app-shell">
+
+    <div class="teacher-hero confetti-bg">
+      <div class="hero-icon-row">
+        <button class="hero-logout" onclick="toggleDarkMode()" title="โหมดมืด"><i class="fa-solid fa-moon" id="darkModeIcon2"></i></button>
+        <button class="hero-logout" onclick="logout()" title="ออกจากระบบ"><i class="fa-solid fa-power-off"></i></button>
+      </div>
+      <div class="hero-tag"><i class="fa-solid fa-chalkboard"></i> ครูผู้สอน</div>
+      <div class="hero-name">ศูนย์ควบคุม</div>
+    </div>
+
+    <div id="teacherStatsLine" style="padding:10px 16px; background:var(--navy); color:var(--white); font-weight:700; text-align:center; font-size:0.9rem;">
+      กำลังโหลดข้อมูลนักเรียน...
+    </div>
+    <div class="teacher-stat-grid" id="teacherStatGrid" style="margin-bottom:16px;"></div>
+
+    <div class="content-pad">
+
+      <!-- แท็บ: สแกน -->
+      <div id="tTab-scan" class="tab-panel active">
+        <div class="section-title" style="margin-bottom:16px; font-size:1.1rem;">
+          <i class="fa-solid fa-qrcode"></i> สแกนคิวอาร์โค้ด / เช็คชื่อ
+        </div>
+        <div id="scanSelectorStrip" style="margin-bottom:14px;">
+          <div class="grid2">
+            <select id="activeSubjSelect"  class="field" style="font-size:0.85rem; padding:10px 12px;"></select>
+            <select id="activeClassSelect" class="field" style="font-size:0.85rem; padding:10px 12px;"></select>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+          <label class="field-label" style="margin:0; flex:1;">บทเรียนที่</label>
+          <input type="number" id="activeChapterInput" class="field" value="1" min="1" max="10" style="width:80px; text-align:center;">
+        </div>
+        <div class="action-card mode-att" onclick="triggerModeSetup('att')">
+          <div class="icon"><i class="fa-solid fa-user-check"></i></div>
+          <div class="info"><h4>เช็คชื่อเข้าเรียน</h4><p>สแกนต่อเนื่อง บันทึกสถานะอัตโนมัติ</p></div>
+          <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        </div>
+        <div class="action-card mode-work" onclick="triggerModeSetup('work')">
+          <div class="icon"><i class="fa-solid fa-signature"></i></div>
+          <div class="info"><h4>ตรวจงาน / ลายเซ็น</h4><p>สแกนแล้วกรอกแต้มสะสมทันที</p></div>
+          <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        </div>
+        <div class="action-card mode-exam" onclick="triggerModeSetup('exam')">
+          <div class="icon"><i class="fa-solid fa-file-pen"></i></div>
+          <div class="info"><h4>บันทึกคะแนนสอบ</h4><p>บันทึกคะแนนท้ายบทเรียน</p></div>
+          <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        </div>
+        <div class="action-card mode-deduct" onclick="triggerModeSetup('deduct')">
+          <div class="icon"><i class="fa-solid fa-circle-minus"></i></div>
+          <div class="info"><h4>หักแต้มพิเศษ</h4><p>ตัดแต้มพร้อมระบุเหตุผล แจ้งนักเรียนอัตโนมัติ</p></div>
+          <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        </div>
+        <div class="action-card mode-award" onclick="triggerModeSetup('award')">
+          <div class="icon"><i class="fa-solid fa-circle-plus"></i></div>
+          <div class="info"><h4>ให้แต้มพิเศษ</h4><p>เพิ่มแต้มพร้อมระบุเหตุผล แจ้งนักเรียนอัตโนมัติ</p></div>
+          <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        </div>
+        <div class="action-card mode-review" onclick="openSubmissionReviewModal()">
+          <div class="icon"><i class="fa-solid fa-images"></i></div>
+          <div class="info"><h4>ตรวจงานส่ง (เรียนออนไลน์)</h4><p>ดูรูปแบบฝึกหัดที่นักเรียนส่งมา แล้วให้ลายเซ็น</p></div>
+          <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        </div>
+        <div class="action-card mode-exam-ctrl" onclick="openExamControlModal()">
+          <div class="icon"><i class="fa-solid fa-clock"></i></div>
+          <div class="info"><h4>คุมสอบท้ายบท (เรียนออนไลน์)</h4><p>เปิด/ปิดให้นักเรียนเข้าสอบตามบทที่เลือกไว้ด้านบน</p></div>
+          <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        </div>
+      </div>
+
+      <!-- แท็บ: ประวัติเช็คชื่อ -->
+      <div id="tTab-att" class="tab-panel">
+        <div class="section-title"><i class="fa-solid fa-clock-rotate-left"></i> ประวัติการเช็คชื่อ</div>
+        <div class="filter-bar">
+          <select id="logClass"   class="field"></select>
+          <select id="logSubject" class="field"></select>
+          <input type="date" id="logDateFrom" class="field">
+          <input type="date" id="logDateTo"   class="field">
+          <button class="btn btn-teal btn-sm" onclick="loadAttendanceLog()"><i class="fa-solid fa-magnifying-glass"></i> เช็ค</button>
+        </div>
+        <div class="tbl-wrap">
+          <table class="dt">
+            <thead><tr><th>วันที่</th><th>ชื่อ</th><th>ชั้น</th><th>วิชา</th><th>สถานะ</th><th>ลบ</th></tr></thead>
+            <tbody id="logTableBody"><tr><td colspan="6" style="color:var(--slate);">เลือกตัวกรองแล้วกด "เช็ค"</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- แท็บ: คะแนน -->
+      <div id="tTab-score" class="tab-panel">
+        <div class="section-title"><i class="fa-solid fa-table"></i> ตารางคะแนนรวม</div>
+        <div class="filter-bar" style="margin-bottom:10px;">
+          <select id="vSubject"  class="field"></select>
+          <select id="vSubClass" class="field"></select>
+          <button class="btn btn-teal btn-sm" onclick="viewClassScores()"><i class="fa-solid fa-magnifying-glass"></i> เช็ค</button>
+        </div>
+        <div class="score-legend">
+          <span>📝 แต้มเซ็น (แก้ได้)</span>
+          <span>📊 คะแนนงาน (คำนวณ)</span>
+          <span>🎯 คะแนนสอบ (แก้ได้)</span>
+        </div>
+        <div class="tbl-wrap">
+          <table class="dt">
+            <thead id="scoreHead"><tr><th>รหัส</th><th>ชื่อ-สกุล</th><th>เกรด</th></tr></thead>
+            <tbody id="scoreTableBody"><tr><td colspan="3" style="color:var(--slate);">เลือกวิชาและชั้นแล้วกด "เช็ค"</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- แท็บ: ประวัติกิจกรรม -->
+      <div id="tTab-history" class="tab-panel">
+        <div class="section-title"><i class="fa-solid fa-clock-rotate-left"></i> ประวัติกิจกรรมทั้งหมด</div>
+        <div class="filter-bar" style="margin-bottom:12px;">
+          <select id="histType" class="field" style="min-width:130px;">
+            <option value="ALL">ทุกประเภท</option>
+            <option value="GPS_CHECKIN">📍 เช็คอิน GPS</option>
+            <option value="COUPON">🎟️ กรอกคูปอง</option>
+            <option value="BUY_CHAPTER_SCORE">🔄 แลกคะแนน</option>
+            <option value="SCAN_ATTEND">✅ สแกนเช็คชื่อ</option>
+            <option value="SCAN_SIGN">✍️ สแกนลายเซ็น</option>
+            <option value="STREAK_BONUS">🔥 โบนัส Streak</option>
+            <option value="MANUAL_DEDUCT">⛔ หักแต้มพิเศษ</option>
+            <option value="MANUAL_AWARD">🎁 ให้แต้มพิเศษ</option>
+          </select>
+          <select id="histClass" class="field"></select>
+          <input type="date" id="histDateFrom" class="field">
+          <input type="date" id="histDateTo"   class="field">
+          <button class="btn btn-teal btn-sm" onclick="loadTeacherHistory()"><i class="fa-solid fa-magnifying-glass"></i> เช็ค</button>
+        </div>
+        <div id="historyContainer">
+          <div style="text-align:center; color:var(--slate); padding:24px;">เลือกตัวกรองแล้วกด "เช็ค"</div>
+        </div>
+      </div>
+
+      <!-- แท็บ: รายชื่อนักเรียน -->
+      <div id="tTab-stu" class="tab-panel">
+        <div class="section-title"><i class="fa-solid fa-address-book"></i> รายชื่อนักเรียน</div>
+        <div class="filter-bar" style="margin-bottom:12px;">
+          <select id="stuFilterClass" class="field"></select>
+          <input type="text" id="stuFilterName" class="field" placeholder="ค้นหาชื่อ..." style="min-width:120px;">
+          <button class="btn btn-teal btn-sm" onclick="loadStudentList()"><i class="fa-solid fa-magnifying-glass"></i> เช็ค</button>
+        </div>
+        <div class="tbl-wrap">
+          <table class="dt">
+            <thead><tr><th>รหัส</th><th style="text-align:left;">ชื่อ-นามสกุล</th><th>ชั้น</th><th>ดู</th></tr></thead>
+            <tbody id="allStuBody"><tr><td colspan="4" style="color:var(--slate);">เลือกชั้นแล้วกด "เช็ค"</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="switchTeacherTab('scan', this)">
+      <i class="fa-solid fa-bolt"></i> สแกน
+    </button>
+    <button class="nav-btn" onclick="switchTeacherTab('att', this)">
+      <i class="fa-solid fa-clipboard-check"></i> เช็คชื่อ
+    </button>
+    <button class="nav-btn" onclick="switchTeacherTab('score', this)">
+      <i class="fa-solid fa-table"></i> คะแนน
+    </button>
+    <button class="nav-btn" onclick="switchTeacherTab('history', this)">
+      <i class="fa-solid fa-clock-rotate-left"></i> ประวัติ
+    </button>
+    <button class="nav-btn" onclick="switchTeacherTab('stu', this)">
+      <i class="fa-solid fa-users"></i> นร.
+    </button>
+  </nav>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     QR SCANNER MODAL
+     ═══════════════════════════════════════════════════════════ -->
+<div id="reader-modal" class="fullpage-view hidden">
+  <div class="fullpage-head">
+    <h3 style="margin:0; font-size:1.1rem;" id="scannerModalTitle">สแกน QR Code</h3>
+    <button class="btn btn-danger-soft btn-sm" onclick="closeScanner()">
+      <i class="fa-solid fa-xmark"></i> ปิดกล้อง
+    </button>
+  </div>
+  <div class="fullpage-body" style="text-align:center;">
+    <div id="reader" style="width:100%; max-width:360px; margin:0 auto; border-radius:16px; overflow:hidden; border:2px solid var(--navy);"></div>
+    <p style="font-size:0.82rem; color:var(--slate); margin-top:12px;" id="scannerHelperText">จัดตำแหน่ง QR ให้อยู่ในกรอบ</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     APP LOGIC — โค้ด JS หลักของแอป (ล็อกอิน, แดชบอร์ด, สแกน, คะแนน,
+     แต้มสะสม, ระบบคู่หู Smart Companion)
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+  // ─── GLOBAL STATE ───────────────────────────────────────────
+  let activeRole           = 'student';
+  let metaData             = { classes: [], subjects: [], settings: {} };
+  let html5QrCode          = null;
+  let currentScanMode      = 'work';
+  let currentTeacherUsername = '';
+  let cachedRoster         = [];
+  let currentLoggedStudentId = "";
+  let studentDashboardData = null;
+
+  // แปลงวันที่เป็น string "YYYY-MM-DD" ตาม local time ของเครื่อง (ห้ามใช้ .valueAsDate เพราะมันแปลงผ่าน UTC เสมอ
+  // ซึ่งจะทำให้วันที่เพี้ยนไปวันก่อนหน้าตอนช่วงเที่ยงคืนถึงก่อน 7 โมงเช้าเวลาไทย เพราะ UTC ยังเป็นเมื่อวานอยู่)
+  function localDateStr_(d) {
+    const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  // ─── INIT ───────────────────────────────────────────────────
+  window.onload = () => {
+    applyDarkModePreference();
+
+    const todayStr = localDateStr_(new Date());
+    ['logDateFrom','logDateTo','histDateFrom','histDateTo'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = todayStr;
+    });
+
+    loadMetaConfig();
+
+    const sessionData = localStorage.getItem('smartClassSession');
+    if (sessionData) {
+      const session = JSON.parse(sessionData);
+      document.getElementById('loginSection').classList.add('hidden');
+      if (session.role === 'teacher') {
+        activeRole = 'teacher';
+        currentTeacherUsername = session.username || '';
+        bootTeacher();
+      } else if (session.role === 'student') {
+        activeRole = 'student';
+        bootStudent(session.studentId);
+      }
+    }
+  };
+
+  // ─── UTILITIES ──────────────────────────────────────────────
+  // แสดงข้อความแจ้งเตือนเล็กๆ มุมจอด้วย SweetAlert2 Toast
+  function Toast(msg, icon = 'success') {
+    Swal.fire({ text: msg, icon, toast: true, position: 'top-end', showConfirmButton: false, timer: 2200 });
+  }
+
+  // สลับแท็บบทบาทผู้ใช้ (นักเรียน/ครู) บนหน้าล็อกอิน
+  function setRole(r, btn) {
+    activeRole = r;
+    document.querySelectorAll('#roleTabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  // ─── AUTH ───────────────────────────────────────────────────
+  // ส่งชื่อผู้ใช้/รหัสผ่านไปตรวจกับ backend แล้วพาเข้าแอปตามบทบาทที่ล็อกอินสำเร็จ
+  function login() {
+    const u = document.getElementById('username').value.trim();
+    const p = document.getElementById('password').value.trim();
+    if (!u || !p) return Toast('กรุณากรอกรหัสและ PIN ให้ครบ', 'warning');
+    Swal.fire({ title: 'กำลังตรวจสอบ...', didOpen: () => Swal.showLoading() });
+    google.script.run.withSuccessHandler(res => {
+      if (res.success) {
+        Swal.close();
+        document.getElementById('loginSection').classList.add('hidden');
+        if (res.role === 'teacher') {
+          currentTeacherUsername = u;
+          localStorage.setItem('smartClassSession', JSON.stringify({ role: 'teacher', username: u }));
+          bootTeacher();
+        } else {
+          localStorage.setItem('smartClassSession', JSON.stringify({ role: 'student', studentId: res.studentId }));
+          bootStudent(res.studentId);
+        }
+      } else {
+        Swal.fire('เข้าสู่ระบบล้มเหลว', res.message, 'error');
+      }
+    }).withFailureHandler(err => {
+      console.error('checkLogin failed:', err);
+      Swal.fire('เชื่อมต่อไม่สำเร็จ', 'ตรวจสอบอินเทอร์เน็ตแล้วลองเข้าสู่ระบบอีกครั้ง', 'error');
+    }).checkLogin(u, p, activeRole);
+  }
+
+  // ล้างข้อมูลผู้ใช้ปัจจุบันและกลับไปหน้าล็อกอิน
+  // ─── DARK MODE ──────────────────────────────────────────────
+  // สลับโหมดมืด/สว่าง จำค่าไว้ใน localStorage ใช้ได้ทั้งฝั่งครูและนักเรียน
+  function applyDarkModePreference() {
+    const on = localStorage.getItem('smartClassDarkMode') === '1';
+    document.body.classList.toggle('dark-mode', on);
+    updateDarkModeIcons(on);
+  }
+  function toggleDarkMode() {
+    const on = !document.body.classList.contains('dark-mode');
+    document.body.classList.toggle('dark-mode', on);
+    localStorage.setItem('smartClassDarkMode', on ? '1' : '0');
+    updateDarkModeIcons(on);
+  }
+  function updateDarkModeIcons(on) {
+    ['darkModeIcon1', 'darkModeIcon2'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.className = on ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    });
+  }
+
+  // ─── NOTIFICATION CENTER (นักเรียน) ─────────────────────────
+  // เปิดดูรายการให้/หักแต้มพิเศษล่าสุดได้ทุกเมื่อ (แยกจาก popup อัตโนมัติตอนล็อกอินซึ่งจะโชว์แค่รายการใหม่)
+  function openNotificationCenter() {
+    const dot = document.getElementById('studentNotifDot');
+    if (dot) dot.classList.remove('show');
+    google.script.run.withSuccessHandler(list => {
+      if (!list || list.length === 0) {
+        Swal.fire('การแจ้งเตือน', 'ยังไม่มีรายการแจ้งเตือนครับ', 'info');
+        return;
+      }
+      const rows = list.map(n => {
+        const isAward = n.points >= 0;
+        const color = isAward ? 'var(--teal2)' : 'var(--coral)';
+        return `<div style="text-align:left; border-bottom:1px solid var(--mist); padding:10px 0;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <b style="color:${color};">${isAward ? '+' : ''}${n.points} แต้ม</b>
+            <span style="font-size:0.72rem; color:var(--slate);">${new Date(n.ts).toLocaleDateString('th-TH')}</span>
+          </div>
+          <div style="font-size:0.85rem; margin-top:2px;">${n.reason}</div>
+          <div style="font-size:0.72rem; color:var(--slate);">โดย ${n.teacher}</div>
+        </div>`;
+      }).join('');
+      Swal.fire({ title: '🔔 การแจ้งเตือน', html: `<div style="max-height:340px; overflow-y:auto;">${rows}</div>`, confirmButtonText: 'ปิด' });
+    }).getStudentManualPointNotices(currentLoggedStudentId);
+  }
+
+  // ออกจากระบบ: ล้าง session แล้วโหลดหน้าใหม่
+  function logout() {
+    localStorage.removeItem('smartClassSession');
+    window.location.reload();
+  }
+
+  // ─── TABS ───────────────────────────────────────────────────
+  // สลับแท็บของฝั่งนักเรียน (หน้าหลัก/ฉายา/การเรียน/บัตร)
+  function switchStudentTab(name, btn) {
+    document.querySelectorAll('#studentSection .tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('sTab-' + name).classList.add('active');
+    document.querySelectorAll('#studentSection .bottom-nav .nav-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (name === 'companion') loadCompanionTab();
+  }
+
+  // สลับแท็บของฝั่งครู (สแกน/ประวัติเช็คชื่อ/คะแนน/ประวัติกิจกรรม/รายชื่อ)
+  function switchTeacherTab(name, btn) {
+    document.querySelectorAll('#teacherSection .tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tTab-' + name).classList.add('active');
+    document.querySelectorAll('#teacherSection .bottom-nav .nav-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('scanSelectorStrip').style.display = 'block';
+  }
+
+  // ─── META CONFIG ────────────────────────────────────────────
+  // โหลดค่า meta (ชั้นเรียน/วิชา/การตั้งค่า) จาก backend มาเก็บไว้ใช้ทั้งหน้า
+  function loadMetaConfig() {
+    google.script.run.withSuccessHandler(res => {
+      metaData = res;
+      populateSelects();
+    }).getMetaConfig();
+  }
+
+  // เติมตัวเลือกชั้นเรียน/วิชาในลิสต์ dropdown ต่างๆ ตามค่า meta ที่โหลดมา
+  function populateSelects() {
+    const cHtml    = metaData.classes.map(c  => `<option value="${c.code}">${c.label}</option>`).join('');
+    const sHtml    = metaData.subjects.map(s  => `<option value="${s.code}">${s.label}</option>`).join('');
+    const cAllHtml = `<option value="ALL">ทุกชั้น</option>` + cHtml;
+    const sAllHtml = `<option value="ALL">ทุกวิชา</option>` + sHtml;
+
+    const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+
+    set('activeSubjSelect',  sHtml);
+    set('activeClassSelect', cHtml);
+    set('logSubject',        sAllHtml);
+    set('logClass',          cAllHtml);
+    set('vSubject',          sHtml);
+    set('vSubClass',         cHtml);
+    set('histClass',         cAllHtml);
+    set('stuFilterClass',    cAllHtml);
+    set('newStuClass',       cHtml);
+  }
+
+  // ─── BOOT TEACHER ───────────────────────────────────────────
+  // เตรียมข้อมูลเริ่มต้นทั้งหมดของฝั่งครูหลังล็อกอินสำเร็จ
+  function bootTeacher() {
+    document.getElementById('teacherSection').classList.remove('hidden');
+    document.getElementById('scanSelectorStrip').style.display = 'block';
+
+    google.script.run.withSuccessHandler(s => {
+      document.getElementById('teacherStatsLine').innerText = `นักเรียนทั้งหมด ${s.totalStudents} คน`;
+      let html = '';
+      Object.keys(s.byClass).forEach(code => {
+        const cls = s.byClass[code];
+        html += `<div class="t-stat-chip">
+          <div class="icon">🎓</div>
+          <div class="info">
+            <div class="n">${cls.count}</div>
+            <div class="l">${cls.label}</div>
+          </div>
+        </div>`;
+      });
+      document.getElementById('teacherStatGrid').innerHTML = html;
+    }).withFailureHandler(err => {
+      console.error('getTeacherDashboardStats failed:', err);
+      document.getElementById('teacherStatsLine').innerText = 'โหลดไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ';
+    }).getTeacherDashboardStats();
+  }
+
+  // ─── BOOT STUDENT ───────────────────────────────────────────
+  // เตรียมข้อมูลเริ่มต้นทั้งหมดของฝั่งนักเรียนหลังล็อกอินสำเร็จ (โหลดแดชบอร์ด/บัตร/คู่หู)
+  // เช็คว่ามีรายการให้/หักแต้มพิเศษใหม่ที่นักเรียนยังไม่เคยเห็นไหม (เทียบกับ timestamp ล่าสุดที่เคยเห็นซึ่งเก็บไว้ในเครื่อง)
+  // ถ้ามี แสดง popup แจ้งเหตุผลทีละรายการ เรียงจากเก่าไปใหม่ (สีเขียว=ได้แต้ม / สีแดง=ถูกหัก)
+  function checkManualPointNotices(stdId) {
+    google.script.run.withSuccessHandler(list => {
+      if (!list || list.length === 0) return;
+      const seenKey  = 'manualPtsSeen_' + stdId;
+      const lastSeen = parseInt(localStorage.getItem(seenKey) || '0');
+      const unseen   = list.filter(n => n.ts > lastSeen).sort((a, b) => a.ts - b.ts);
+      if (unseen.length === 0) return;
+
+      const dot = document.getElementById('studentNotifDot');
+      if (dot) dot.classList.add('show');
+
+      let i = 0;
+      function showNext() {
+        if (i >= unseen.length) {
+          localStorage.setItem(seenKey, String(list[0].ts)); // list[0] คือรายการล่าสุดสุด (backend เรียงใหม่ก่อนมาให้แล้ว)
+          if (dot) dot.classList.remove('show');
+          return;
+        }
+        const n = unseen[i];
+        const isAward = n.points >= 0;
+        const color   = isAward ? '#FF5C97' : '#B01248';
+        Swal.fire({
+          title: isAward ? '🎁 ได้รับแต้มพิเศษ' : '⛔ มีการหักแต้มพิเศษ',
+          html: `<div style="font-size:2rem; font-weight:900; color:${color}; margin-bottom:10px;">${isAward ? '+' : '-'}${Math.abs(n.points)} แต้ม</div>
+                 <div style="text-align:left; background:var(--cloud); border-radius:12px; padding:12px 14px; font-size:0.88rem; color:var(--ink);">
+                   <b>เหตุผล:</b> ${n.reason}<br>
+                   <span style="color:var(--slate); font-size:0.78rem;">โดย ${n.teacher} · ${new Date(n.ts).toLocaleDateString('th-TH')}</span>
+                 </div>`,
+          confirmButtonText: 'รับทราบ',
+          confirmButtonColor: color
+        }).then(() => { i++; showNext(); });
+      }
+      showNext();
+    }).getStudentManualPointNotices(stdId);
+  }
+
+  function bootStudent(stdId) {
+    currentLoggedStudentId = stdId;
+    document.getElementById('studentSection').classList.remove('hidden');
+    refreshPointsBalance();
+    checkManualPointNotices(stdId);
+    refreshRunSummary_();
+
+    google.script.run.withSuccessHandler(d => {
+      studentDashboardData = d;
+
+      document.getElementById('sNameDisplay').innerText = d.name;
+      document.getElementById('sClassDisplay').innerText = d.clsLabel;
+      document.getElementById('csCheckinCount').innerText = d.checkinStats?.checkinCount  ?? 0;
+      document.getElementById('csStreakCount').innerText  = d.checkinStats?.consecutiveDays ?? 0;
+
+      // ฉายาประจำห้อง
+      const nickCont = document.getElementById('nicknameContainer');
+      if (d.classNicknames && Object.keys(d.classNicknames).length > 0) {
+        let html = '';
+        Object.values(d.classNicknames).forEach(cat => {
+          if (!cat.top3 || cat.top3.length === 0) return;
+          const rankRows = cat.top3.map(p => `
+            <div class="nc-rank-row">
+              <div class="rank-badge rank-${p.rank}">${p.rank}</div>
+              <div class="rank-name">${p.name}</div>
+              <div class="rank-val">${p.value}</div>
+            </div>`).join('');
+          html += `<div class="nickname-card">
+            <div class="nc-head">
+              <div class="nc-icon">${cat.icon}</div>
+              <div>
+                <div class="nc-title">${cat.label}</div>
+                <div class="nc-desc">${cat.desc}</div>
+              </div>
+            </div>
+            <div class="nc-ranking">${rankRows}</div>
+          </div>`;
+        });
+        nickCont.innerHTML = html || '<div style="color:var(--slate); font-size:0.85rem; text-align:center; padding:12px;">ยังไม่มีข้อมูลฉายา</div>';
+      } else {
+        nickCont.innerHTML = '<div style="color:var(--slate); font-size:0.85rem; text-align:center; padding:12px;">ยังไม่มีข้อมูลฉายา</div>';
+      }
+
+      // วิเคราะห์ศักยภาพ
+      const sm = document.getElementById('skillMetersContainer');
+      if (sm) {
+        const pd       = d.potentialData || {};
+        const mySigs   = pd.myTotalSigs  || 0;
+        const maxSigs  = pd.maxClassSigs  || 1;
+        const myTest   = pd.myTotalTest   || 0;
+        const maxTest  = pd.maxTotalTest  || 1;
+        const sigPct   = Math.min(100, Math.round((mySigs / maxSigs) * 100));
+        const testPct  = Math.min(100, Math.round((myTest / maxTest) * 100));
+
+        sm.innerHTML = `
+          <div class="meter-row">
+            <div class="meter-head" style="color:var(--slate);">
+              <span>✍️ ลายเซ็นสะสม <small style="color:var(--ink); opacity:0.6;">(${mySigs} / สูงสุดในชั้น ${maxSigs})</small></span>
+              <b style="color:var(--teal2);">${sigPct}%</b>
+            </div>
+            <div style="background:var(--cloud); height:12px; border-radius:6px; overflow:hidden; border:1px solid var(--mist);">
+              <div style="background:var(--teal); width:${sigPct}%; height:100%; border-radius:6px; transition:width .6s;"></div>
+            </div>
+          </div>
+          <div class="meter-row">
+            <div class="meter-head" style="color:var(--slate);">
+              <span>📝 คะแนนสอบท้ายบท <small style="color:var(--ink); opacity:0.6;">(${myTest} / เต็ม ${maxTest})</small></span>
+              <b style="color:var(--amber2);">${testPct}%</b>
+            </div>
+            <div style="background:var(--cloud); height:12px; border-radius:6px; overflow:hidden; border:1px solid var(--mist);">
+              <div style="background:var(--amber); width:${testPct}%; height:100%; border-radius:6px; transition:width .6s;"></div>
+            </div>
+          </div>`;
+      }
+
+      // QR Code
+      new QRCode(document.getElementById('qrcode'), {
+        text: String(stdId), width: 200, height: 200,
+        colorDark: "#123C69", colorLight: "#ffffff"
+      });
+
+      // บัตรประจำตัว
+      document.getElementById('cardName').innerText = d.name;
+      document.getElementById('cardClass').innerHTML = `<i class="fa-solid fa-school"></i> ${d.clsLabel}`;
+      document.getElementById('cardStudentId').innerText = `รหัส: ${stdId}`;
+      document.getElementById('cardCheckin').innerText = d.checkinStats?.checkinCount  ?? 0;
+      document.getElementById('cardStreak').innerText  = d.checkinStats?.consecutiveDays ?? 0;
+
+      // ฉายาในบัตร
+      const nickEl = document.getElementById('cardNickname');
+      let nickHtml = '';
+      if (d.classNicknames) {
+        Object.values(d.classNicknames).forEach(cat => {
+          const myRank = (cat.top3 || []).find(p => String(p.id) === String(stdId));
+          if (myRank) {
+            nickHtml += `<span style="background:rgba(255,92,151,0.2); color:#FF5C97; padding:4px 12px; border-radius:999px; font-size:0.72rem; font-weight:700; border:1px solid rgba(255,92,151,0.4);">
+              ${cat.icon} ${cat.label} อันดับ ${myRank.rank}
+            </span>`;
+          }
+        });
+      }
+      nickEl.innerHTML = nickHtml;
+
+      // ผลการเรียน
+      renderGradeCards(d);
+
+    }).withFailureHandler(err => {
+      console.error('getStudentDashboard (boot) failed:', err);
+      Swal.fire({
+        title: 'โหลดข้อมูลไม่สำเร็จ', text: 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง',
+        icon: 'error', confirmButtonText: 'ลองใหม่'
+      }).then(() => bootStudent(stdId));
+    }).getStudentDashboard(stdId);
+  }
+
+  // วาดการ์ดผลการเรียนของนักเรียน (ใช้ทั้งตอน boot และตอน refresh หลังแลกแต้มเป็นคะแนนเก็บ)
+  function renderGradeCards(d) {
+    const gc = document.getElementById('gradeCardsContainer');
+    gc.innerHTML = '';
+    if (!d.subjects || Object.keys(d.subjects).length === 0) {
+      gc.innerHTML = '<div style="text-align:center; color:var(--slate); padding:24px;">ยังไม่มีข้อมูลคะแนน</div>';
+      return;
+    }
+    Object.keys(d.subjects).forEach(k => {
+      const sub        = d.subjects[k];
+      const total100   = parseFloat(sub.total100) || 0;
+      const gradeColor = sub.grade >= 3 ? 'var(--teal2)' : sub.grade <= 1.5 ? 'var(--coral)' : 'var(--amber2)';
+      const scorePct   = Math.min(100, Math.round((total100 / 100) * 100));
+      const finalExamDisplay = (sub.finalExam !== undefined && sub.finalExam !== null && sub.finalExam !== '') ? sub.finalExam : '—';
+
+      let chHtml = '';
+      (sub.chapters || []).forEach(ch => {
+        chHtml += `
+          <div class="score-row">
+            <div class="label">
+              บทที่ ${ch.ch}
+              <span style="font-size:0.72rem; color:var(--slate);">
+                (✍️ ${ch.sig} ลาย &nbsp;/&nbsp; 📊 ${ch.workScore} คะแนนงาน &nbsp;/&nbsp; 🎯 ${ch.test} คะแนนสอบ)
+              </span>
+            </div>
+            <div class="val" style="color:var(--ink);">${ch.total} <small style="color:var(--slate);">/20</small></div>
+          </div>`;
+      });
+
+      gc.innerHTML += `
+        <div class="grade-summary-card">
+          <div class="gsc-head">
+            <div class="subj-name"><i class="fa-solid fa-book" style="opacity:0.7; margin-right:6px;"></i>${sub.label}</div>
+            <div class="grade-big" style="background:${gradeColor}; color:#fff;">เกรด ${sub.grade}</div>
+          </div>
+          <div class="gsc-body">
+            ${chHtml}
+            <div class="score-row" style="margin-top:8px; padding-top:8px; border-top:2px solid var(--mist);">
+              <div class="label" style="font-weight:700;">คะแนนเก็บ 70%</div>
+              <div class="val" style="color:var(--teal2);">${sub.total70}</div>
+            </div>
+            <div class="score-row">
+              <div class="label" style="font-weight:700;">สอบปลายภาค 30%</div>
+              <div class="val" style="color:var(--amber2);">${finalExamDisplay}</div>
+            </div>
+            <div class="score-row" style="border-bottom:none;">
+              <div class="label" style="font-weight:700; color:var(--ink);">รวม 100 คะแนน</div>
+              <div class="val" style="font-size:1.1rem; color:${gradeColor};">${total100}</div>
+            </div>
+            <div class="progress-bar" style="margin-top:10px;">
+              <div class="fill" style="background:${gradeColor}; width:${scorePct}%;"></div>
+            </div>
+          </div>
+        </div>`;
+    });
+  }
+
+  // โหลดข้อมูลแดชบอร์ดใหม่แบบเงียบๆ (ไม่วาด QR/บัตร/ฉายาใหม่) ใช้หลัง action ที่กระทบคะแนนเก็บ เช่นแลกแต้ม
+  function refreshStudentDashboardData() {
+    google.script.run.withSuccessHandler(d => {
+      studentDashboardData = d;
+      renderGradeCards(d);
+    }).getStudentDashboard(currentLoggedStudentId);
+  }
+
+  // ─── SCANNER ────────────────────────────────────────────────
+  // ตั้งโหมดการสแกน (เช็คชื่อ/ลายเซ็น/คะแนนสอบ) ก่อนเริ่มกล้องสแกน QR
+  function triggerModeSetup(mode) {
+    currentScanMode = mode;
+    const titles = { att: '1. สแกนเช็คชื่อเข้าเรียน', work: '2. สแกนตรวจงาน/ลายเซ็น', exam: '3. สแกนกรอกคะแนนสอบ', deduct: '4. สแกนหักแต้มพิเศษ', award: '5. สแกนให้แต้มพิเศษ' };
+    const hints  = { att: 'สแกนต่อเนื่องได้ทันที',    work: 'สแกนแล้วกรอกแต้มสะสม',   exam: 'สแกนเพื่อบันทึกคะแนนสอบ', deduct: 'สแกนแล้วระบุจำนวน+เหตุผล', award: 'สแกนแล้วระบุจำนวน+เหตุผล' };
+    document.getElementById('scannerModalTitle').innerText = titles[mode];
+    document.getElementById('scannerHelperText').innerText = hints[mode];
+    openFullpageView_('reader-modal');
+    startScanner();
+  }
+
+  // เปิดกล้องและเริ่มสแกน QR code ด้วย html5-qrcode
+  function startScanner() {
+    if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 240, height: 240 } },
+      decoded => {
+        html5QrCode.stop()
+          .then(()  => { closeFullpageView_('reader-modal'); handleScannedId(decoded.trim()); })
+          .catch(() => { closeFullpageView_('reader-modal'); handleScannedId(decoded.trim()); });
+      }
+    ).catch(err => Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเปิดกล้องได้: ' + err, 'error'));
+  }
+
+  // ปิดกล้องสแกนและคืนทรัพยากรกล้อง
+  function closeScanner() {
+    if (html5QrCode) {
+      html5QrCode.stop()
+        .then(()  => closeFullpageView_('reader-modal'))
+        .catch(() => closeFullpageView_('reader-modal'));
+    } else {
+      closeFullpageView_('reader-modal');
+    }
+  }
+
+  // รับรหัสนักเรียนที่สแกนได้ ตรวจสอบเบื้องต้นก่อนส่งไปประมวลผลที่ backend
+  function handleScannedId(stdId) {
+    if (currentScanMode === 'att') {
+      executeBackendScan(stdId, 'attendance', 0);
+    } else if (currentScanMode === 'work') {
+      Swal.fire({
+        title: '✍️ บันทึกแต้มลายเซ็น',
+        html: `นักเรียนรหัส: <b>${stdId}</b>`,
+        input: 'number', inputValue: 1, showCancelButton: true,
+        confirmButtonText: 'บันทึก', cancelButtonText: 'ยกเลิก',
+        inputValidator: v => { if (!v || parseInt(v) <= 0) return 'ระบุแต้ม 1 ขึ้นไป'; }
+      }).then(r => {
+        if (r.isConfirmed) executeBackendScan(stdId, 'signature', parseInt(r.value));
+        else resumeScannerAfterCancel();
+      });
+    } else if (currentScanMode === 'exam') {
+      Swal.fire({
+        title: '📝 บันทึกคะแนนสอบ',
+        html: `นักเรียนรหัส: <b>${stdId}</b>`,
+        input: 'number', inputAttributes: { step: '0.5' }, showCancelButton: true,
+        confirmButtonText: 'บันทึก', cancelButtonText: 'ยกเลิก',
+        inputValidator: v => { if (v === '') return 'กรุณากรอกคะแนน'; }
+      }).then(r => {
+        if (r.isConfirmed) executeBackendScan(stdId, 'test', parseFloat(r.value));
+        else resumeScannerAfterCancel();
+      });
+    } else if (currentScanMode === 'deduct') {
+      Swal.fire({
+        title: '⛔ หักแต้มพิเศษ',
+        html: `นักเรียนรหัส: <b>${stdId}</b>
+               <div style="margin-top:14px; text-align:left;">
+                 <label class="field-label">จำนวนแต้มที่จะหัก</label>
+                 <input id="deductAmountInput" type="number" min="1" value="5" class="swal2-input" style="margin:0 0 12px;">
+                 <label class="field-label">เหตุผล (จำเป็นต้องระบุ)</label>
+                 <textarea id="deductReasonInput" class="swal2-textarea" style="margin:0;" placeholder="เช่น พูดคุยเสียงดังรบกวนเพื่อนขณะสอบ"></textarea>
+               </div>`,
+        showCancelButton: true,
+        confirmButtonText: 'ตรวจสอบ', cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#B01248',
+        preConfirm: () => {
+          const amt    = parseInt(document.getElementById('deductAmountInput').value);
+          const reason = document.getElementById('deductReasonInput').value.trim();
+          if (!amt || amt <= 0) return Swal.showValidationMessage('ระบุจำนวนแต้มที่จะหัก (มากกว่า 0)');
+          if (!reason) return Swal.showValidationMessage('กรุณาระบุเหตุผล');
+          return { amt, reason };
+        }
+      }).then(r => {
+        if (!r.isConfirmed) { resumeScannerAfterCancel(); return; }
+        // ยืนยันซ้ำอีกครั้งเพราะเป็นการหักแต้มจริง ผลกระทบกับนักเรียนโดยตรง
+        Swal.fire({
+          title: 'ยืนยันการหักแต้ม?',
+          html: `หัก <b>${r.value.amt} แต้ม</b> จากรหัส <b>${stdId}</b><br><span style="color:var(--slate);font-size:0.85rem;">เหตุผล: ${r.value.reason}</span>`,
+          icon: 'warning', showCancelButton: true,
+          confirmButtonText: 'ยืนยันหักแต้ม', cancelButtonText: 'ยกเลิก',
+          confirmButtonColor: '#B01248'
+        }).then(r2 => {
+          if (r2.isConfirmed) executeDeduction(stdId, r.value.amt, r.value.reason);
+          else resumeScannerAfterCancel();
+        });
+      });
+    } else if (currentScanMode === 'award') {
+      Swal.fire({
+        title: '🎁 ให้แต้มพิเศษ',
+        html: `นักเรียนรหัส: <b>${stdId}</b>
+               <div style="margin-top:14px; text-align:left;">
+                 <label class="field-label">จำนวนแต้มที่จะให้</label>
+                 <input id="awardAmountInput" type="number" min="1" value="5" class="swal2-input" style="margin:0 0 12px;">
+                 <label class="field-label">เหตุผล (จำเป็นต้องระบุ)</label>
+                 <textarea id="awardReasonInput" class="swal2-textarea" style="margin:0;" placeholder="เช่น ช่วยเหลือเพื่อนในห้อง / ทำความดี"></textarea>
+               </div>`,
+        showCancelButton: true,
+        confirmButtonText: 'ให้แต้ม', cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#FF5C97',
+        preConfirm: () => {
+          const amt    = parseInt(document.getElementById('awardAmountInput').value);
+          const reason = document.getElementById('awardReasonInput').value.trim();
+          if (!amt || amt <= 0) return Swal.showValidationMessage('ระบุจำนวนแต้มที่จะให้ (มากกว่า 0)');
+          if (!reason) return Swal.showValidationMessage('กรุณาระบุเหตุผล');
+          return { amt, reason };
+        }
+      }).then(r => {
+        if (r.isConfirmed) executeAward(stdId, r.value.amt, r.value.reason);
+        else resumeScannerAfterCancel();
+      });
+    }
+  }
+
+  // ส่งคำสั่งหักแต้มพิเศษไปที่ backend พร้อมเหตุผล (แยกจาก executeBackendScan เพราะเรียกคนละฟังก์ชันฝั่ง server)
+  function executeDeduction(stdId, amount, reason) {
+    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    google.script.run
+      .withSuccessHandler(res => {
+        if (res.success) {
+          Toast(res.message, 'success');
+          setTimeout(() => { openFullpageView_('reader-modal'); startScanner(); }, 1200);
+        } else {
+          Swal.fire('แจ้งเตือน', res.message, 'warning').then(() => resumeScannerAfterCancel());
+        }
+      })
+      .withFailureHandler(err => Swal.fire('ผิดพลาด', err.toString(), 'error').then(() => resumeScannerAfterCancel()))
+      .deductStudentPoints(currentTeacherUsername, stdId, amount, reason);
+  }
+
+  // ส่งคำสั่งให้แต้มพิเศษไปที่ backend พร้อมเหตุผล (คู่กับ executeDeduction)
+  function executeAward(stdId, amount, reason) {
+    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    google.script.run
+      .withSuccessHandler(res => {
+        if (res.success) {
+          Toast(res.message, 'success');
+          setTimeout(() => { openFullpageView_('reader-modal'); startScanner(); }, 1200);
+        } else {
+          Swal.fire('แจ้งเตือน', res.message, 'warning').then(() => resumeScannerAfterCancel());
+        }
+      })
+      .withFailureHandler(err => Swal.fire('ผิดพลาด', err.toString(), 'error').then(() => resumeScannerAfterCancel()))
+      .awardStudentPoints(currentTeacherUsername, stdId, amount, reason);
+  }
+
+  // ส่งผลการสแกน (รหัสนักเรียน, ประเภทการสแกน, คะแนน) ไปบันทึกที่ backend
+  function executeBackendScan(stdId, actionType, scoreVal) {
+    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    const payload = {
+      studentId: stdId,
+      subject:   document.getElementById('activeSubjSelect').value,
+      cls:       document.getElementById('activeClassSelect').value,
+      chapter:   parseInt(document.getElementById('activeChapterInput').value) || 1,
+      action: actionType, scoreValue: scoreVal, status: 'present'
+    };
+    google.script.run
+      .withSuccessHandler(res => {
+        if (res.success) {
+          Toast(res.message, 'success');
+          setTimeout(() => { openFullpageView_('reader-modal'); startScanner(); }, 1200);
+        } else {
+          Swal.fire('แจ้งเตือน', res.message, 'warning').then(() => resumeScannerAfterCancel());
+        }
+      })
+      .withFailureHandler(err => Swal.fire('ผิดพลาด', err.toString(), 'error').then(() => resumeScannerAfterCancel()))
+      .processScanData(payload);
+  }
+
+  // เริ่มสแกนต่อหลังจากผู้ใช้กดยกเลิก dialog ยืนยัน
+  function resumeScannerAfterCancel() {
+    openFullpageView_('reader-modal');
+    startScanner();
+  }
+
+  // ─── ATTENDANCE ─────────────────────────────────────────────
+  // โหลดประวัติการเช็คชื่อตามตัวกรองที่ครูเลือกมาแสดงเป็นตาราง
+  function loadAttendanceLog() {
+    const f = {
+      cls:      document.getElementById('logClass').value,
+      subject:  document.getElementById('logSubject').value,
+      dateFrom: document.getElementById('logDateFrom').value,
+      dateTo:   document.getElementById('logDateTo').value
+    };
+    document.getElementById('logTableBody').innerHTML = '<tr><td colspan="6">กำลังโหลด...</td></tr>';
+    google.script.run.withSuccessHandler(list => {
+      document.getElementById('logTableBody').innerHTML = list.map(l => `
+        <tr>
+          <td>${l.date}</td>
+          <td style="text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px;">${l.name}</td>
+          <td>${l.clsLabel}</td>
+          <td>${l.subjectLabel}</td>
+          <td><span class="grade-badge ${l.status === 'present' ? 'g-hi' : l.status === 'absent' ? 'g-lo' : 'g-mid'}">${l.statusLabel}</span></td>
+          <td><button class="btn btn-danger-soft btn-sm" style="padding:6px 10px;" onclick="deleteLogRow(${l.sheetRow},this)"><i class="fa-solid fa-trash"></i></button></td>
+        </tr>`).join('');
+      if (!list.length) document.getElementById('logTableBody').innerHTML = '<tr><td colspan="6">ไม่พบข้อมูล</td></tr>';
+    }).getAttendanceLog(f);
+  }
+
+  // ลบแถวประวัติการเช็คชื่อหนึ่งแถว (ยืนยันก่อนลบ)
+  function deleteLogRow(row, btn) {
+    Swal.fire({ title: 'ลบรายการนี้?', icon: 'warning', showCancelButton: true }).then(r => {
+      if (r.isConfirmed) {
+        google.script.run.withSuccessHandler(m => { Toast(m.message); btn.closest('tr').remove(); })
+          .withFailureHandler(err => { console.error('deleteAttendanceRow failed:', err); Swal.fire('ลบไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error'); })
+          .deleteAttendanceRow(row);
+      }
+    });
+  }
+
+  // ─── SCORE TABLE ────────────────────────────────────────────
+  // โหลดตารางคะแนนของวิชา+ชั้นที่เลือกมาแสดงให้ครูแก้ไข
+  function viewClassScores() {
+    const s = document.getElementById('vSubject').value;
+    const c = document.getElementById('vSubClass').value;
+    if (!s || !c) return;
+    document.getElementById('scoreTableBody').innerHTML = '<tr><td colspan="3">กำลังดึงคะแนน...</td></tr>';
+    google.script.run.withSuccessHandler(res => {
+      if (!res.success || res.data.length === 0) {
+        document.getElementById('scoreTableBody').innerHTML = '<tr><td colspan="3">ไม่มีข้อมูล</td></tr>';
+        return;
+      }
+      let ths = '<tr><th>รหัส</th><th>ชื่อ-สกุล</th>';
+      for (let i = 1; i <= res.totalChapters; i++) {
+        ths += `<th>บท ${i}<br><small style="font-weight:400; color:var(--slate);">เซ็น / งาน / สอบ</small></th>`;
+      }
+      ths += '<th>เก็บ<br>70%</th><th>ปลายภาค<br>30%</th><th>รวม<br>100</th><th>เกรด</th></tr>';
+      document.getElementById('scoreHead').innerHTML = ths;
+
+      document.getElementById('scoreTableBody').innerHTML = res.data.map(std => {
+        let tds = `<td><b>${std.id}</b></td><td style="text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:110px;">${std.name}</td>`;
+        std.chapters.forEach(ch => {
+          tds += `<td style="background:var(--cloud); white-space:nowrap;">
+            <input class="cell-input" title="✍️ แต้มเซ็น" value="${ch.sig}" onchange="editScoreCell('${s}','${c}','${std.id}','${std.name}',${ch.ch},'sig',this.value)">
+            /<span id="work-${s}-${c}-${std.id}-${ch.ch}" style="color:var(--amber2); font-weight:700;" title="📊 คะแนนงาน (คำนวณอัตโนมัติ)">${ch.work}</span>
+            /<input class="cell-input" title="🎯 คะแนนสอบ" value="${ch.test}" onchange="editScoreCell('${s}','${c}','${std.id}','${std.name}',${ch.ch},'test',this.value)">
+          </td>`;
+        });
+        tds += `<td><b id="norm70-${s}-${c}-${std.id}">${std.norm70}</b></td>
+                <td><input class="cell-input" style="background:#E3F2FD; font-weight:700;" title="คะแนนปลายภาค" value="${std.finalExam}" onchange="editScoreCell('${s}','${c}','${std.id}','${std.name}',1,'final',this.value)"></td>
+                <td><b id="total100-${s}-${c}-${std.id}" style="color:var(--teal2);">${std.total100}</b></td>
+                <td><span id="grade-${s}-${c}-${std.id}" class="grade-badge ${std.grade >= 3 ? 'g-hi' : std.grade <= 1.5 ? 'g-lo' : 'g-mid'}">เกรด ${std.grade}</span></td>`;
+        return `<tr>${tds}</tr>`;
+      }).join('');
+    }).withFailureHandler(err => {
+      console.error('getClassScoreData failed:', err);
+      document.getElementById('scoreTableBody').innerHTML = '<tr><td colspan="3">โหลดไม่สำเร็จ กรุณาลองใหม่</td></tr>';
+    }).getClassScoreData(s, c);
+  }
+
+  // แก้ไขคะแนนช่องใดช่องหนึ่งในตาราง แล้วส่งค่าใหม่ไปบันทึกที่ backend
+  // [Perf] ปกติ backend จะ recalc แค่แถวเดียวและส่งค่ากลับมา -> อัปเดตเฉพาะแถวนี้ในตาราง ไม่ต้องโหลดทั้งตารางใหม่
+  // กรณีหายาก (แก้ 'sig' แล้วไปเปลี่ยนสถิติสูงสุดของห้อง) backend จะส่ง groupChanged:true กลับมา ค่อยโหลดทั้งตารางใหม่
+  function editScoreCell(sub, cls, stdId, stdName, ch, field, val) {
+    google.script.run.withSuccessHandler(res => {
+      if (!res.success) { Toast(res.message); return; }
+      if (res.groupChanged) {
+        Toast('บันทึกแล้ว (กระทบคะแนนทั้งห้อง กำลังโหลดตารางใหม่...)');
+        viewClassScores();
+        return;
+      }
+      Toast('บันทึกแล้ว');
+      applyScoreRowUpdate_(sub, cls, res.row);
+    }).withFailureHandler(err => {
+      console.error('updateStudentScoreCell failed:', err);
+      Swal.fire('บันทึกไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองแก้คะแนนช่องนี้อีกครั้ง', 'error');
+    }).updateStudentScoreCell(sub, cls, stdId, stdName, ch, field, val);
+  }
+
+  // [Perf] อัปเดตแค่เซลล์ที่คำนวณใหม่ของแถวเดียว (คะแนนงานต่อบท/เก็บ70/รวม100/เกรด) โดยไม่ต้องโหลดตารางทั้งหมดใหม่
+  function applyScoreRowUpdate_(sub, cls, row) {
+    if (!row) return;
+    row.chapters.forEach(ch => {
+      const el = document.getElementById(`work-${sub}-${cls}-${row.id}-${ch.ch}`);
+      if (el) el.textContent = ch.work;
+    });
+    const norm = document.getElementById(`norm70-${sub}-${cls}-${row.id}`);
+    if (norm) norm.textContent = row.norm70;
+    const total = document.getElementById(`total100-${sub}-${cls}-${row.id}`);
+    if (total) total.textContent = row.total100;
+    const gradeEl = document.getElementById(`grade-${sub}-${cls}-${row.id}`);
+    if (gradeEl) {
+      gradeEl.textContent = `เกรด ${row.grade}`;
+      gradeEl.className = `grade-badge ${row.grade >= 3 ? 'g-hi' : row.grade <= 1.5 ? 'g-lo' : 'g-mid'}`;
+    }
+  }
+
+  // ─── TEACHER HISTORY ────────────────────────────────────────
+  // โหลดประวัติกิจกรรม/แต้มทั้งหมดตามตัวกรองที่ครูเลือก
+  function loadTeacherHistory() {
+    const filters = {
+      type:     document.getElementById('histType').value,
+      cls:      document.getElementById('histClass').value,
+      dateFrom: document.getElementById('histDateFrom').value,
+      dateTo:   document.getElementById('histDateTo').value
+    };
+    const cont = document.getElementById('historyContainer');
+    cont.innerHTML = '<div style="text-align:center; color:var(--slate); padding:24px;">กำลังโหลด...</div>';
+
+    google.script.run.withSuccessHandler(list => {
+      if (!list || list.length === 0) {
+        cont.innerHTML = '<div style="text-align:center; color:var(--slate); padding:24px;">ไม่พบข้อมูลในช่วงที่เลือก</div>';
+        return;
+      }
+      cont.innerHTML = list.map(item => {
+        const typeClass =
+          ['GPS_CHECKIN','SCAN_ATTEND','SCAN_SIGN','STREAK_BONUS'].includes(item.actionType) ? 'history-type-checkin' :
+          item.actionType === 'COUPON' ? 'history-type-coupon' :
+          item.actionType === 'MANUAL_DEDUCT' ? 'history-type-deduct' :
+          item.actionType === 'MANUAL_AWARD'  ? 'history-type-award'  : 'history-type-buy';
+        const ptsHtml = item.points >= 0
+          ? `<div class="hi-pts plus">+${item.points}</div>`
+          : `<div class="hi-pts minus">${item.points}</div>`;
+        return `<div class="history-item ${typeClass}">
+          <div class="hi-icon">${item.typeLabel.split(' ')[0]}</div>
+          <div class="hi-body">
+            <div class="hi-name">${item.studentName} <span style="font-weight:400; color:var(--slate); font-size:0.75rem;">(${item.clsLabel || item.cls})</span></div>
+            <div class="hi-meta">${item.typeLabel.substring(2)} · ${item.date} · ${item.note || item.refKey}</div>
+          </div>
+          ${ptsHtml}
+        </div>`;
+      }).join('');
+    }).getTeacherHistory(filters);
+  }
+
+  // ─── STUDENT LIST ───────────────────────────────────────────
+  // โหลดรายชื่อนักเรียนทั้งหมดมาแสดงในแท็บจัดการรายชื่อ
+  function loadStudentList() {
+    const clsFilter  = document.getElementById('stuFilterClass').value;
+    const nameFilter = (document.getElementById('stuFilterName').value || '').trim().toLowerCase();
+
+    document.getElementById('allStuBody').innerHTML = '<tr><td colspan="4" style="color:var(--slate);">กำลังโหลด...</td></tr>';
+    google.script.run.withSuccessHandler(list => {
+      let filtered = list;
+      if (clsFilter && clsFilter !== 'ALL') filtered = filtered.filter(s => s.cls === clsFilter);
+      if (nameFilter) filtered = filtered.filter(s => s.name.toLowerCase().includes(nameFilter) || String(s.id).includes(nameFilter));
+
+      document.getElementById('allStuBody').innerHTML = filtered.length === 0
+        ? '<tr><td colspan="4" style="color:var(--slate);">ไม่พบนักเรียน</td></tr>'
+        : filtered.map(s => `
+          <tr>
+            <td style="font-size:0.8rem;">${s.id}</td>
+            <td style="text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px;">${s.name}</td>
+            <td>${s.clsLabel}</td>
+            <td><button class="btn btn-ghost btn-sm" style="padding:6px 12px;" onclick="viewStudentProfile('${s.id}')"><i class="fa-solid fa-eye"></i> ดู</button></td>
+          </tr>`).join('');
+    }).withFailureHandler(err => {
+      console.error('getAllStudents failed:', err);
+      document.getElementById('allStuBody').innerHTML = '<tr><td colspan="4" style="color:var(--coral);">โหลดไม่สำเร็จ กรุณาลองใหม่</td></tr>';
+    }).getAllStudents();
+  }
+
+  // เปิด modal แสดงข้อมูลโปรไฟล์/ผลการเรียนของนักเรียนคนใดคนหนึ่ง
+  function viewStudentProfile(stdId) {
+    Swal.fire({ title: 'กำลังโหลด...', didOpen: () => Swal.showLoading() });
+    google.script.run.withSuccessHandler(d => {
+      if (!d || !d.found) { Swal.fire('ไม่พบข้อมูล', '', 'error'); return; }
+
+      const ci = d.checkinStats || { checkinCount: 0, consecutiveDays: 0 };
+      const pd = d.potentialData || {};
+
+      const gradeHtml = Object.values(d.subjects || {}).map(sub => {
+        const gc = parseFloat(sub.grade) >= 3 ? '#E63D7A' : parseFloat(sub.grade) <= 1.5 ? '#E0245E' : '#E0A800';
+        return `<div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #F5FAFF; font-size:0.83rem;">
+          <span style="color:#6E88A3;">${sub.label}</span>
+          <span style="font-weight:700; color:${gc};">เกรด ${sub.grade} <small style="opacity:0.65;">(${sub.total100} คะแนน)</small></span>
+        </div>`;
+      }).join('');
+
+      const nickHtml = Object.values(d.classNicknames || {}).map(cat => {
+        const myRank = (cat.top3 || []).find(p => String(p.id) === String(stdId));
+        return myRank
+          ? `<span style="background:rgba(255,92,151,0.12); color:#E63D7A; padding:3px 10px; border-radius:999px; font-size:0.75rem; font-weight:700; margin:2px; display:inline-block;">${cat.icon} ${cat.label} อันดับ ${myRank.rank}</span>`
+          : '';
+      }).join('');
+
+      Swal.fire({
+        html: `
+          <div style="text-align:left;">
+            <div style="background:linear-gradient(135deg,#123C69,#1D63A8); color:white; border-radius:16px; padding:18px 20px; margin-bottom:14px;">
+              <div style="font-size:0.65rem; color:#FF5C97; font-weight:700; letter-spacing:0.12em; margin-bottom:6px;">SMART CLASS · ประจำตัวนักเรียน</div>
+              <div style="font-size:1.3rem; font-weight:700; font-family:'Mitr',Prompt,sans-serif; line-height:1.2; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${d.name}</div>
+              <div style="font-size:0.82rem; color:rgba(255,255,255,0.55);">${d.clsLabel} &nbsp;·&nbsp; รหัส ${stdId}</div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; margin-bottom:14px;">
+              <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
+                <div style="font-size:1.2rem; font-weight:900; color:#E63D7A;">${ci.checkinCount}</div>
+                <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">เช็คอิน</div>
+              </div>
+              <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
+                <div style="font-size:1.2rem; font-weight:900; color:#FFC93C;">${d.pointsBalance || 0}</div>
+                <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">แต้มสะสม</div>
+              </div>
+              <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
+                <div style="font-size:1.2rem; font-weight:900; color:#E0A800;">${ci.consecutiveDays}🔥</div>
+                <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">ต่อเนื่อง</div>
+              </div>
+              <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
+                <div style="font-size:1.2rem; font-weight:900; color:#123C69;">${pd.myTotalSigs || 0}</div>
+                <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">ลายเซ็น</div>
+              </div>
+            </div>
+            ${nickHtml ? `<div style="margin-bottom:12px; flex-wrap:wrap; display:flex; gap:4px;">${nickHtml}</div>` : ''}
+            ${gradeHtml ? `<div style="font-size:0.72rem; font-weight:700; color:#6E88A3; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">ผลการเรียน</div>${gradeHtml}` : ''}
+          </div>`,
+        showConfirmButton: false,
+        showCloseButton: true,
+        width: 'min(92vw, 420px)',
+        padding: '1.5rem'
+      });
+    }).withFailureHandler(err => {
+      console.error('getStudentDashboard (profile) failed:', err);
+      Swal.fire('โหลดไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
+    }).getStudentDashboard(stdId);
+  }
+
+  // ─── POINTS & REWARDS ───────────────────────────────────────
+  // โหลดยอดแต้มคงเหลือของนักเรียนที่ล็อกอินอยู่มาอัปเดตหน้าจอ
+  function refreshPointsBalance() {
+    google.script.run.withSuccessHandler(bal => {
+      document.getElementById('stdPointsDisplay').innerHTML = `${bal} <small>แต้ม</small>`;
+      const cp = document.getElementById('cardPoints');
+      if (cp) cp.innerText = bal;
+    }).getStudentPointsBalance(currentLoggedStudentId);
+  }
+
+  // ขอตำแหน่ง GPS ปัจจุบันของเครื่อง แล้วส่งไปเช็คอินรับแต้มที่ backend
+  function tryGpsCheckin() {
+    if (!navigator.geolocation) return Toast('อุปกรณ์ไม่รองรับ GPS', 'warning');
+    Swal.fire({ title: '📍 กำลังตรวจสอบพิกัด...', didOpen: () => Swal.showLoading() });
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        google.script.run.withSuccessHandler(r => {
+          if (r.success) { Swal.fire('สำเร็จ!', r.message, 'success'); refreshPointsBalance(); }
+          else Swal.fire('ไม่สำเร็จ', r.message, 'warning');
+        }).withFailureHandler(err => {
+          console.error('submitGpsCheckin failed:', err);
+          Swal.fire('เชื่อมต่อไม่สำเร็จ', 'เช็คอินไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+        }).submitGpsCheckin(currentLoggedStudentId, pos.coords.latitude, pos.coords.longitude);
+      },
+      () => Swal.fire('ข้อผิดพลาด', 'กรุณาเปิด GPS และกดอนุญาต', 'error'),
+      { enableHighAccuracy: true, timeout: 12000 }
+    );
+  }
+
+  // รับรหัสคูปองจากผู้ใช้แล้วส่งไปแลกแต้มที่ backend
+  function tryRedeemCouponUI() {
+    Swal.fire({
+      title: '🎟️ กรอกรหัสคูปอง', input: 'text', inputPlaceholder: 'เช่น SPORTSDAY50',
+      showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ปิด'
+    }).then(r => {
+      if (r.isConfirmed && r.value.trim()) {
+        Swal.fire({ title: 'ตรวจสอบ...', didOpen: () => Swal.showLoading() });
+        google.script.run.withSuccessHandler(res => {
+          if (res.success) { Swal.fire('ยินดีด้วย!', res.message, 'success'); refreshPointsBalance(); }
+          else Swal.fire('เสียใจด้วย', res.message, 'error');
+        }).withFailureHandler(err => {
+          console.error('submitCouponRedeem failed:', err);
+          Swal.fire('เชื่อมต่อไม่สำเร็จ', 'แลกคูปองไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+        }).submitCouponRedeem(currentLoggedStudentId, r.value.trim());
+      }
+    });
+  }
+
+  // สร้างลิสต์ตัวเลือกบทเรียนของวิชาที่ระบุ สำหรับใช้ตอนแลกคะแนน
+  function getChapterOptions(subjCode) {
+    const subj    = studentDashboardData?.subjects?.[subjCode];
+    const actualCh = subj ? subj.chapters.length : (metaData.settings.TOTAL_CHAPTERS || 3);
+    let opts = '';
+    for (let i = 1; i <= actualCh; i++) {
+      opts += `<option value="${i}">บทเรียนที่ ${i} (สูงสุด 20 คะแนน)</option>`;
+    }
+    return opts;
+  }
+
+  // เปิด modal ให้นักเรียนเลือกวิชา/บทเรียน เพื่อใช้แต้มแลกคะแนนเก็บ
+  function openScoreExchangeModal() {
+    const subjOptions = metaData.subjects.map(s => `<option value="${s.code}">${s.label}</option>`).join('');
+    const firstSubj   = metaData.subjects[0]?.code || '';
+    const chOptions   = getChapterOptions(firstSubj);
+
+    Swal.fire({
+      title: '🔄 แลกแต้มเพิ่มคะแนนรายบท',
+      html: `
+        <div style="background:#FFF3CC; border:1px solid #FFC93C; padding:10px; border-radius:10px; margin-bottom:14px; font-size:0.85rem; text-align:left;">
+          <b>อัตราแลกเปลี่ยน:</b> 100 แต้มพิเศษ = 1 คะแนนเก็บ<br>
+          <small style="color:var(--coral);">*ระบบจะปฏิเสธหากคะแนนบทนั้นเต็ม 20 แล้ว</small>
+        </div>
+        <div style="text-align:left; font-size:0.80rem; font-weight:700; color:var(--slate); margin-bottom:4px;">1. เลือกรายวิชา:</div>
+        <select id="exchSubj" class="field" style="margin-bottom:10px;"
+          onchange="document.getElementById('exchCh').innerHTML = getChapterOptions(this.value)">
+          ${subjOptions}
+        </select>
+        <div style="text-align:left; font-size:0.80rem; font-weight:700; color:var(--slate); margin-bottom:4px;">2. เลือกบทเรียนที่ต้องการเติมคะแนน:</div>
+        <select id="exchCh" class="field" style="margin-bottom:10px;">${chOptions}</select>
+        <div style="text-align:left; font-size:0.80rem; font-weight:700; color:var(--slate); margin-bottom:4px;">3. ระบุจำนวนคะแนนที่ต้องการซื้อ:</div>
+        <input type="number" id="exchQty" class="field" placeholder="เช่น 2 (ใช้ 200 แต้ม)" min="1" max="20">`,
+      showCancelButton: true,
+      confirmButtonText: 'ยืนยันการแลก',
+      cancelButtonText: 'ยกเลิก',
+      preConfirm: () => {
+        const subj = document.getElementById('exchSubj').value;
+        const ch   = parseInt(document.getElementById('exchCh').value);
+        const qty  = parseInt(document.getElementById('exchQty').value);
+        if (!qty || qty < 1) return Swal.showValidationMessage('กรุณาระบุจำนวนคะแนน 1 ขึ้นไป');
+        return { subj, ch, qty };
+      }
+    }).then(r => {
+      if (r.isConfirmed) {
+        Swal.fire({ title: 'ตรวจสอบเพดานคะแนน...', didOpen: () => Swal.showLoading() });
+        google.script.run.withSuccessHandler(res => {
+          if (res.success) { Swal.fire('สำเร็จ!', res.message, 'success').then(() => { refreshPointsBalance(); refreshStudentDashboardData(); }); }
+          else Swal.fire('แลกไม่สำเร็จ', res.message, 'warning');
+        }).withFailureHandler(err => {
+          console.error('redeemPointsForChapter failed:', err);
+          Swal.fire('เชื่อมต่อไม่สำเร็จ', 'แลกคะแนนไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+        }).redeemPointsForChapter(currentLoggedStudentId, r.value.subj, r.value.ch, r.value.qty);
+      }
+    });
+  }
+
+// ─── WHEEL SEGMENTS ────────────────────────────────────────
+// index 0-4 ตรงกับ SPIN_TABLE backend
+const WHEEL_SEGS = [
+  { pct:25, startDeg:0,     endDeg:90,    midDeg:45,    color:'#7B93B0', border:'#A8BDD4', label:'เกลือ',
+    emoji:{ hunger:'🪨', happiness:'😴', exp:'💨' }, val:{ hunger:0,  happiness:0,  exp:0  } },
+  { pct:35, startDeg:90,    endDeg:216,   midDeg:153,   color:'#C42862', border:'#FF5C97', label:'+เล็ก',
+    emoji:{ hunger:'🍎', happiness:'⚽', exp:'⭐' }, val:{ hunger:5,  happiness:5,  exp:10 } },
+  { pct:25, startDeg:216,   endDeg:306,   midDeg:261,   color:'#1C86C4', border:'#2AABEE', label:'+กลาง',
+    emoji:{ hunger:'🥕', happiness:'🧸', exp:'⭐' }, val:{ hunger:10, happiness:10, exp:20 } },
+  { pct:12, startDeg:306,   endDeg:349.2, midDeg:327.6, color:'#2E6DA4', border:'#4A90D9', label:'+สูง',
+    emoji:{ hunger:'🍗', happiness:'🎈', exp:'⭐' }, val:{ hunger:20, happiness:20, exp:40 } },
+  { pct:3,  startDeg:349.2, endDeg:360,   midDeg:354.6, color:'#B8860B', border:'#FFD23F', label:'JACKPOT!',
+    emoji:{ hunger:'🍖', happiness:'🎁', exp:'⭐' }, val:{ hunger:30, happiness:30, exp:80 } },
+];
+
+// ─── STATE ─────────────────────────────────────────────────
+let companionData      = null;
+let currentWheelType   = 'hunger';
+let wheelRotation      = 0;
+let wheelSpinning      = false;
+let lowTicketMsgIdx    = 0;
+let dialogueMsgIdx     = {};
+
+// ─── DIALOGUES ─────────────────────────────────────────────
+const DIALOGUES = {
+  idle:     ['ว่างๆ อยู่นะ...','วันนี้เป็นไงบ้าง?','อยู่ด้วยกันนะ 🌟','คิดถึงนะ'],
+  hunger:   ['ท้องร้องกิ่วแล้ว... หิวมากเลย 🥺','ขอกินด้วยได้ไหม...','배고파...'],
+  happy:    ['เหงาจังเลย... ไม่มีใครเล่นด้วย 😢','คิดถึงนะ... มาเล่นด้วยกันไหม?'],
+  fed:      ['อร่อยมากเลย ขอบคุณนะ 😋','อิ่มแล้ว ดีใจจัง!','หมดหิวแล้ว 🍖'],
+  played:   ['สนุกมากเลย! 🎉','ยิ้มไม่หุบเลย~','เล่นอีกนะ ชอบมาก!'],
+  trained:  ['รู้สึกแข็งแกร่งขึ้นนะ ⭐','ฝึกแล้วรู้สึกดี!','เก่งขึ้นแล้ว!'],
+  levelup:  ['ไชโย! ฉันโตขึ้นอีกขั้นแล้ว 🎊','เลเวลอัปแล้ว! แข็งแกร่งมากขึ้น!'],
+  morning:  ['อรุณสวัสดิ์! มาเช้าจังเลยนะ ☀️','วันนี้มาเช้า เก่งมาก!'],
+  egg:      ['มีอะไรอยู่ข้างในนะ...','🥚 กำลังรอเวลาออกมา...'],
+  salt:     ['เอ่อ... ไม่ได้อะไรเลย 🪨','โชคร้ายจัง...','ลองอีกครั้งนะ!'],
+  lowTicket:[
+    'ไปส่งงานก่อนได้ตั๋วเพิ่มนะ 🍖',
+    'มาเช้าพรุ่งนี้ได้เยอะเลย ☀️',
+    'ถ้าได้ลายเซ็นเพิ่มก็ดีนะ... ✍️',
+    'เช็คชื่อทุกคาบได้ตั๋วนะ 📋',
+    'สอบได้คะแนนดีจะได้เยอะมาก 📝',
+  ],
+  tap:      ['เอ๊ะ! จั๊กจี้จัง 😆','แตะทำไมอ่ะ 😳','อูย~ ชอบเลย!','เฮ้ย! 👋','555 จั๊กจี้จี้','อะไรน้าา 😄'],
+  eggTap:   ['เงียบๆ น่า... กำลังพักอยู่ 🥚','อย่าเขย่าไข่สิ! 😅','...มีใครเคาะอยู่รึเปล่า?','ใจเย็นๆ นะ กำลังจะออกมาแล้ว'],
+  tapMilestone: ['แตะฉันบ่อยจังเลย ชอบใจ 🥰','เพื่อนซี้กันแล้วนะ!','ตะแตะๆ กันมาตั้งเยอะละ 😄'],
+};
+
+// สุ่มเลือกประโยคพูดของคู่หูตามประเภทเหตุการณ์ (type) ที่กำหนด
+function rndDialogue(type) {
+  const pool = DIALOGUES[type] || DIALOGUES.idle;
+  const idx  = (dialogueMsgIdx[type] || 0) % pool.length;
+  dialogueMsgIdx[type] = idx + 1;
+  return pool[idx];
+}
+
+// ─── RENDER WHEEL (Canvas) ─────────────────────────────────
+// วาดวงล้อกาชาบน canvas ตามประเภทวงล้อ (hunger/happiness/exp)
+function drawWheel(type) {
+  const canvas = document.getElementById('wheelEl');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cx = 110, cy = 110, r = 107;
+  ctx.clearRect(0, 0, 220, 220);
+
+  WHEEL_SEGS.forEach(seg => {
+    const startRad = (seg.startDeg - 90) * Math.PI / 180;
+    const endRad   = (seg.endDeg   - 90) * Math.PI / 180;
+
+    // Segment fill
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, startRad, endRad);
+    ctx.closePath();
+    ctx.fillStyle = seg.color;
+    ctx.fill();
+
+    // Border line
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, startRad, endRad);
+    ctx.closePath();
+    ctx.strokeStyle = seg.border;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Emoji label (only if segment large enough)
+    if (seg.pct >= 10) {
+      const midRad = (seg.midDeg - 90) * Math.PI / 180;
+      const lx = cx + Math.cos(midRad) * r * 0.65;
+      const ly = cy + Math.sin(midRad) * r * 0.65;
+      ctx.save();
+      ctx.font = seg.pct >= 25 ? '22px serif' : '16px serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(seg.emoji[type] || '?', lx, ly);
+      ctx.restore();
+    }
+  });
+
+  // Outer ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+// ─── OPEN / CLOSE WHEEL MODAL ──────────────────────────────
+// เปิด modal วงล้อหมุนตามประเภทที่เลือก พร้อมวาดวงล้อเริ่มต้น
+function openWheelModal(type) {
+  if (!companionData || companionData.isEgg) return;
+
+  currentWheelType = type;
+  const titles = { hunger:'🍖 วงล้อความอิ่ม', happiness:'🎈 วงล้อความสุข', exp:'⭐ วงล้อ EXP' };
+  const centerEmoji = { hunger:'🍖', happiness:'🎈', exp:'⭐' };
+
+  document.getElementById('wheelModalTitle').innerText = titles[type];
+  document.getElementById('wheelCenterEmoji').innerText = centerEmoji[type];
+
+  // กลับสู่หน้าวงล้อปกติเสมอเวลาเปิดใหม่
+  document.getElementById('wheelSpinView').classList.remove('hidden');
+  const spinBtn = document.getElementById('wheelSpinBtn');
+  spinBtn.classList.remove('hidden');
+  spinBtn.disabled = false;
+  spinBtn.innerText = '🎡 หมุน! (10 ตั๋ว)';
+  document.getElementById('wheelResultView').classList.add('hidden');
+
+  // Reset wheel rotation visually
+  const canvas = document.getElementById('wheelEl');
+  canvas.classList.remove('wheel-blind-spin');
+  canvas.style.transition = 'none';
+  canvas.style.transform  = `rotate(${wheelRotation % 360}deg)`;
+
+  drawWheel(type);
+
+  wheelSpinning = false;
+  openFullpageView_('wheelModal');
+}
+
+// ปิดหน้าวงล้อหมุน
+function closeWheelModal() {
+  if (wheelSpinning) return;
+  closeFullpageView_('wheelModal');
+}
+
+// ─── SPIN LOGIC ────────────────────────────────────────────
+// เรียก backend ให้สุ่มผลวงล้อ แล้วเริ่มอนิเมชันหมุนไปยังผลลัพธ์
+function doWheelSpin() {
+  if (wheelSpinning) return;
+
+  // Check tickets
+  if (!companionData || companionData.tickets < 10) {
+    closeWheelModal();
+    setDialogue(rndDialogue('lowTicket'));
+    return;
+  }
+
+  wheelSpinning = true;
+  const btn = document.getElementById('wheelSpinBtn');
+  btn.disabled = true;
+  btn.innerText = '⏳ กำลังหมุน...';
+
+  // เริ่มหมุนวงล้อทันทีแบบ "หมุนไปพลางๆ" ระหว่างรอผลจริงจาก backend ไม่ต้องให้ผู้ใช้เห็นวงล้อนิ่งค้างระหว่างรอ network
+  startWheelBlindSpin_();
+
+  // Call backend
+  google.script.run
+    .withSuccessHandler(res => {
+      if (!res.success) {
+        stopWheelBlindSpin_();
+        wheelSpinning = false;
+        btn.disabled  = false;
+        btn.innerText = '🎡 หมุน! (10 ตั๋ว)';
+        if (res.message === 'low_tickets') {
+          closeWheelModal();
+          setDialogue(rndDialogue('lowTicket'));
+        } else {
+          Toast(res.message, 'warning');
+        }
+        return;
+      }
+      // Animate then show result inline ในการ์ดวงล้อเดิม
+      animateWheelToSegment(res.segIndex, () => {
+        showSpinResult(res);
+      });
+    })
+    .withFailureHandler(err => {
+      stopWheelBlindSpin_();
+      wheelSpinning = false;
+      btn.disabled  = false;
+      btn.innerText = '🎡 หมุน! (10 ตั๋ว)';
+      Toast(err.toString(), 'error');
+    })
+    .spinCompanionWheel(currentLoggedStudentId, currentWheelType, -1);
+}
+
+// เริ่มหมุนวงล้อไปเรื่อยๆ ด้วย CSS animation (ยังไม่รู้ผลจริง)
+function startWheelBlindSpin_() {
+  const canvas = document.getElementById('wheelEl');
+  canvas.style.transition = 'none';
+  canvas.classList.add('wheel-blind-spin');
+}
+// หยุดหมุนไปเรื่อยๆ แล้วอ่านมุมที่แสดงอยู่บนจอจริงตอนนี้ไว้ต่อยอด กันวงล้อกระตุก/เด้งตอนสลับไปหมุนเข้าเป้าหมายจริง
+function stopWheelBlindSpin_() {
+  const canvas = document.getElementById('wheelEl');
+  if (!canvas.classList.contains('wheel-blind-spin')) return;
+  const computed = getComputedStyle(canvas).transform;
+  let currentDeg = wheelRotation;
+  if (computed && computed !== 'none') {
+    const m = computed.match(/matrix\(([^)]+)\)/);
+    if (m) {
+      const values = m[1].split(',').map(Number);
+      let angleDeg = Math.atan2(values[1], values[0]) * (180 / Math.PI);
+      if (angleDeg < 0) angleDeg += 360;
+      currentDeg = Math.floor(wheelRotation / 360) * 360 + angleDeg;
+    }
+  }
+  canvas.classList.remove('wheel-blind-spin');
+  canvas.style.transform = `rotate(${currentDeg}deg)`;
+  void canvas.offsetWidth; // force reflow กันเบราว์เซอร์รวม transform เก่า/ใหม่เข้าด้วยกันเป็น transition เดียว
+  wheelRotation = currentDeg;
+}
+
+// อนิเมชันหมุนวงล้อ (canvas) ไปหยุดที่ช่องผลลัพธ์ที่กำหนด แล้วเรียก callback เมื่อจบ
+function animateWheelToSegment(segIndex, callback) {
+  stopWheelBlindSpin_(); // หยุดหมุนไปเรื่อยๆ (ถ้ามี) แล้ว sync มุมปัจจุบันก่อนคำนวณจุดหมายจริง
+  const seg      = WHEEL_SEGS[segIndex];
+  const canvas   = document.getElementById('wheelEl');
+
+  // คำนวณ rotation ที่ segment นั้นหยุดที่ pointer (ด้านบน)
+  const toTop       = (360 - seg.midDeg) % 360;
+  const randomOffset = (Math.random() - 0.5) * (seg.endDeg - seg.startDeg) * 0.5;
+  const extraSpins   = (5 + Math.floor(Math.random() * 3)) * 360;
+  const targetRot    = wheelRotation + extraSpins + toTop + randomOffset;
+
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    canvas.removeEventListener('transitionend', finish);
+    wheelSpinning = false;
+    if (callback) callback();
+  };
+
+  canvas.style.transition = 'transform 3.2s cubic-bezier(0.22, 1, 0.36, 1)';
+  canvas.style.transform  = `rotate(${targetRot}deg)`;
+  wheelRotation = targetRot;
+
+  // ใช้ transitionend เป็นหลัก + fallback setTimeout กันเหตุการณ์ไม่ยิงในบางเบราว์เซอร์มือถือ
+  canvas.addEventListener('transitionend', finish, { once: true });
+  setTimeout(finish, 3500);
+}
+
+// แสดงผลลัพธ์ที่ได้จากการหมุนวงล้อ และอัปเดตค่าคู่หู (หิว/สุข/EXP) บนหน้าจอ
+function showSpinResult(res) {
+  const seg   = WHEEL_SEGS[res.segIndex];
+  const type  = currentWheelType;
+  const emoji = seg.emoji[type];
+  const val   = res.gained;
+
+  const isJackpot = res.segIndex === 4;
+  const isSalt    = res.segIndex === 0;
+
+  // สลับจากหน้าวงล้อ → หน้าผลลัพธ์ ภายในการ์ดเดียวกัน ไม่แยกป๊อปอัป
+  document.getElementById('wheelSpinView').classList.add('hidden');
+  document.getElementById('wheelSpinBtn').classList.add('hidden');
+
+  const resultView = document.getElementById('wheelResultView');
+  const resultEmoji = document.getElementById('wheelResultEmoji');
+  const resultText  = document.getElementById('wheelResultText');
+
+  resultEmoji.textContent = emoji;
+  resultEmoji.style.filter = isSalt ? 'grayscale(60%)' : 'none';
+  const label = isSalt ? 'ไม่ได้อะไรเลย'
+    : (type === 'hunger' ? 'ความอิ่ม' : type === 'happiness' ? 'ความสุข' : 'EXP') + ' +' + val + '!';
+  resultText.textContent = (isJackpot ? '🎊 แจ็กพอต! ' : '') + label;
+  resultText.style.color = isSalt ? '#6E88A3' : isJackpot ? '#FFC93C' : '#FF5C97';
+
+  resultView.classList.remove('hidden');
+
+  // อัปเดตการ์ดคู่หูด้านหลังทันที ไม่ต้องรอผู้ใช้กดปิด
+  if (res.companion) {
+    companionData = Object.assign(companionData, res.companion);
+    const dialogue = isSalt ? rndDialogue('salt')
+      : type === 'hunger' ? rndDialogue('fed')
+      : type === 'happiness' ? rndDialogue('played')
+      : rndDialogue('trained');
+    renderCompanion(companionData, dialogue);
+
+    if (res.leveledUp) {
+      setTimeout(() => {
+        Swal.fire({
+          title: '🎊 เลเวลอัป!',
+          html: `<div style="font-size:2rem;margin:8px 0;">${companionData.petEmoji}</div>
+                 <div style="font-weight:900;color:#FFC93C;">Lv.${companionData.level} · ${companionData.stage}</div>
+                 ${res.bonusPoints > 0 ? `<div style="margin-top:6px;color:#FF5C97;font-weight:700;">+${res.bonusPoints} แต้มพิเศษ!</div>` : ''}`,
+          width: '280px',
+          background:'#17518C', color:'#fff', confirmButtonColor:'#FFC93C',
+          timer:3000, timerProgressBar:true, showConfirmButton:false,
+        });
+        setDialogue(rndDialogue('levelup'));
+        if (res.bonusPoints > 0) refreshPointsBalance();
+      }, 400);
+    }
+  }
+}
+
+// ─── LOAD COMPANION TAB ────────────────────────────────────
+// โหลดข้อมูลคู่หูของนักเรียนมาแสดงในแท็บฉายา/คู่หู
+function loadCompanionTab() {
+  const cont = document.getElementById('companionContainer');
+  cont.innerHTML = `<div style="text-align:center;color:var(--slate);padding:40px 0;"><div style="font-size:48px;margin-bottom:8px;">🥚</div>กำลังโหลด...</div>`;
+
+  google.script.run
+    .withSuccessHandler(d => {
+      companionData = d;
+      const type = d.isEgg ? 'egg' : d.hunger < 30 ? 'hunger' : d.happiness < 30 ? 'happy' : 'idle';
+      renderCompanion(d, rndDialogue(type));
+    })
+    .withFailureHandler(err => {
+      cont.innerHTML = `<div style="text-align:center;color:var(--coral);padding:32px;">${err}</div>`;
+    })
+    .getCompanionData(currentLoggedStudentId);
+}
+
+// ─── RENDER ────────────────────────────────────────────────
+// ─── PET 3D ENGINE (Three.js) ────────────────────────────────
+// สร้างตัวคู่หู 3 มิติจากทรงเรขาคณิตพื้นฐานตาม petType ไม่ต้องพึ่งไฟล์โมเดลภายนอกเลย
+// canvas ตัวเดียวถูกใช้ซ้ำทุกครั้งที่ renderCompanion ทำงาน (ย้าย DOM เข้า container ใหม่ ไม่สร้าง WebGL context ซ้ำ)
+const PET_TYPE_CONFIG = {
+  cat:     { color: 0xFFA94D, ears: 'pointy' },
+  dog:     { color: 0xC9A27E, ears: 'flop' },
+  rabbit:  { color: 0xFFD6E8, ears: 'long' },
+  fox:     { color: 0xFF7A45, ears: 'pointy', tail: true },
+  bear:    { color: 0x8B5E3C, ears: 'round' },
+  panda:   { color: 0xFAFAFA, ears: 'round', patch: 0x232338 },
+  koala:   { color: 0xB3B3B3, ears: 'fluffy' },
+  lion:    { color: 0xF2B33D, ears: 'round', mane: 0xD98A2B },
+  tiger:   { color: 0xFF9640, ears: 'round', patch: 0x33241A },
+  pig:     { color: 0xFFB3C6, ears: 'flop', snout: 0xFF8FAE },
+  monkey:  { color: 0x9C6B4F, ears: 'round', face: 0xF2D9C4 },
+  frog:    { color: 0x7ED957, ears: 'none' },
+  penguin: { color: 0x2B2D42, ears: 'none', belly: 0xFFFFFF },
+  owl:     { color: 0x8D6748, ears: 'tuft' },
+  turtle:  { color: 0x6FBF73, ears: 'none', shell: 0x3E7C3F },
+  octopus: { color: 0xB565D8, ears: 'none', tentacles: true },
+  unicorn: { color: 0xFFF5FB, ears: 'pointy', horn: true, mane: 0xFF8CC8 },
+  dragon:  { color: 0x4CD3A5, ears: 'pointy', wings: true },
+};
+
+const CompanionScene = (() => {
+  let renderer, scene, camera, creature, container;
+  let currentType = null, bobT = 0, tapT = 0;
+
+  function ensureRenderer() {
+    if (renderer) return;
+    scene  = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+    camera.position.set(0, 1.1, 6.2);
+    camera.lookAt(0, 0.6, 0);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+    const key = new THREE.DirectionalLight(0xffffff, 0.9);
+    key.position.set(2, 4, 3);
+    scene.add(key);
+    const rim = new THREE.DirectionalLight(0x88e8d0, 0.35);
+    rim.position.set(-3, 1, -2);
+    scene.add(rim);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(180, 180);
+
+    requestAnimationFrame(loop);
+  }
+
+  function makeEye(x) {
+    const g = new THREE.Group();
+    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 12), new THREE.MeshStandardMaterial({ color: 0x1A1A2E }));
+    pupil.position.set(x, 0.15, 0.86);
+    g.add(pupil);
+    const shine = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }));
+    shine.position.set(x + 0.035, 0.19, 0.94);
+    g.add(shine);
+    return g;
+  }
+
+  function buildPet(type) {
+    const cfg = PET_TYPE_CONFIG[type] || PET_TYPE_CONFIG.cat;
+    const g = new THREE.Group();
+    const bodyMat = new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.55, metalness: 0.05 });
+
+    const body = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 20), bodyMat);
+    body.scale.set(1, 0.92, 0.96);
+    g.add(body);
+
+    if (cfg.ears === 'round') {
+      [-0.55, 0.55].forEach(x => {
+        const ear = new THREE.Mesh(new THREE.SphereGeometry(0.3, 14, 14), bodyMat);
+        ear.position.set(x, 0.95, 0);
+        g.add(ear);
+      });
+    } else if (cfg.ears === 'pointy') {
+      [-0.5, 0.5].forEach(x => {
+        const ear = new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.55, 12), bodyMat);
+        ear.position.set(x, 1.1, 0.05);
+        ear.rotation.z = x > 0 ? -0.25 : 0.25;
+        g.add(ear);
+      });
+    } else if (cfg.ears === 'long') {
+      [-0.42, 0.42].forEach(x => {
+        const ear = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.9, 10), bodyMat);
+        ear.position.set(x, 1.35, 0);
+        ear.rotation.z = x > 0 ? -0.12 : 0.12;
+        g.add(ear);
+      });
+    } else if (cfg.ears === 'flop') {
+      [-0.55, 0.55].forEach(x => {
+        const ear = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 12), bodyMat);
+        ear.scale.set(0.7, 1.3, 0.5);
+        ear.position.set(x, 0.55, 0.15);
+        ear.rotation.z = x > 0 ? -0.5 : 0.5;
+        g.add(ear);
+      });
+    } else if (cfg.ears === 'tuft') {
+      [-0.28, 0.28].forEach(x => {
+        const ear = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.32, 8), bodyMat);
+        ear.position.set(x, 1.15, 0.1);
+        g.add(ear);
+      });
+    } else if (cfg.ears === 'fluffy') {
+      [-0.6, 0.6].forEach(x => {
+        const ear = new THREE.Mesh(new THREE.SphereGeometry(0.38, 14, 14), new THREE.MeshStandardMaterial({ color: 0xD8D8D8, roughness: 0.9 }));
+        ear.position.set(x, 0.9, -0.05);
+        g.add(ear);
+      });
+    }
+
+    g.add(makeEye(-0.34));
+    g.add(makeEye(0.34));
+
+    if (cfg.patch) {
+      [-0.34, 0.34].forEach(x => {
+        const patch = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), new THREE.MeshStandardMaterial({ color: cfg.patch }));
+        patch.scale.set(1, 1.2, 0.4);
+        patch.position.set(x, 0.85, 0.55);
+        g.add(patch);
+      });
+    }
+    if (cfg.mane) {
+      const mane = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.28, 10, 20), new THREE.MeshStandardMaterial({ color: cfg.mane }));
+      mane.position.set(0, 0.05, -0.15);
+      g.add(mane);
+    }
+    if (cfg.snout) {
+      const snout = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.22, 14), new THREE.MeshStandardMaterial({ color: cfg.snout }));
+      snout.rotation.x = Math.PI / 2;
+      snout.position.set(0, -0.05, 0.95);
+      g.add(snout);
+    }
+    if (cfg.face) {
+      const face = new THREE.Mesh(new THREE.SphereGeometry(0.55, 16, 16), new THREE.MeshStandardMaterial({ color: cfg.face }));
+      face.scale.set(1, 1, 0.5);
+      face.position.set(0, -0.05, 0.65);
+      g.add(face);
+    }
+    if (cfg.belly) {
+      const belly = new THREE.Mesh(new THREE.SphereGeometry(0.62, 16, 16), new THREE.MeshStandardMaterial({ color: cfg.belly }));
+      belly.scale.set(0.85, 1.05, 0.45);
+      belly.position.set(0, -0.1, 0.7);
+      g.add(belly);
+    }
+    if (cfg.shell) {
+      const shell = new THREE.Mesh(new THREE.SphereGeometry(0.95, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.62), new THREE.MeshStandardMaterial({ color: cfg.shell, roughness: 0.6 }));
+      shell.position.set(0, 0.15, -0.15);
+      g.add(shell);
+    }
+    if (cfg.tentacles) {
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2;
+        const t = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.04, 0.6, 8), bodyMat);
+        t.position.set(Math.cos(a) * 0.5, -0.75, Math.sin(a) * 0.5);
+        t.rotation.x = 0.4 * Math.sin(a);
+        t.rotation.z = 0.4 * Math.cos(a);
+        g.add(t);
+      }
+    }
+    if (cfg.horn) {
+      const horn = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.55, 10), new THREE.MeshStandardMaterial({ color: 0xFFD76B, metalness: 0.4, roughness: 0.3 }));
+      horn.position.set(0, 1.35, 0.35);
+      horn.rotation.x = -0.35;
+      g.add(horn);
+    }
+    if (cfg.wings) {
+      [-1, 1].forEach(s => {
+        const wing = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.9, 3), new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.6, side: THREE.DoubleSide }));
+        wing.position.set(s * 0.95, 0.3, -0.3);
+        wing.rotation.z = s * 1.0;
+        wing.rotation.y = 0.3;
+        g.add(wing);
+      });
+    }
+    if (cfg.tail) {
+      const tail = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.75, 10), bodyMat);
+      tail.position.set(0, 0.1, -0.9);
+      tail.rotation.x = Math.PI / 2.3;
+      g.add(tail);
+    }
+
+    g.scale.set(0.62, 0.62, 0.62);
+    g.position.y = -0.15;
+    return g;
+  }
+
+  function loop() {
+    requestAnimationFrame(loop);
+    if (!creature || !container || !renderer) return;
+    bobT += 0.045;
+    creature.position.y = -0.15 + Math.sin(bobT) * 0.06;
+    creature.rotation.y += 0.006;
+
+    if (tapT > 0) {
+      tapT = Math.max(0, tapT - 0.06);
+      const s = 1 + Math.sin(tapT * Math.PI) * 0.18 * tapT;
+      creature.scale.set(0.62 * s, 0.62 * (2 - s), 0.62 * s);
+    } else {
+      creature.scale.set(0.62, 0.62, 0.62);
+    }
+    renderer.render(scene, camera);
+  }
+
+  return {
+    // ย้าย canvas เข้า container ใหม่ทุกครั้ง (เพราะ renderCompanion overwrite DOM ด้วย innerHTML)
+    // สร้างโมเดลใหม่เฉพาะตอน petType เปลี่ยนจริงๆ เท่านั้น ไม่ต้องสร้างซ้ำทุกครั้งที่ข้อมูลอัปเดต
+    mount(el, type) {
+      ensureRenderer();
+      container = el;
+      el.innerHTML = '';
+      el.appendChild(renderer.domElement);
+      renderer.setSize(180, 180);
+      if (type !== currentType) {
+        if (creature) scene.remove(creature);
+        creature = buildPet(type);
+        scene.add(creature);
+        currentType = type;
+      }
+    },
+    tap() { tapT = 1; },
+  };
+})();
+
+// วาดหน้าตาคู่หู (อิโมจิ, เลเวล, แถบหิว/สุข/EXP) และคำพูดประกอบบนหน้าจอ
+function renderCompanion(d, dialogue) {
+  const isEgg     = d.isEgg;
+  const hungerPct = d.hunger;
+  const happyPct  = d.happiness;
+  const expPct    = Math.min(100, Math.round((d.currentExp / d.expTarget) * 100));
+  const hColor    = d.hunger    < 30 ? '#E0245E' : '#FFC93C';
+  const haColor   = d.happiness < 30 ? '#E0245E' : '#FF8CC8';
+  const emojiAnim = isEgg ? '' : (d.hunger < 30 || d.happiness < 30 ? 'hungry' : 'alive');
+  const canAct    = d.tickets >= 10;
+  const canHatch  = d.tickets >= 100;
+
+  let inner = '';
+
+  if (isEgg) {
+    // ── EGG UI ──
+    inner = `
+      <div class="cp-card">
+        <div class="cp-ticket">🎟️ ${d.tickets} ตั๋ว</div>
+
+        <div class="cp-emoji-wrap" style="margin-top:16px;">
+          <span class="cp-emoji ${emojiAnim}" onclick="petTapReaction()">🥚</span>
+        </div>
+
+        <div class="cp-bubble" id="companionBubble">${dialogue}</div>
+
+        <div style="font-size:11px;color:rgba(255,255,255,0.5);margin:0 0 14px;text-align:center;">
+          มาเป็นคู่หูกัน กดเลย! 🥚
+        </div>
+
+        <div class="cp-btn-hatch ${canHatch ? '' : 'off'}" onclick="doHatchEgg()" style="${canHatch?'':'opacity:.35;pointer-events:none;'}">
+          <div class="cp-btn-hatch-label">🎟️ ใช้ 100 ตั๋วเพื่อฟักไข่</div>
+          <div class="cp-btn-hatch-sub">เหลือตั๋ว ${d.tickets} ใบ</div>
+        </div>
+      </div>`;
+
+  } else {
+    // ── PET UI ──
+    const offCls = canAct ? '' : 'off';
+    inner = `
+      <div class="cp-card">
+        <div class="cp-ticket">🎟️ ${d.tickets} ตั๋ว</div>
+
+        <div class="cp-emoji-wrap is3d" id="petCanvasWrap" onclick="petTapReaction()"></div>
+
+        <div class="cp-bubble" id="companionBubble">${dialogue}</div>
+
+        <div class="cp-name">${d.petName || '?'}</div>
+        <div class="cp-stage">Lv.${d.level} · ${d.stage}</div>
+
+        ${d.hunger < 30 || d.happiness < 30 ? `
+        <div style="background:rgba(224,36,94,0.1);border:1px solid rgba(224,36,94,0.3);border-radius:10px;padding:8px 12px;text-align:center;margin-bottom:12px;">
+          <div style="font-size:11px;color:#E0245E;font-weight:700;">⚠️ ${d.hunger < 30 && d.happiness < 30 ? 'หิวและเหงามากแล้ว' : d.hunger < 30 ? 'หิวมากแล้ว' : 'เหงามากแล้ว'}</div>
+        </div>` : ''}
+
+        <div class="cp-bar-row">
+          <div class="cp-bar-head"><span>🍖 ความอิ่ม</span><span style="color:${hColor};">${d.hunger}/100</span></div>
+          <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${hungerPct}%;background:${hColor};"></div></div>
+        </div>
+        <div class="cp-bar-row">
+          <div class="cp-bar-head"><span>😊 ความสุข</span><span style="color:${haColor};">${d.happiness}/100</span></div>
+          <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${happyPct}%;background:${haColor};"></div></div>
+        </div>
+        <div class="cp-bar-row">
+          <div class="cp-bar-head"><span>⭐ EXP</span><span style="color:#FF5C97;">${d.currentExp}/${d.expTarget}</span></div>
+          <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${expPct}%;background:linear-gradient(90deg,#E63D7A,#FF5C97);"></div></div>
+        </div>
+
+        <div class="cp-actions">
+          ${[
+            { type:'hunger',    emoji:'🍖', label:'ให้อาหาร',   color:'#FFCB5C' },
+            { type:'happiness', emoji:'🎈', label:'เล่นด้วยกัน', color:'#FF6B9D' },
+            { type:'exp',       emoji:'⭐', label:'ฝึกฝน EXP',  color:'#FF5C97' },
+          ].map(b => `
+            <div class="cp-btn ${offCls}"
+              style="background:${b.color}18;border-color:${b.color}55;"
+              onclick="openWheelModal('${b.type}')">
+              <div class="cp-btn-emoji">${b.emoji}</div>
+              <div class="cp-btn-label">${b.label}</div>
+              <div class="cp-btn-cost">10 ตั๋ว</div>
+            </div>`).join('')}
+        </div>
+
+        ${!canAct ? `
+        <div class="cp-low-tk" onclick="setDialogue(rndDialogue('lowTicket'))" style="cursor:pointer;">
+          🎟️ ตั๋วไม่พอ — แตะเพื่อรับคำแนะนำ
+        </div>` : ''}
+      </div>`;
+  }
+
+  document.getElementById('companionContainer').innerHTML = inner;
+
+  if (!isEgg) {
+    const wrap = document.getElementById('petCanvasWrap');
+    if (wrap) CompanionScene.mount(wrap, d.petType);
+  }
+}
+
+// ตั้งข้อความคำพูดของคู่หูที่แสดงบนหน้าจอ
+function setDialogue(text) {
+  const el = document.getElementById('companionBubble');
+  if (el) el.innerText = text;
+}
+
+// ─── PET TAP REACTION ──────────────────────────────────────
+// แตะตัวคู่หู/ไข่ -> เขย่าตัว + อิโมจิลอยขึ้น + เปลี่ยนคำพูด (ฝั่ง frontend ล้วนๆ)
+// [ตั้งใจ] ไม่ยิง backend และไม่ให้ตั๋ว/EXP/หิว/สุขจริงใดๆ เพื่อกันการแตะรัวๆ เพื่อฟาร์มรางวัล
+let petTapCooldown = false;
+let petTapCount     = 0;
+
+const TAP_EMOJIS = {
+  egg:    ['✨', '🥚', '❓', '👀'],
+  happy:  ['💕', '✨', '😍', '🌟'],
+  hungry: ['🍖', '😋', '🥺'],
+  normal: ['💫', '⭐', '😊', '💛'],
+};
+
+function petTapReaction() {
+  if (!companionData || petTapCooldown) return;
+  petTapCooldown = true;
+  setTimeout(() => { petTapCooldown = false; }, 250);
+
+  const wrapEl = document.querySelector('.cp-emoji-wrap');
+  if (!wrapEl) return;
+
+  // เขย่าตัว: ไข่ยังเป็น DOM span ธรรมดา / คู่หูที่ฟักแล้วเป็นโมเดล 3 มิติ สั่งเด้งผ่าน CompanionScene แทน
+  if (companionData.isEgg) {
+    const emojiEl = document.querySelector('.cp-emoji');
+    if (emojiEl) {
+      emojiEl.classList.remove('poked');
+      void emojiEl.offsetWidth; // force reflow เพื่อให้ animation เล่นใหม่ได้แม้แตะรัวๆ
+      emojiEl.classList.add('poked');
+    }
+  } else {
+    CompanionScene.tap();
+  }
+
+  // อิโมจิลอยขึ้น สุ่มตามสถานะปัจจุบัน
+  let pool = TAP_EMOJIS.normal;
+  if (companionData.isEgg) pool = TAP_EMOJIS.egg;
+  else if (companionData.hunger < 30 || companionData.happiness < 30) pool = TAP_EMOJIS.hungry;
+  else if (companionData.happiness >= 70) pool = TAP_EMOJIS.happy;
+
+  const floatEmoji = document.createElement('span');
+  floatEmoji.className = 'cp-float-emoji';
+  floatEmoji.textContent = pool[Math.floor(Math.random() * pool.length)];
+  floatEmoji.style.left = (42 + Math.random() * 16) + '%';
+  wrapEl.appendChild(floatEmoji);
+  setTimeout(() => floatEmoji.remove(), 1000);
+
+  // เปลี่ยนคำพูด (ทุกๆ 10 ครั้งจะมีคำพูดพิเศษ)
+  petTapCount++;
+  let dtype = companionData.isEgg ? 'eggTap' : 'tap';
+  if (!companionData.isEgg && petTapCount % 10 === 0) dtype = 'tapMilestone';
+  setDialogue(rndDialogue(dtype));
+}
+
+// ─── HATCH EGG ─────────────────────────────────────────────
+// เรียก backend ให้ฟักไข่คู่หูด้วยตั๋วสะสม แล้วแสดงผลลัพธ์
+function doHatchEgg() {
+  Swal.fire({ title:'🥚 กำลังฟัก...', width: 'min(92vw, 320px)', didOpen:()=>Swal.showLoading(), allowOutsideClick:false });
+
+  google.script.run
+    .withSuccessHandler(res => {
+      Swal.close();
+      if (!res.success) { Toast(res.message,'warning'); return; }
+
+      if (res.outcome === 'success') {
+        Swal.fire({
+          title: '🎉 ฟักสำเร็จ!',
+          html: `<div style="font-size:4rem;margin:12px 0;">${res.emoji}</div>
+                 ${res.bonusPoints > 0 ? `<div style="margin-bottom:10px;color:#FF5C97;font-weight:700;">+${res.bonusPoints} แต้มพิเศษ!</div>` : ''}
+                 <div style="margin-bottom:12px;font-weight:700;">ตั้งชื่อให้คู่หูใหม่:</div>
+                 <input id="petNameInput" class="swal2-input" placeholder="ชื่อคู่หู..." maxlength="20" style="text-align:center; display:block; margin:0 auto; width:90%; box-sizing:border-box;">`,
+          width: 'min(92vw, 360px)',
+          padding: '1.5rem',
+          scrollbarPadding: false,
+          heightAuto: false,
+          background:'#17518C', color:'#fff', confirmButtonColor:'#FF5C97',
+          confirmButtonText:'ยืนยัน', allowOutsideClick:false,
+          preConfirm: () => {
+            const n = document.getElementById('petNameInput').value.trim();
+            if (!n) return Swal.showValidationMessage('กรุณาใส่ชื่อด้วยนะ');
+            return n;
+          }
+        }).then(r => {
+          if (r.isConfirmed) {
+            // อัปเดตหน้าจอทันทีจากข้อมูลที่ hatchEgg ส่งกลับมา ไม่ต้องรอโหลดซ้ำ
+            companionData = {
+              petName: r.value,
+              petEmoji: res.emoji,
+              petType: res.petType,
+              isEgg: false,
+              level: 1,
+              stage: 'ทารก',
+              currentExp: 0,
+              expTarget: 100,
+              hunger: 100,
+              happiness: 100,
+              tickets: res.tickets
+            };
+            renderCompanion(companionData, rndDialogue('idle'));
+
+            // ค่อยบันทึกชื่อที่ backend แบบเงียบๆ ในพื้นหลัง
+            google.script.run
+              .withFailureHandler(err => console.error('setCompanionName failed:', err))
+              .setCompanionName(currentLoggedStudentId, r.value);
+            if (res.bonusPoints > 0) refreshPointsBalance();
+          }
+        });
+      } else {
+        Toast(res.message, 'info');
+        if (companionData) {
+          companionData.tickets = res.tickets;
+          renderCompanion(companionData, rndDialogue('egg'));
+        }
+      }
+    })
+    .withFailureHandler(err => { Swal.close(); Toast(err.toString(),'error'); })
+    .hatchEgg(currentLoggedStudentId);
+}
+
+// ═══════════════════════════════════════════════════════════
+// ONLINE COURSE MODULE (เรียนออนไลน์)
+// เนื้อหา (วิดีโอ/คำสั่งแบบฝึกหัด/เฉลยสอบ) มาจากชีต Course_Topics / Exam_Config ที่ครูกรอกเอง
+// โมดัลเดียวสลับ "ระดับ" การนำทาง: subjects -> chapters -> topics -> (video|exercise|exam)
+// ═══════════════════════════════════════════════════════════
+let courseNavStack = []; // เก็บ state แต่ละระดับไว้ทำปุ่มย้อนกลับ
+let ytPlayer = null, ytWatchTimer = null, ytCurrentTopic = null, ytMaxWatchedSec = 0;
+
+function openOnlineCourseModal() {
+  courseNavStack = [];
+  openFullpageView_('courseModal');
+  renderCourseSubjects();
+}
+function closeCourseModal() {
+  stopVideoTracking_();
+  closeFullpageView_('courseModal');
+}
+
+// เปิด/ปิดหน้าเต็มจอ (เลื่อนเข้า-ออกจากขวา) ใช้กับ "เรียนออนไลน์" และ "วิ่งแลกแต้ม" แทน popup เดิม
+function openFullpageView_(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('hidden');
+  void el.offsetWidth; // force reflow ก่อน เพื่อให้ browser เห็นสถานะ "ยังไม่ show" จริงๆ ก่อนค่อย trigger transition
+  el.classList.add('show');
+}
+function closeFullpageView_(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('show');
+  setTimeout(() => el.classList.add('hidden'), 300); // รอ transition เลื่อนออกจบก่อนค่อยซ่อนจริง
+}
+function courseSetTitle_(text, showBack) {
+  document.getElementById('courseModalTitle').innerHTML = `<i class="fa-solid fa-play"></i> ${text}`;
+  document.getElementById('courseBackBtn').style.display = showBack ? 'flex' : 'none';
+}
+function courseNavBack() {
+  stopVideoTracking_();
+  courseNavStack.pop();
+  const prev = courseNavStack.pop();
+  if (!prev) { renderCourseSubjects(); return; }
+  prev(); // เรียก render function ของระดับก่อนหน้าซ้ำ
+}
+function coursePush_(renderFn) { courseNavStack.push(renderFn); }
+
+// สปินเนอร์กำลังโหลด (ใช้ตรงกันทุกระดับของโมดูลเรียนออนไลน์ ให้เห็นชัดว่า "กำลังทำงานอยู่" ไม่ใช่ค้าง)
+function courseLoadingHtml_() {
+  return '<div style="text-align:center; padding:36px 0; color:var(--slate);"><i class="fa-solid fa-spinner fa-spin" style="font-size:1.6rem; margin-bottom:8px; display:block;"></i>กำลังโหลด...</div>';
+}
+function courseErrorHtml_(retryFnCall) {
+  return `<div style="text-align:center; padding:24px; color:var(--coral);">
+    โหลดไม่สำเร็จ เชื่อมต่อไม่ได้<br>
+    <button class="btn btn-ghost btn-sm" style="margin-top:12px;" onclick="${retryFnCall}">ลองอีกครั้ง</button>
+  </div>`;
+}
+
+// กันผลลัพธ์ของคำขอเก่าที่ยังค้างอยู่ (เช่นแตะเปลี่ยนวิชา/บทเร็วๆ ติดกัน) มาทับ/แทรกเนื้อหาที่นำทางไปที่อื่นแล้ว
+let courseReqToken = 0;
+
+// ── ระดับ 1: เลือกวิชา ──
+function renderCourseSubjects() {
+  courseSetTitle_('เรียนออนไลน์', false);
+  const body = document.getElementById('courseModalBody');
+  const myToken = ++courseReqToken;
+  body.innerHTML = courseLoadingHtml_();
+  google.script.run.withSuccessHandler(subjects => {
+    if (myToken !== courseReqToken) return;
+    if (!subjects || subjects.length === 0) {
+      body.innerHTML = '<div style="text-align:center; padding:24px; color:var(--slate);">ยังไม่มีรายวิชา</div>';
+      return;
+    }
+    body.innerHTML = subjects.map(s => `
+      <div class="action-card" onclick="openCourseSubject('${s.code}', '${s.label.replace(/'/g, "\\'")}')">
+        <div class="icon" style="background:rgba(255,92,151,0.12); color:var(--teal2);"><i class="fa-solid fa-book"></i></div>
+        <div class="info"><h4>${s.label}</h4><p>แตะเพื่อดูบทเรียน</p></div>
+        <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
+      </div>`).join('');
+  }).withFailureHandler(err => {
+    if (myToken !== courseReqToken) return;
+    console.error('getSubjects failed:', err);
+    body.innerHTML = courseErrorHtml_('renderCourseSubjects()');
+  }).getSubjects();
+}
+
+// ── ระดับ 2: เลือกบท ──
+function openCourseSubject(subjectCode, subjectLabel) {
+  coursePush_(() => openCourseSubject(subjectCode, subjectLabel));
+  courseSetTitle_(subjectLabel, true);
+  const body = document.getElementById('courseModalBody');
+  const myToken = ++courseReqToken;
+  body.innerHTML = courseLoadingHtml_();
+  const clsCode = (studentDashboardData && studentDashboardData.cls) || '';
+  google.script.run.withSuccessHandler(chapters => {
+    if (myToken !== courseReqToken) return;
+    if (!chapters || chapters.length === 0) {
+      body.innerHTML = '<div style="text-align:center; padding:24px; color:var(--slate);">ยังไม่มีบทเรียนของวิชานี้</div>';
+      return;
+    }
+    body.innerHTML = chapters.map(ch => {
+      const doneCount = ch.topics.filter(t => t.watched).length;
+      return `
+      <div class="action-card" onclick='openCourseChapter(${JSON.stringify(subjectCode)}, ${JSON.stringify(subjectLabel)}, ${JSON.stringify(ch)})'>
+        <div class="icon" style="background:rgba(42,171,238,0.12); color:var(--sky2);"><i class="fa-solid fa-layer-group"></i></div>
+        <div class="info"><h4>บทที่ ${ch.chapterNum} ${ch.chapterName || ''}</h4><p>${doneCount}/${ch.topics.length} เรื่อง · ${ch.examOpen ? '🟢 เปิดสอบ' : (ch.examStatus === 'submitted' ? '✅ สอบแล้ว ' + ch.examScore + ' คะแนน' : '')}</p></div>
+        <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
+      </div>`;
+    }).join('');
+  }).withFailureHandler(err => {
+    if (myToken !== courseReqToken) return;
+    console.error('getCourseChapters failed:', err);
+    body.innerHTML = courseErrorHtml_(`openCourseSubject(${JSON.stringify(subjectCode)}, ${JSON.stringify(subjectLabel)})`);
+  }).getCourseChapters(subjectCode, clsCode, currentLoggedStudentId);
+}
+
+// ── ระดับ 3: รายการเรื่องย่อยในบท + ปุ่มสอบท้ายบท ──
+function openCourseChapter(subjectCode, subjectLabel, chapter) {
+  coursePush_(() => openCourseChapter(subjectCode, subjectLabel, chapter));
+  courseSetTitle_('บทที่ ' + chapter.chapterNum, true);
+  const clsCode = (studentDashboardData && studentDashboardData.cls) || '';
+  const body = document.getElementById('courseModalBody');
+
+  const topicRows = chapter.topics.map(t => {
+    const watchedBadge = t.watched ? '<span class="pill" style="background:rgba(82,196,26,0.15); color:var(--teal2);">✅ ดูจบแล้ว</span>' : '';
+    const subBadge = t.submitted === 'reviewed' ? '<span class="pill" style="background:rgba(82,196,26,0.15); color:var(--teal2);">✅ ตรวจแล้ว</span>'
+                    : t.submitted === 'pending' ? '<span class="pill" style="background:rgba(255,201,60,0.2); color:var(--amber2);">⏳ รอตรวจ</span>' : '';
+    return `
+      <div class="card card-pad" style="margin-bottom:10px;">
+        <div style="font-weight:700; margin-bottom:8px;">${t.topicNum}. ${t.topicName}</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">${watchedBadge}${subBadge}</div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-navy btn-sm" style="flex:1;" onclick='openCourseVideo(${JSON.stringify(subjectCode)}, ${JSON.stringify(clsCode)}, ${chapter.chapterNum}, ${JSON.stringify(t)})'>
+            <i class="fa-solid fa-circle-play"></i> ดูวิดีโอ
+          </button>
+          <button class="btn btn-amber btn-sm" style="flex:1;" onclick='openCourseExercise(${JSON.stringify(subjectCode)}, ${JSON.stringify(clsCode)}, ${chapter.chapterNum}, ${JSON.stringify(t)})'>
+            <i class="fa-solid fa-camera"></i> ส่งงาน
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+
+  let examBlock = '';
+  if (chapter.examStatus === 'submitted') {
+    examBlock = `<div class="card card-pad" style="text-align:center; background:rgba(82,196,26,0.08);">
+      <div style="font-weight:700; color:var(--teal2);">✅ สอบท้ายบทแล้ว — ได้ ${chapter.examScore} คะแนน</div>
+    </div>`;
+  } else if (chapter.examOpen) {
+    examBlock = `<button class="btn btn-teal btn-block" onclick='openCourseExam(${JSON.stringify(subjectCode)}, ${JSON.stringify(clsCode)}, ${JSON.stringify(chapter)})'>
+      <i class="fa-solid fa-pen"></i> เข้าสอบท้ายบท (${chapter.examDurationMin} นาที)
+    </button>`;
+  } else if (chapter.examTotalItems > 0) {
+    examBlock = `<div class="card card-pad" style="text-align:center; color:var(--slate);">🔒 ครูยังไม่เปิดสอบท้ายบทนี้</div>`;
+  }
+
+  body.innerHTML = topicRows + (examBlock ? `<div class="divider"></div>${examBlock}` : '');
+}
+
+// ── วิดีโอ + จับเวลาดูจริง (YouTube IFrame API) ──
+function extractYouTubeId_(url) {
+  const m = String(url || '').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+function openCourseVideo(subjectCode, clsCode, chapterNum, topic) {
+  coursePush_(() => openCourseVideo(subjectCode, clsCode, chapterNum, topic));
+  courseSetTitle_(topic.topicName, true);
+  const body = document.getElementById('courseModalBody');
+  const vid = extractYouTubeId_(topic.youtubeUrl);
+  if (!vid) {
+    body.innerHTML = '<div style="text-align:center; padding:24px; color:var(--slate);">ยังไม่มีลิงก์วิดีโอของเรื่องนี้</div>';
+    return;
+  }
+  body.innerHTML = `
+    <div style="border-radius:16px; overflow:hidden; margin-bottom:12px; background:#000;">
+      <div id="ytPlayerMount" style="aspect-ratio:16/9; width:100%;"></div>
+    </div>
+    <div id="watchProgressText" style="text-align:center; font-size:0.82rem; color:var(--slate);">กำลังโหลดวิดีโอ...</div>`;
+
+  ytCurrentTopic = { subjectCode, clsCode, chapterNum, topicNum: topic.topicNum, minPercent: topic.minWatchPercent || 80 };
+  ytMaxWatchedSec = 0;
+
+  function createPlayer() {
+    ytPlayer = new YT.Player('ytPlayerMount', {
+      videoId: vid,
+      playerVars: { rel: 0, modestbranding: 1 },
+      events: {
+        onReady: () => {},
+        onStateChange: onYtStateChange_
+      }
+    });
+  }
+  if (window.YT && window.YT.Player) createPlayer();
+  else window.onYouTubeIframeAPIReady = createPlayer;
+}
+function onYtStateChange_(e) {
+  if (e.data === YT.PlayerState.PLAYING) {
+    if (ytWatchTimer) clearInterval(ytWatchTimer);
+    ytWatchTimer = setInterval(() => {
+      const cur = Math.floor(ytPlayer.getCurrentTime());
+      const dur = Math.floor(ytPlayer.getDuration());
+      if (cur > ytMaxWatchedSec) ytMaxWatchedSec = cur; // นับเฉพาะเวลาที่ไปถึงจริง กันข้ามไปกดที่ท้ายคลิปแล้วนับว่าดูจบ
+      const pct = dur > 0 ? Math.min(100, Math.round((ytMaxWatchedSec / dur) * 100)) : 0;
+      const txt = document.getElementById('watchProgressText');
+      if (txt) txt.innerHTML = `ดูไปแล้ว ${pct}% (ต้องดูอย่างน้อย ${ytCurrentTopic.minPercent}%)`;
+      pingVideoWatch_(dur);
+    }, 5000);
+  } else {
+    if (ytWatchTimer) { clearInterval(ytWatchTimer); ytWatchTimer = null; }
+    if (ytPlayer && ytPlayer.getDuration) pingVideoWatch_(Math.floor(ytPlayer.getDuration()));
+  }
+}
+function pingVideoWatch_(durationSec) {
+  if (!ytCurrentTopic || !durationSec) return;
+  const t = ytCurrentTopic;
+  google.script.run.withSuccessHandler(res => {
+    if (res && res.completed) {
+      const txt = document.getElementById('watchProgressText');
+      if (txt) txt.innerHTML = '✅ ดูครบตามเกณฑ์แล้ว!' + (res.bonusPoints > 0 ? ` (+${res.bonusPoints} แต้มพิเศษ)` : '');
+      if (res.bonusPoints > 0) refreshPointsBalance();
+    }
+  }).withFailureHandler(err => console.error('logVideoWatch failed:', err))
+    .logVideoWatch(currentLoggedStudentId, t.subjectCode, t.clsCode, t.chapterNum, t.topicNum, ytMaxWatchedSec, durationSec);
+}
+function stopVideoTracking_() {
+  if (ytWatchTimer) { clearInterval(ytWatchTimer); ytWatchTimer = null; }
+  if (ytPlayer && ytPlayer.getDuration) pingVideoWatch_(Math.floor(ytPlayer.getDuration()));
+  ytPlayer = null; ytCurrentTopic = null;
+}
+
+// ── ส่งแบบฝึกหัด (ถ่ายรูปจากสมุด ส่งได้หลายรูป) ──
+let courseExercisePhotos = []; // เก็บ base64 ของรูปที่เลือกไว้ก่อนกดส่ง
+function openCourseExercise(subjectCode, clsCode, chapterNum, topic) {
+  coursePush_(() => openCourseExercise(subjectCode, clsCode, chapterNum, topic));
+  courseSetTitle_('ส่งงาน: ' + topic.topicName, true);
+  courseExercisePhotos = [];
+  const body = document.getElementById('courseModalBody');
+  body.innerHTML = `
+    <div class="card card-pad" style="margin-bottom:12px;">
+      <div style="font-weight:700; margin-bottom:6px;">📖 โจทย์แบบฝึกหัด</div>
+      <div style="color:var(--slate); font-size:0.88rem; white-space:pre-line;">${topic.exerciseText || 'ไม่มีคำสั่งเพิ่มเติม'}</div>
+    </div>
+    <input type="file" id="exercisePhotoInput" accept="image/*" capture="environment" multiple style="display:none;" onchange="onExercisePhotosSelected_(event)">
+    <button class="btn btn-navy btn-block" style="margin-bottom:12px;" onclick="document.getElementById('exercisePhotoInput').click()">
+      <i class="fa-solid fa-camera"></i> ถ่ายรูป / เลือกรูป (ส่งได้หลายรูป)
+    </button>
+    <div id="exercisePhotoPreview" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;"></div>
+    <button class="btn btn-teal btn-block" id="exerciseSubmitBtn" disabled onclick="submitCourseExercise_('${subjectCode}','${clsCode}',${chapterNum},${topic.topicNum})">
+      <i class="fa-solid fa-paper-plane"></i> ส่งงาน
+    </button>`;
+}
+function onExercisePhotosSelected_(e) {
+  const files = Array.from(e.target.files || []);
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      resizeImageForUpload_(ev.target.result, base64 => {
+        courseExercisePhotos.push(base64);
+        renderExercisePhotoPreview_();
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+}
+// ย่อขนาดรูปก่อนส่ง (กันไฟล์ใหญ่เกินจากกล้องมือถือ) โดยวาดลง canvas แล้วบีบเป็น JPEG คุณภาพ 0.7
+function resizeImageForUpload_(dataUrl, callback) {
+  const img = new Image();
+  img.onload = () => {
+    const maxW = 1280;
+    const scale = Math.min(1, maxW / img.width);
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width * scale;
+    canvas.height = img.height * scale;
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    callback(canvas.toDataURL('image/jpeg', 0.7));
+  };
+  img.src = dataUrl;
+}
+function renderExercisePhotoPreview_() {
+  const wrap = document.getElementById('exercisePhotoPreview');
+  wrap.innerHTML = courseExercisePhotos.map((b64, i) => `
+    <div style="position:relative;">
+      <img src="${b64}" style="width:72px; height:72px; object-fit:cover; border-radius:10px; border:2px solid var(--mist);">
+      <button onclick="removeExercisePhoto_(${i})" style="position:absolute; top:-6px; right:-6px; width:22px; height:22px; border-radius:50%; background:var(--coral); color:#fff; font-size:11px; display:flex; align-items:center; justify-content:center;">✕</button>
+    </div>`).join('');
+  document.getElementById('exerciseSubmitBtn').disabled = courseExercisePhotos.length === 0;
+}
+function removeExercisePhoto_(i) {
+  courseExercisePhotos.splice(i, 1);
+  renderExercisePhotoPreview_();
+}
+function submitCourseExercise_(subjectCode, clsCode, chapterNum, topicNum) {
+  if (courseExercisePhotos.length === 0) return;
+  Swal.fire({ title: 'กำลังส่งงาน...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  google.script.run.withSuccessHandler(res => {
+    Swal.close();
+    if (res.success) { Toast(res.message, 'success'); courseNavBack(); }
+    else Swal.fire('แจ้งเตือน', res.message, 'warning');
+  }).withFailureHandler(err => { Swal.close(); Swal.fire('ผิดพลาด', err.toString(), 'error'); })
+    .submitExerciseHomework(currentLoggedStudentId, subjectCode, clsCode, chapterNum, topicNum, courseExercisePhotos);
+}
+
+// ── สอบท้ายบท (จับเวลา ตอบ ก/ข/ค/ง) ──
+let examTimerInterval = null, examDeadlineTs = 0, examCurrentMeta = null, examAnswers = [];
+function openCourseExam(subjectCode, clsCode, chapter) {
+  const body = document.getElementById('courseModalBody');
+  Swal.fire({ title: 'กำลังเตรียมข้อสอบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  google.script.run.withSuccessHandler(res => {
+    Swal.close();
+    if (!res.success) { Swal.fire('แจ้งเตือน', res.message, 'warning'); return; }
+    coursePush_(() => openCourseExam(subjectCode, clsCode, chapter));
+    courseSetTitle_('สอบท้ายบท ' + chapter.chapterNum, true);
+    examCurrentMeta = { subjectCode, clsCode, chapterNum: chapter.chapterNum, totalItems: res.totalItems };
+    examDeadlineTs = res.startedAt + res.durationMin * 60000;
+    examAnswers = new Array(res.totalItems).fill('');
+
+    const qRows = [];
+    for (let i = 0; i < res.totalItems; i++) {
+      qRows.push(`
+        <div class="card card-pad" style="margin-bottom:10px;">
+          <div style="font-weight:700; margin-bottom:8px;">ข้อ ${i + 1}</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            ${['A','B','C','D'].map(opt => `
+              <button class="btn btn-ghost btn-sm exam-opt-btn" data-q="${i}" data-opt="${opt}" style="flex:1; min-width:60px;" onclick="selectExamAnswer_(${i}, '${opt}', this)">${opt}</button>
+            `).join('')}
+          </div>
+        </div>`);
+    }
+    body.innerHTML = `
+      <div class="card card-pad" style="text-align:center; margin-bottom:14px; background:rgba(255,77,109,0.08);">
+        <div style="font-size:0.75rem; color:var(--slate); text-transform:uppercase; letter-spacing:0.06em;">เวลาที่เหลือ</div>
+        <div id="examTimerDisplay" style="font-family:'Mitr','Prompt',sans-serif; font-weight:700; font-size:1.8rem; color:var(--coral);">--:--</div>
+      </div>
+      ${qRows.join('')}
+      <button class="btn btn-teal btn-block" onclick="confirmSubmitExam_()"><i class="fa-solid fa-paper-plane"></i> ส่งคำตอบ</button>`;
+
+    if (examTimerInterval) clearInterval(examTimerInterval);
+    examTimerInterval = setInterval(updateExamTimer_, 1000);
+    updateExamTimer_();
+  }).withFailureHandler(err => { Swal.close(); Swal.fire('ผิดพลาด', err.toString(), 'error'); })
+    .startExamAttempt(currentLoggedStudentId, subjectCode, clsCode, chapter.chapterNum);
+}
+function selectExamAnswer_(qIdx, opt, btnEl) {
+  examAnswers[qIdx] = opt;
+  document.querySelectorAll(`.exam-opt-btn[data-q="${qIdx}"]`).forEach(b => {
+    b.classList.remove('btn-teal'); b.classList.add('btn-ghost');
+  });
+  btnEl.classList.remove('btn-ghost'); btnEl.classList.add('btn-teal');
+}
+function updateExamTimer_() {
+  const remainMs = examDeadlineTs - Date.now();
+  const disp = document.getElementById('examTimerDisplay');
+  if (remainMs <= 0) {
+    if (disp) disp.innerText = '00:00';
+    clearInterval(examTimerInterval);
+    Swal.fire({ title: '⏰ หมดเวลา!', text: 'ระบบจะส่งคำตอบที่ทำไว้ให้อัตโนมัติ', icon: 'warning', allowOutsideClick: false })
+      .then(() => doSubmitExam_());
+    return;
+  }
+  if (!disp) { clearInterval(examTimerInterval); return; }
+  const mm = String(Math.floor(remainMs / 60000)).padStart(2, '0');
+  const ss = String(Math.floor((remainMs % 60000) / 1000)).padStart(2, '0');
+  disp.innerText = `${mm}:${ss}`;
+}
+function confirmSubmitExam_() {
+  const unanswered = examAnswers.filter(a => !a).length;
+  if (unanswered > 0) {
+    Swal.fire({
+      title: 'ยังตอบไม่ครบ', text: `เหลืออีก ${unanswered} ข้อที่ยังไม่ได้ตอบ ต้องการส่งเลยไหม?`,
+      icon: 'question', showCancelButton: true, confirmButtonText: 'ส่งเลย', cancelButtonText: 'ทำต่อ'
+    }).then(r => { if (r.isConfirmed) doSubmitExam_(); });
+  } else {
+    doSubmitExam_();
+  }
+}
+function doSubmitExam_() {
+  if (examTimerInterval) clearInterval(examTimerInterval);
+  const m = examCurrentMeta;
+  Swal.fire({ title: 'กำลังส่งคำตอบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  google.script.run.withSuccessHandler(res => {
+    Swal.close();
+    if (res.bonusPoints > 0) refreshPointsBalance();
+    Swal.fire(res.success ? 'เสร็จสิ้น' : 'แจ้งเตือน', res.message, res.success ? 'success' : 'warning').then(() => courseNavBack());
+  }).withFailureHandler(err => { Swal.close(); Swal.fire('ผิดพลาด', err.toString(), 'error'); })
+    .submitExamAttempt(currentLoggedStudentId, m.subjectCode, m.clsCode, m.chapterNum, examAnswers);
+}
+
+// ═══════════════════════════════════════════════════════════
+// TEACHER: ตรวจงานส่ง + คุมสอบท้ายบท (เรียนออนไลน์)
+// ═══════════════════════════════════════════════════════════
+
+// ── ตรวจงานส่ง ──
+function openSubmissionReviewModal() {
+  const subj = document.getElementById('activeSubjSelect').value;
+  const cls  = document.getElementById('activeClassSelect').value;
+  openFullpageView_('reviewModal');
+  loadPendingSubmissions_(subj, cls);
+}
+function loadPendingSubmissions_(subj, cls) {
+  const body = document.getElementById('reviewModalBody');
+  body.innerHTML = '<div style="text-align:center; padding:24px; color:var(--slate);">กำลังโหลด...</div>';
+  google.script.run.withSuccessHandler(list => {
+    if (!list || list.length === 0) {
+      body.innerHTML = '<div style="text-align:center; padding:24px; color:var(--slate);">ไม่มีงานรอตรวจครับ 🎉</div>';
+      return;
+    }
+    body.innerHTML = list.map(s => `
+      <div class="card card-pad" style="margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div>
+            <div style="font-weight:700;">${s.studentName}</div>
+            <div style="font-size:0.75rem; color:var(--slate);">${s.clsLabel} · บทที่ ${s.chapterNum} · ${s.topicName}</div>
+          </div>
+          <span style="font-size:0.7rem; color:var(--slate);">${new Date(s.timestamp).toLocaleDateString('th-TH')}</span>
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+          ${s.photoUrls.map(u => `<img src="${u}" onclick="window.open('${u}','_blank')" style="width:64px; height:64px; object-fit:cover; border-radius:8px; border:2px solid var(--mist); cursor:pointer;">`).join('')}
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="number" min="0" value="1" id="sigInput_${s.sheetRow}" class="field" style="width:70px; text-align:center; padding:8px;">
+          <button class="btn btn-teal btn-sm" style="flex:1;" onclick="doReviewSubmission_(${s.sheetRow})"><i class="fa-solid fa-check"></i> อนุมัติ + บันทึกลายเซ็น</button>
+        </div>
+      </div>`).join('');
+  }).getPendingSubmissions(subj, cls);
+}
+function doReviewSubmission_(sheetRow) {
+  const sigVal = parseInt(document.getElementById('sigInput_' + sheetRow).value) || 0;
+  google.script.run.withSuccessHandler(res => {
+    Toast(res.message, res.success ? 'success' : 'warning');
+    if (res.success) {
+      const subj = document.getElementById('activeSubjSelect').value;
+      const cls  = document.getElementById('activeClassSelect').value;
+      loadPendingSubmissions_(subj, cls);
+    }
+  }).withFailureHandler(err => {
+    console.error('reviewSubmission failed:', err);
+    Swal.fire('บันทึกไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
+  }).reviewSubmission(sheetRow, sigVal, currentTeacherUsername);
+}
+
+// ── คุมสอบท้ายบท ──
+function openExamControlModal() {
+  const subj = document.getElementById('activeSubjSelect').value;
+  const cls  = document.getElementById('activeClassSelect').value;
+  const ch   = document.getElementById('activeChapterInput').value;
+  openFullpageView_('examCtrlModal');
+  const body = document.getElementById('examCtrlModalBody');
+  body.innerHTML = '<div style="text-align:center; padding:24px; color:var(--slate);">กำลังโหลด...</div>';
+  google.script.run.withSuccessHandler(cfg => {
+    if (!cfg.hasConfig) {
+      body.innerHTML = `<div style="text-align:center; padding:16px; color:var(--slate);">
+        ยังไม่มีการตั้งค่าข้อสอบของบทที่ ${ch} วิชานี้<br>
+        <span style="font-size:0.78rem;">(เพิ่มแถวใหม่ในชีต Exam_Config ก่อน)</span>
+      </div>`;
+      return;
+    }
+    body.innerHTML = `
+      <div class="card card-pad" style="text-align:center; margin-bottom:14px;">
+        <div style="font-size:0.78rem; color:var(--slate); margin-bottom:6px;">บทที่ ${ch} · ${cfg.totalItems} ข้อ · ${cfg.durationMin} นาที</div>
+        <div style="font-size:1.3rem; font-weight:800; color:${cfg.isOpen ? 'var(--teal2)' : 'var(--coral)'};">
+          ${cfg.isOpen ? '🟢 กำลังเปิดสอบ' : '🔴 ปิดอยู่'}
+        </div>
+      </div>
+      <button class="btn ${cfg.isOpen ? 'btn-danger-soft' : 'btn-teal'} btn-block" onclick="doToggleExam_('${subj}','${cls}',${ch}, ${!cfg.isOpen})">
+        ${cfg.isOpen ? '⛔ ปิดสอบตอนนี้' : '✅ เปิดสอบตอนนี้'}
+      </button>`;
+  }).getExamConfigForTeacher(subj, cls, ch);
+}
+function doToggleExam_(subj, cls, ch, newState) {
+  google.script.run.withSuccessHandler(res => {
+    Toast(res.message, res.success ? 'success' : 'warning');
+    if (res.success) openExamControlModal();
+  }).withFailureHandler(err => {
+    console.error('toggleExamOpen failed:', err);
+    Swal.fire('เปลี่ยนสถานะไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
+  }).toggleExamOpen(subj, cls, ch, newState);
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// RUNNING ACTIVITY (กิจกรรมวิ่งแลกแต้มวิ่ง)
+// ติดตามตำแหน่งต่อเนื่องด้วย navigator.geolocation.watchPosition คำนวณระยะทาง+ความเร็วระหว่างจุด
+// นับระยะเป็นแต้มเฉพาะช่วงที่ความเร็วอยู่ในช่วง "วิ่งจริง" (กรองเดินสบายๆ ออก / กรองปั่นจักรยาน-มอไซค์ออก)
+// หมายเหตุ: อาศัยพิกัด GPS ที่เบราว์เซอร์รายงานมา ถ้าใช้แอปปลอมพิกัดก็ยังหลอกได้ในทางเทคนิค
+// กันได้แค่ระดับ "เดินเฉยๆ แล้วอ้างว่าวิ่ง" หรือ "นั่งรถ/ปั่นจักรยานแทนวิ่ง" ทั่วไป ไม่ใช่กันโกงระดับสมบูรณ์
+// ═══════════════════════════════════════════════════════════
+let runWatchId = null, runStartedAt = 0, runLastGoodPos = null, runLastSpeedKmh = 0;
+let runValidMeters = 0, runTotalMeters = 0, runIdleSeconds = 0, runSteps = 0;
+let runMinSpeedKmh = 7, runMaxSpeedKmh = 22;
+let runTickInterval = null, runSyncInterval = null;
+// แผนที่เส้นทางวิ่งแบบ real-time (Google Maps) — สร้างครั้งแรกตอนได้พิกัดแรกที่แม่นพอ ไม่ใช่ตอนเปิดหน้าจอ
+let runMap = null, runMarker = null, runPath = null, runPathCoords = [];
+const RUN_MAX_IDLE_SECONDS = 300; // 5 นาที
+const RUN_MIN_ACCURACY_M = 30;
+
+// ── ตัวนับก้าว (pedometer แบบง่าย) ─────────────────────────
+// เบราว์เซอร์ไม่มี API นับก้าวโดยตรง จึงอ่านความเร่งจากเซนเซอร์ (devicemotion) แล้วจับ "จุดสูงสุด"
+// ของแรงเร่งรวมที่ข้ามค่า threshold มาเป็นการนับ 1 ก้าว (debounce กันนับซ้ำในจังหวะเดียวกัน)
+let runMotionActive = false, runMotionAboveThreshold = false, runMotionLastStepAt = 0, runMotionLastSampleAt = 0;
+const RUN_STEP_THRESHOLD_MS2 = 11.5;   // ขนาดแรงเร่งรวม (m/s²) ที่ถือว่าเป็นจังหวะก้าวเดิน/วิ่ง (ค่ากลางแรงโน้มถ่วง ~9.8)
+const RUN_STEP_MIN_INTERVAL_MS = 300;  // ห่างกันอย่างน้อยเท่านี้ถึงจะนับก้าวใหม่ (กันสั่นถี่ๆ นับซ้ำ)
+const RUN_MOTION_SAMPLE_MS = 80;       // [Perf] ประมวลผลอย่างมากทุก 80ms (~12Hz) แม้เซนเซอร์บางเครื่องจะยิง event ถี่ถึง 60Hz
+                                        // เพราะการก้าวเดิน/วิ่งไม่มีทางเร็วกว่านี้อยู่แล้ว ยิงถี่กว่านี้มีแต่กิน CPU เปล่าๆ จนหน้าจอ/ปุ่มอื่นตอบสนองช้า
+
+function onRunDeviceMotion_(e) {
+  const now = Date.now();
+  if (now - runMotionLastSampleAt < RUN_MOTION_SAMPLE_MS) return; // ทิ้ง event ที่ถี่เกินไป ลดภาระ main thread
+  runMotionLastSampleAt = now;
+
+  const acc = e.accelerationIncludingGravity || e.acceleration;
+  if (!acc || acc.x === null || acc.x === undefined) return;
+  const mag = Math.sqrt((acc.x || 0) ** 2 + (acc.y || 0) ** 2 + (acc.z || 0) ** 2);
+  if (mag > RUN_STEP_THRESHOLD_MS2) {
+    if (!runMotionAboveThreshold && (now - runMotionLastStepAt) > RUN_STEP_MIN_INTERVAL_MS) {
+      runSteps++;
+      runMotionLastStepAt = now;
+    }
+    runMotionAboveThreshold = true;
+  } else {
+    runMotionAboveThreshold = false;
+  }
+}
+
+// เริ่มฟังเซนเซอร์ความเร่ง (ต้องขอสิทธิ์ก่อนบน iOS 13+) ถ้าอุปกรณ์ไม่รองรับก็แค่ไม่นับก้าว ไม่กระทบระยะทาง/แต้มที่คำนวณจาก GPS
+async function startStepCounter_() {
+  if (runMotionActive || typeof DeviceMotionEvent === 'undefined') return;
+  if (typeof DeviceMotionEvent.requestPermission === 'function') {
+    try {
+      const perm = await DeviceMotionEvent.requestPermission();
+      if (perm !== 'granted') return;
+    } catch (e) { return; }
+  }
+  runMotionAboveThreshold = false;
+  window.addEventListener('devicemotion', onRunDeviceMotion_);
+  runMotionActive = true;
+}
+function stopStepCounter_() {
+  if (!runMotionActive) return;
+  window.removeEventListener('devicemotion', onRunDeviceMotion_);
+  runMotionActive = false;
+}
+
+function openRunModal() {
+  openFullpageView_('runModal');
+  document.getElementById('runModalBody').innerHTML = courseLoadingHtml_();
+  google.script.run.withSuccessHandler(status => renderRunModalByStatus_(status))
+    .withFailureHandler(err => {
+      console.error('getTodayRunStatus failed:', err);
+      document.getElementById('runModalBody').innerHTML = courseErrorHtml_('openRunModal()');
+    }).getTodayRunStatus(currentLoggedStudentId);
+}
+function closeRunModal() {
+  if (runWatchId !== null) {
+    Swal.fire({
+      title: 'กำลังวิ่งอยู่นะ', text: 'ถ้าปิดตอนนี้ ระยะที่วิ่งไปแล้วจะถูกบันทึกไว้ ทำต่อได้ทีหลัง แต่ตัวจับเวลาจะหยุดชั่วคราว',
+      icon: 'warning', showCancelButton: true, confirmButtonText: 'ปิดเลย', cancelButtonText: 'วิ่งต่อ'
+    }).then(r => {
+      if (r.isConfirmed) { stopRunTracking_(false); closeFullpageView_('runModal'); }
+    });
+    return;
+  }
+  closeFullpageView_('runModal');
+}
+function renderRunModalByStatus_(status) {
+  const body = document.getElementById('runModalBody');
+  if (status.status === 'completed') {
+    body.innerHTML = `
+      <div class="card card-pad" style="text-align:center; background:rgba(82,196,26,0.08); margin-bottom:14px;">
+        <div style="font-size:2.4rem; margin-bottom:6px;">🏅</div>
+        <div style="font-weight:700; color:var(--teal2); font-size:1.1rem;">วันนี้ร่วมกิจกรรมไปแล้ว!</div>
+        <div style="color:var(--slate); margin-top:6px;">วิ่งได้ ${status.validMeters} เมตร · ${status.steps || 0} ก้าว · ได้ ${status.points} แต้มวิ่ง</div>
+        <div style="color:var(--slate); font-size:0.78rem; margin-top:4px;">พรุ่งนี้มาร่วมกิจกรรมได้ใหม่นะครับ</div>
+      </div>
+      <div id="runHistorySection"></div>`;
+    loadRunHistory_();
+    return;
+  }
+  const resumeNote = status.status === 'in_progress'
+    ? `<div style="text-align:center; color:var(--amber2); font-size:0.82rem; margin-bottom:10px;">มีเซสชันที่ทำค้างไว้ (${status.validMeters || 0} เมตร · ${status.steps || 0} ก้าว) กดปุ่มด้านล่างเพื่อทำต่อ</div>` : '';
+  body.innerHTML = `
+    <div class="card card-pad" style="margin-bottom:14px;">
+      <div style="font-weight:700; margin-bottom:8px;">📋 กติกา</div>
+      <ul style="margin:0; padding-left:20px; color:var(--slate); font-size:0.85rem; line-height:1.7;">
+        <li>ต้อง<b>วิ่งจริง</b> (เดินสบายๆ ไม่นับ / ปั่นจักรยาน-มอไซค์ไม่นับ)</li>
+        <li>หยุดพักได้ แต่ห้ามเกิน <b>5 นาทีต่อครั้ง</b> ไม่งั้นระบบตัดรอบให้อัตโนมัติ</li>
+        <li>ร่วมกิจกรรมได้ <b>วันละ 1 ครั้ง</b></li>
+        <li><b>1 เมตร = 0.1 แต้มวิ่ง</b> (แต้มวิ่งแลกเป็นคะแนนวิชาไม่ได้)</li>
+      </ul>
+    </div>
+    ${resumeNote}
+    <button class="btn btn-teal btn-block" onclick="beginRunSession_()"><i class="fa-solid fa-play"></i> ${status.status === 'in_progress' ? 'ทำต่อ' : 'เริ่มวิ่ง'}</button>
+    <div id="runHistorySection" style="margin-top:14px;"></div>`;
+  loadRunHistory_();
+}
+
+// โหลดประวัติการวิ่งที่จบแล้วมาแสดงเป็นรายการ (วันที่ / ระยะ / ก้าว / แต้มที่ได้) เรียงล่าสุดก่อน
+function loadRunHistory_() {
+  const el = document.getElementById('runHistorySection');
+  if (!el) return;
+  el.innerHTML = courseLoadingHtml_();
+  google.script.run.withSuccessHandler(list => {
+    if (!el || !document.body.contains(el)) return; // modal ถูกปิด/สลับเนื้อหาไปแล้วระหว่างรอ
+    if (!list || list.length === 0) {
+      el.innerHTML = '';
+      return;
+    }
+    const rows = list.map(r => `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1.5px solid var(--mist); font-size:0.85rem;">
+        <span style="color:var(--slate);">${r.dateKey}</span>
+        <span>${r.validMeters} ม. · ${r.steps || 0} ก้าว</span>
+        <span style="font-weight:700; color:var(--teal2);">+${r.points} แต้ม</span>
+      </div>`).join('');
+    el.innerHTML = `
+      <div class="card card-pad">
+        <div style="font-weight:700; margin-bottom:8px;">📜 ประวัติการวิ่ง</div>
+        ${rows}
+      </div>`;
+  }).withFailureHandler(err => {
+    console.error('getRunHistory failed:', err);
+    if (el) el.innerHTML = '';
+  }).getRunHistory(currentLoggedStudentId);
+}
+
+function beginRunSession_() {
+  if (!navigator.geolocation) { Swal.fire('ไม่รองรับ', 'เบราว์เซอร์นี้ไม่รองรับ GPS ครับ', 'error'); return; }
+  google.script.run.withSuccessHandler(res => {
+    if (!res.success) { Swal.fire('แจ้งเตือน', res.message, 'warning'); return; }
+    runStartedAt = res.startedAt;
+    runMinSpeedKmh = res.minSpeedKmh; runMaxSpeedKmh = res.maxSpeedKmh;
+    runValidMeters = 0; runTotalMeters = 0; runIdleSeconds = 0; runLastGoodPos = null; runSteps = 0;
+    if (res.resumed) {
+      google.script.run.withSuccessHandler(st => {
+        runValidMeters = Number(st.validMeters) || 0;
+        runTotalMeters = Number(st.totalMeters) || 0;
+        runSteps = Number(st.steps) || 0;
+        startRunTracking_();
+      }).getTodayRunStatus(currentLoggedStudentId);
+    } else {
+      startRunTracking_();
+    }
+  }).withFailureHandler(err => {
+    console.error('startRunSession failed:', err);
+    Swal.fire('เชื่อมต่อไม่สำเร็จ', 'เริ่มบันทึกการวิ่งไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
+  }).startRunSession(currentLoggedStudentId);
+}
+
+function startRunTracking_() {
+  renderRunActiveView_();
+  runWatchId = navigator.geolocation.watchPosition(onRunPosition_, onRunGeoError_, {
+    enableHighAccuracy: true, maximumAge: 2000, timeout: 15000
+  });
+  startStepCounter_();
+  runTickInterval = setInterval(updateRunLiveUI_, 1000);
+  runSyncInterval = setInterval(() => {
+    google.script.run.withSuccessHandler(res => {
+      // [Fix] เซิร์ฟเวอร์ตรวจจับ "หยุดพักเกิน 5 นาที" เองจากระยะที่ sync เข้ามา (รีเฟรช/เปิดแอปใหม่หลบไม่ได้แล้ว)
+      // ถ้าเซิร์ฟเวอร์ตัดจบเซสชันให้แล้ว ฝั่งนี้ก็แค่หยุดติดตามตาม ไม่ต้องเรียก finishRunSession ซ้ำ (ตัดไปแล้วฝั่งนั้น)
+      if (res && res.forceEnded) {
+        stopRunTracking_(false);
+        Swal.fire('⏱️ หยุดพักนานเกินไป', res.message, 'warning').then(() => { refreshRunSummary_(); openRunModal(); });
+      }
+    }).withFailureHandler(err => console.error('updateRunProgress failed:', err))
+      .updateRunProgress(currentLoggedStudentId, runStartedAt, runValidMeters, runTotalMeters, runSteps);
+  }, 15000);
+}
+
+function renderRunActiveView_() {
+  document.getElementById('runModalBody').innerHTML = `
+    <div id="runMapContainer" style="width:100%; height:220px; border-radius:16px; margin-bottom:14px; background:var(--cloud); border:2.5px solid var(--mist); overflow:hidden; display:flex; align-items:center; justify-content:center;">
+      <span style="color:var(--slate); font-size:0.85rem;"><i class="fa-solid fa-spinner fa-spin"></i> กำลังรอสัญญาณ GPS...</span>
+    </div>
+    <div class="card card-pad" style="text-align:center; margin-bottom:14px; background:rgba(255,201,60,0.08);">
+      <div style="font-size:0.75rem; color:var(--slate); text-transform:uppercase; letter-spacing:0.06em;">กำลังวิ่ง...</div>
+      <div id="runDistanceDisplay" style="font-family:'Mitr','Prompt',sans-serif; font-weight:700; font-size:2.2rem; color:var(--amber2);">0 ม.</div>
+      <div id="runPointsDisplay" style="color:var(--teal2); font-weight:700;">+0.0 แต้มวิ่ง</div>
+    </div>
+    <div class="card card-pad" style="margin-bottom:14px;">
+      <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+        <span style="color:var(--slate);">ความเร็วปัจจุบัน</span>
+        <span id="runSpeedDisplay" style="font-weight:700;">— กม./ชม.</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-top:6px;">
+        <span style="color:var(--slate);">เวลาพัก</span>
+        <span id="runIdleDisplay" style="font-weight:700;">0:00 / 5:00</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-top:6px;">
+        <span style="color:var(--slate);">จำนวนก้าว</span>
+        <span id="runStepsDisplay" style="font-weight:700;">0 ก้าว</span>
+      </div>
+    </div>
+    <div id="runStatusMsg" style="text-align:center; font-size:0.8rem; color:var(--slate); margin-bottom:10px;">กำลังค้นหาสัญญาณ GPS...</div>
+    <button class="btn btn-danger-soft btn-block" onclick="confirmStopRun_()"><i class="fa-solid fa-stop"></i> จบการวิ่ง</button>`;
+}
+
+function haversineMeters_(lat1, lon1, lat2, lon2) {
+  const R = 6371000, toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function onRunPosition_(pos) {
+  const { latitude, longitude, accuracy } = pos.coords;
+  const now = pos.timestamp;
+  const msg = document.getElementById('runStatusMsg');
+
+  if (accuracy > RUN_MIN_ACCURACY_M) {
+    if (msg) msg.innerText = `สัญญาณ GPS ไม่แม่นพอ (±${Math.round(accuracy)} ม.) รอสักครู่...`;
+    return; // สัญญาณไม่แม่นพอ ข้ามจุดนี้ไปเลย ไม่เอามาคำนวณ
+  }
+  if (msg) msg.innerText = 'กำลังติดตามตำแหน่ง...';
+
+  updateRunMap_(latitude, longitude);
+
+  if (!runLastGoodPos) { runLastGoodPos = { lat: latitude, lon: longitude, t: now, accuracy }; return; }
+
+  const distM = haversineMeters_(runLastGoodPos.lat, runLastGoodPos.lon, latitude, longitude);
+  const dtSec = (now - runLastGoodPos.t) / 1000;
+  if (dtSec <= 0) return;
+  const speedKmh = (distM / dtSec) * 3.6;
+  runLastSpeedKmh = speedKmh;
+
+  // ตัดสัญญาณรบกวน (GPS jitter): ต้องขยับมากกว่ารัศมีความคลาดเคลื่อนของทั้งจุดก่อนหน้าและจุดปัจจุบันรวมกันจริงๆ
+  // ไม่งั้นต่อให้ยืนอยู่กับที่ พิกัดที่เหวี่ยงไปมา ±10-20 ม. ตามปกติของ GPS มือถือ จะถูกนับเป็นระยะทางสะสมไปเรื่อยๆ (บวกอย่างเดียว ไม่มีทางลบ)
+  const noiseFloor = Math.max(5, (runLastGoodPos.accuracy || 0) * 0.5 + accuracy * 0.5);
+  if (distM > noiseFloor) {
+    runTotalMeters += distM;
+    if (speedKmh >= runMinSpeedKmh && speedKmh <= runMaxSpeedKmh) {
+      runValidMeters += distM;
+      runIdleSeconds = 0;
+    }
+  }
+  runLastGoodPos = { lat: latitude, lon: longitude, t: now, accuracy };
+}
+
+// วาด/อัปเดตเส้นทางวิ่งบน Google Maps แบบ real-time (สร้างแผนที่ครั้งแรกตอนได้พิกัดแรกที่แม่นพอ)
+function updateRunMap_(lat, lng) {
+  if (typeof google === 'undefined' || !google.maps) return; // โหลด Maps API ไม่สำเร็จ (เน็ตช้า/คีย์มีปัญหา) ไม่ให้พังฟีเจอร์วิ่งหลัก แค่ไม่มีแผนที่
+  const mapContainer = document.getElementById('runMapContainer');
+  if (!mapContainer) return; // ปิดหน้าไปแล้วระหว่างรอสัญญาณ
+  const currentLatLng = { lat, lng };
+
+  if (!runMap) {
+    mapContainer.innerHTML = ''; // เอาข้อความ "กำลังรอสัญญาณ GPS..." ออก
+    runMap = new google.maps.Map(mapContainer, {
+      center: currentLatLng, zoom: 17,
+      disableDefaultUI: true, gestureHandling: 'greedy'
+    });
+    runMarker = new google.maps.Marker({
+      position: currentLatLng, map: runMap,
+      icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: '#FF5C97', fillOpacity: 1, strokeWeight: 2, strokeColor: '#ffffff' }
+    });
+    runPathCoords = [currentLatLng];
+    runPath = new google.maps.Polyline({
+      path: runPathCoords, geodesic: true,
+      strokeColor: '#2AABEE', strokeOpacity: 1.0, strokeWeight: 4, map: runMap
+    });
+  } else {
+    runMap.panTo(currentLatLng);
+    runMarker.setPosition(currentLatLng);
+    runPathCoords.push(currentLatLng);
+    runPath.setPath(runPathCoords);
+  }
+}
+
+function onRunGeoError_(err) {
+  const msg = document.getElementById('runStatusMsg');
+  if (msg) msg.innerText = '⚠️ ดึงตำแหน่ง GPS ไม่ได้ (' + err.message + ') ตรวจสอบว่าเปิดสิทธิ์ตำแหน่งแล้ว';
+}
+
+function updateRunLiveUI_() {
+  const distEl = document.getElementById('runDistanceDisplay');
+  if (!distEl) return; // modal ถูกปิด/สลับหน้าไปแล้ว
+  document.getElementById('runPointsDisplay').innerText = '+' + (Math.round(runValidMeters * 0.1 * 10) / 10) + ' แต้มวิ่ง';
+  document.getElementById('runSpeedDisplay').innerText = runLastSpeedKmh.toFixed(1) + ' กม./ชม.';
+  document.getElementById('runStepsDisplay').innerText = runSteps + ' ก้าว';
+  distEl.innerText = Math.round(runValidMeters) + ' ม.';
+
+  if (runLastSpeedKmh < runMinSpeedKmh) runIdleSeconds++; else runIdleSeconds = 0;
+
+  const idleEl = document.getElementById('runIdleDisplay');
+  const mm = Math.floor(runIdleSeconds / 60), ss = String(runIdleSeconds % 60).padStart(2, '0');
+  idleEl.innerText = `${mm}:${ss} / 5:00`;
+  idleEl.style.color = runIdleSeconds > 240 ? 'var(--coral)' : 'var(--ink)';
+
+  if (runIdleSeconds >= RUN_MAX_IDLE_SECONDS) {
+    Swal.fire({ title: '⏱️ หยุดพักนานเกินไป', text: 'ระบบตัดรอบการวิ่งให้อัตโนมัติ', icon: 'warning', allowOutsideClick: false })
+      .then(() => stopRunTracking_(true));
+  }
+}
+
+function confirmStopRun_() {
+  Swal.fire({
+    title: 'จบการวิ่งเลยไหม?', text: `ตอนนี้วิ่งได้ ${Math.round(runValidMeters)} เมตร · ${runSteps} ก้าว (${Math.round(runValidMeters * 0.1 * 10) / 10} แต้มวิ่ง)`,
+    icon: 'question', showCancelButton: true, confirmButtonText: 'จบเลย', cancelButtonText: 'วิ่งต่อ'
+  }).then(r => { if (r.isConfirmed) stopRunTracking_(true); });
+}
+
+function stopRunTracking_(finalize) {
+  if (runWatchId !== null) { navigator.geolocation.clearWatch(runWatchId); runWatchId = null; }
+  if (runTickInterval) { clearInterval(runTickInterval); runTickInterval = null; }
+  if (runSyncInterval) { clearInterval(runSyncInterval); runSyncInterval = null; }
+  stopStepCounter_();
+
+  // เคลียร์สถานะแผนที่ ให้พร้อมสร้างใหม่ตอนวิ่งรอบถัดไป (DOM container เดิมจะถูกแทนที่อยู่แล้วตอน renderRunActiveView_ ครั้งหน้า)
+  if (runPath) runPath.setMap(null);
+  runMap = null; runMarker = null; runPath = null; runPathCoords = [];
+
+  if (!finalize) return;
+
+  Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  google.script.run.withSuccessHandler(res => {
+    Swal.close();
+    if (res.success) {
+      Swal.fire('เยี่ยมมาก! 🎉', res.message, 'success').then(() => { refreshRunSummary_(); openRunModal(); });
+    } else {
+      Swal.fire('แจ้งเตือน', res.message, 'warning');
+    }
+  }).withFailureHandler(err => {
+    console.error('finishRunSession failed:', err);
+    Swal.fire('เชื่อมต่อไม่สำเร็จ', 'บันทึกผลการวิ่งไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดจบการวิ่งอีกครั้ง', 'error');
+  }).finishRunSession(currentLoggedStudentId, runStartedAt, runValidMeters, runTotalMeters, runSteps);
+}
+
+function refreshRunSummary_() {
+  google.script.run.withSuccessHandler(bal => {
+    const el = document.getElementById('runSummaryText');
+    if (el) el.innerText = `สะสม ${bal.totalMeters} เมตร · ${bal.totalSteps || 0} ก้าว · ${bal.totalPoints} แต้มวิ่ง`;
+  }).getRunningPointsBalance(currentLoggedStudentId);
+}
+</script>
+
+<div id="wheelModal" class="fullpage-view hidden">
+  <div class="fullpage-body" style="display:flex; flex-direction:column;">
+  <div class="wheel-sheet">
+    <button class="wheel-close" onclick="closeWheelModal()">✕</button>
+    <div class="wheel-title" id="wheelModalTitle">🎡 หมุนวงล้อ</div>
+
+    <div class="wheel-wrap" id="wheelSpinView">
+      <div class="wheel-pointer">▼</div>
+      <canvas id="wheelEl" width="220" height="220"></canvas>
+      <div class="wheel-center" id="wheelCenterEmoji">🎡</div>
+    </div>
+
+    <button class="wheel-spin-btn" id="wheelSpinBtn" onclick="doWheelSpin()">
+      🎡 หมุน! (10 ตั๋ว)
+    </button>
+
+    <div id="wheelResultView" class="wheel-result-view hidden">
+      <div class="wheel-result-emoji" id="wheelResultEmoji">⭐</div>
+      <div class="wheel-result-text" id="wheelResultText">ได้รางวัล!</div>
+      <button class="wheel-spin-btn" id="wheelResultCloseBtn" onclick="closeWheelModal()">โอเค!</button>
+    </div>
+  </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ONLINE COURSE MODAL (เรียนออนไลน์) — โมดัลเดียว สลับเนื้อหาตามระดับที่เปิด
+     (รายวิชา -> บท -> เรื่องย่อย -> วิดีโอ/แบบฝึกหัด/สอบ)
+     ═══════════════════════════════════════════════════════════ -->
+<div id="courseModal" class="fullpage-view hidden">
+  <div class="fullpage-head">
+    <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+      <button class="btn btn-ghost btn-icon" id="courseBackBtn" style="display:none;" onclick="courseNavBack()"><i class="fa-solid fa-arrow-left"></i></button>
+      <div class="section-title" id="courseModalTitle" style="margin-bottom:0;"><i class="fa-solid fa-play"></i> เรียนออนไลน์</div>
+    </div>
+    <button class="btn btn-ghost btn-icon" onclick="closeCourseModal()"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div id="courseModalBody" class="fullpage-body"></div>
+</div>
+
+<!-- ตรวจงานส่ง (ฝั่งครู) -->
+<div id="reviewModal" class="fullpage-view hidden">
+  <div class="fullpage-head">
+    <div class="section-title" style="margin-bottom:0;"><i class="fa-solid fa-images"></i> ตรวจงานส่ง</div>
+    <button class="btn btn-ghost btn-icon" onclick="closeFullpageView_('reviewModal')"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div id="reviewModalBody" class="fullpage-body"></div>
+</div>
+
+<!-- คุมสอบท้ายบท (ฝั่งครู) -->
+<div id="examCtrlModal" class="fullpage-view hidden">
+  <div class="fullpage-head">
+    <div class="section-title" style="margin-bottom:0;"><i class="fa-solid fa-clock"></i> คุมสอบท้ายบท</div>
+    <button class="btn btn-ghost btn-icon" onclick="closeFullpageView_('examCtrlModal')"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div id="examCtrlModalBody" class="fullpage-body"></div>
+</div>
+
+<!-- กิจกรรมวิ่งแลกแต้มวิ่ง (ฝั่งนักเรียน) -->
+<div id="runModal" class="fullpage-view hidden">
+  <div class="fullpage-head">
+    <div class="section-title" style="margin-bottom:0;"><i class="fa-solid fa-person-running"></i> กิจกรรมวิ่งแลกแต้มวิ่ง</div>
+    <button class="btn btn-ghost btn-icon" onclick="closeRunModal()"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div id="runModalBody" class="fullpage-body"></div>
+</div>
+
+</body>
+</html>
