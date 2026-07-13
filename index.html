@@ -45,6 +45,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://www.youtube.com/iframe_api"></script>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDaEqUTYzY-Tn0f35qN9Y18w7XlQ-UbUhw&libraries=geometry"></script>
 
@@ -193,6 +194,15 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     }
     .field:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(255,92,151,0.15); }
     .field-label { font-size: 0.75rem; font-weight: 700; color: var(--slate); margin-bottom: 6px; display: block; letter-spacing: 0.04em; text-transform: uppercase; }
+
+    /* CHAPTER BUTTON GRID (เลือกบทเรียนด้วยปุ่มแทนช่องกรอกตัวเลข) */
+    .chapter-btn {
+      aspect-ratio: 1; border-radius: var(--r-sm); border: 2.5px solid var(--mist);
+      background: var(--surface); color: var(--ink); font-weight: 700; font-size: 0.95rem;
+      cursor: pointer; transition: border-color .15s, background .15s, color .15s;
+    }
+    .chapter-btn.active { border-color: var(--teal); background: var(--teal); color: #fff; }
+    .chapter-btn:not(.active):hover { border-color: var(--teal); }
 
     /* LOGIN */
     .login-wrap {
@@ -920,8 +930,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           </div>
         </div>
 
-        <div class="card card-pad" style="margin-bottom:16px; cursor:pointer;" onclick="openRunModal()">
-          <div style="display:flex; align-items:center; gap:14px;">
+        <div class="card card-pad" style="margin-bottom:16px;">
+          <div style="display:flex; align-items:center; gap:14px; cursor:pointer;" onclick="openRunModal()">
             <div style="width:52px; height:52px; border-radius:16px; background:rgba(255,201,60,0.18); display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:var(--amber2); flex-shrink:0;">
               <i class="fa-solid fa-person-running"></i>
             </div>
@@ -931,6 +941,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
             </div>
             <i class="fa-solid fa-chevron-right" style="color:var(--mist); flex-shrink:0;"></i>
           </div>
+          <button onclick="event.stopPropagation(); openRunExchangeModal()"
+            style="width:100%; margin-top:10px; padding:8px; border:none; border-radius:10px; background:rgba(255,201,60,0.15); color:var(--amber2); font-weight:700; font-size:0.8rem; cursor:pointer;">
+            <i class="fa-solid fa-rotate"></i> แลกแต้มวิ่งเป็นแต้มพิเศษ
+          </button>
         </div>
 
         <div class="section-label" style="margin-top:4px;">วิเคราะห์ศักยภาพ</div>
@@ -989,6 +1003,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
             </div>
           </div>
           <div id="cardNickname" style="position:relative; display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:14px;"></div>
+          <div id="cardCompanionRun" style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px; text-align:left;"></div>
           <div class="id-footer" id="cardStudentId">รหัส: —</div>
         </div>
         <div class="id-card-hint">
@@ -1049,8 +1064,18 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
     <div class="content-pad">
 
+      <!-- แท็บ: ภาพรวม -->
+      <div id="tTab-overview" class="tab-panel active">
+        <div class="section-title" style="margin-bottom:14px;">
+          <i class="fa-solid fa-gauge-high"></i> สิ่งที่ควรรู้วันนี้
+        </div>
+        <div id="overviewContainer">
+          <div style="text-align:center; color:var(--slate); padding:24px;">กำลังโหลด...</div>
+        </div>
+      </div>
+
       <!-- แท็บ: สแกน -->
-      <div id="tTab-scan" class="tab-panel active">
+      <div id="tTab-scan" class="tab-panel">
         <div class="section-title" style="margin-bottom:16px; font-size:1.1rem;">
           <i class="fa-solid fa-qrcode"></i> สแกนคิวอาร์โค้ด / เช็คชื่อ
         </div>
@@ -1060,9 +1085,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
             <select id="activeClassSelect" class="field" style="font-size:0.85rem; padding:10px 12px;"></select>
           </div>
         </div>
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
-          <label class="field-label" style="margin:0; flex:1;">บทเรียนที่</label>
-          <input type="number" id="activeChapterInput" class="field" value="1" min="1" max="10" style="width:80px; text-align:center;">
+        <div style="margin-bottom:14px;">
+          <label class="field-label" style="margin-bottom:8px; display:block;">บทเรียนที่</label>
+          <input type="hidden" id="activeChapterInput" value="1">
+          <div id="chapterButtonGrid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:8px;"></div>
         </div>
         <div class="action-card mode-att" onclick="triggerModeSetup('att')">
           <div class="icon"><i class="fa-solid fa-user-check"></i></div>
@@ -1101,37 +1127,29 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         </div>
       </div>
 
-      <!-- แท็บ: ประวัติเช็คชื่อ -->
-      <div id="tTab-att" class="tab-panel">
-        <div class="section-title"><i class="fa-solid fa-clock-rotate-left"></i> ประวัติการเช็คชื่อ</div>
-        <div class="filter-bar">
-          <select id="logClass"   class="field"></select>
-          <select id="logSubject" class="field"></select>
-          <input type="date" id="logDateFrom" class="field">
-          <input type="date" id="logDateTo"   class="field">
-          <button class="btn btn-teal btn-sm" onclick="loadAttendanceLog()"><i class="fa-solid fa-magnifying-glass"></i> เช็ค</button>
-        </div>
-        <div class="tbl-wrap">
-          <table class="dt">
-            <thead><tr><th>วันที่</th><th>ชื่อ</th><th>ชั้น</th><th>วิชา</th><th>สถานะ</th><th>ลบ</th></tr></thead>
-            <tbody id="logTableBody"><tr><td colspan="6" style="color:var(--slate);">เลือกตัวกรองแล้วกด "เช็ค"</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-
       <!-- แท็บ: คะแนน -->
       <div id="tTab-score" class="tab-panel">
-        <div class="section-title"><i class="fa-solid fa-table"></i> ตารางคะแนนรวม</div>
-        <div class="filter-bar" style="margin-bottom:10px;">
+        <div class="section-title"><i class="fa-solid fa-table"></i> คะแนน</div>
+        <div class="filter-bar" style="margin-bottom:12px;">
           <select id="vSubject"  class="field"></select>
           <select id="vSubClass" class="field"></select>
           <button class="btn btn-teal btn-sm" onclick="viewClassScores()"><i class="fa-solid fa-magnifying-glass"></i> เช็ค</button>
         </div>
-        <div class="score-legend">
-          <span>📝 แต้มเซ็น (แก้ได้)</span>
-          <span>📊 คะแนนงาน (คำนวณ)</span>
-          <span>🎯 คะแนนสอบ (แก้ได้)</span>
+
+        <div style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">
+          <button id="scoreViewBtn-collect" class="btn btn-sm btn-teal" style="flex:1; min-width:64px;" onclick="switchScoreView_('collect')">คะแนนเก็บ</button>
+          <button id="scoreViewBtn-final"   class="btn btn-sm" style="flex:1; min-width:64px; background:var(--mist); color:var(--ink);" onclick="switchScoreView_('final')">ปลายภาค</button>
+          <button id="scoreViewBtn-total"   class="btn btn-sm" style="flex:1; min-width:64px; background:var(--mist); color:var(--ink);" onclick="switchScoreView_('total')">คะแนนรวม</button>
+          <button id="scoreViewBtn-grade"   class="btn btn-sm" style="flex:1; min-width:64px; background:var(--mist); color:var(--ink);" onclick="switchScoreView_('grade')">เกรด</button>
         </div>
+
+        <div id="scoreChapterPicker" style="display:none; margin-bottom:12px;">
+          <label class="field-label" style="margin-bottom:8px; display:block;">เลือกบทเรียน</label>
+          <div id="scoreChapterGrid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:8px;"></div>
+        </div>
+
+        <div id="scoreSummaryCard" class="card card-pad" style="margin-bottom:12px; display:none;"></div>
+
         <div class="tbl-wrap">
           <table class="dt">
             <thead id="scoreHead"><tr><th>รหัส</th><th>ชื่อ-สกุล</th><th>เกรด</th></tr></thead>
@@ -1140,20 +1158,28 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         </div>
       </div>
 
-      <!-- แท็บ: ประวัติกิจกรรม -->
+      <!-- แท็บ: บันทึก — ไทม์ไลน์กิจกรรมเดียวรวมทุกอย่าง (เดิมเช็คชื่อแยกแท็บ ยกเลิกแล้วเพราะการสแกนเช็คชื่อทุกครั้งมีรายการ "✅ สแกนเช็คชื่อ" ในนี้อยู่แล้วเสมอ) -->
       <div id="tTab-history" class="tab-panel">
-        <div class="section-title"><i class="fa-solid fa-clock-rotate-left"></i> ประวัติกิจกรรมทั้งหมด</div>
+        <div class="section-title"><i class="fa-solid fa-clock-rotate-left"></i> บันทึกกิจกรรม</div>
         <div class="filter-bar" style="margin-bottom:12px;">
           <select id="histType" class="field" style="min-width:130px;">
             <option value="ALL">ทุกประเภท</option>
-            <option value="GPS_CHECKIN">📍 เช็คอิน GPS</option>
-            <option value="COUPON">🎟️ กรอกคูปอง</option>
-            <option value="BUY_CHAPTER_SCORE">🔄 แลกคะแนน</option>
             <option value="SCAN_ATTEND">✅ สแกนเช็คชื่อ</option>
             <option value="SCAN_SIGN">✍️ สแกนลายเซ็น</option>
+            <option value="SCAN_TEST">📝 บันทึกคะแนนสอบ</option>
+            <option value="GPS_CHECKIN">📍 เช็คอิน GPS</option>
             <option value="STREAK_BONUS">🔥 โบนัส Streak</option>
-            <option value="MANUAL_DEDUCT">⛔ หักแต้มพิเศษ</option>
+            <option value="COUPON">🎟️ กรอกคูปอง</option>
+            <option value="BUY_CHAPTER_SCORE">🔄 แลกคะแนน</option>
+            <option value="ONLINE_WATCH">🎬 ดูวิดีโอออนไลน์</option>
+            <option value="ONLINE_SIGN">📤 ส่งงานออนไลน์</option>
+            <option value="ONLINE_TEST">🧪 สอบออนไลน์</option>
+            <option value="RUN_SESSION">🏃 วิ่งแลกแต้มวิ่ง</option>
+            <option value="RUN_EXCHANGE">🔄 แลกแต้มวิ่ง</option>
+            <option value="COMPANION_HATCH">🥚 ฟักไข่คู่หู</option>
+            <option value="COMPANION_LEVELUP">⭐ คู่หูเลเวลอัป</option>
             <option value="MANUAL_AWARD">🎁 ให้แต้มพิเศษ</option>
+            <option value="MANUAL_DEDUCT">⛔ หักแต้มพิเศษ</option>
           </select>
           <select id="histClass" class="field"></select>
           <input type="date" id="histDateFrom" class="field">
@@ -1185,17 +1211,17 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   </div>
 
   <nav class="bottom-nav">
-    <button class="nav-btn active" onclick="switchTeacherTab('scan', this)">
-      <i class="fa-solid fa-bolt"></i> สแกน
+    <button class="nav-btn active" onclick="switchTeacherTab('overview', this)">
+      <i class="fa-solid fa-gauge-high"></i> ภาพรวม
     </button>
-    <button class="nav-btn" onclick="switchTeacherTab('att', this)">
-      <i class="fa-solid fa-clipboard-check"></i> เช็คชื่อ
+    <button class="nav-btn" onclick="switchTeacherTab('scan', this)">
+      <i class="fa-solid fa-bolt"></i> สแกน
     </button>
     <button class="nav-btn" onclick="switchTeacherTab('score', this)">
       <i class="fa-solid fa-table"></i> คะแนน
     </button>
     <button class="nav-btn" onclick="switchTeacherTab('history', this)">
-      <i class="fa-solid fa-clock-rotate-left"></i> ประวัติ
+      <i class="fa-solid fa-clock-rotate-left"></i> บันทึก
     </button>
     <button class="nav-btn" onclick="switchTeacherTab('stu', this)">
       <i class="fa-solid fa-users"></i> นร.
@@ -1233,6 +1259,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   let cachedRoster         = [];
   let currentLoggedStudentId = "";
   let studentDashboardData = null;
+  // วิชา/ชั้นที่ครูเลือกไว้ล่าสุด ใช้ตั้งค่าเริ่มต้นให้ dropdown ทุกแท็บ (สแกน/คะแนน/เช็คชื่อ) จะได้ไม่ต้องเลือกซ้ำทุกครั้งที่สลับแท็บ
+  let sharedTeacherSubject = '';
+  let sharedTeacherClass   = '';
 
   // แปลงวันที่เป็น string "YYYY-MM-DD" ตาม local time ของเครื่อง (ห้ามใช้ .valueAsDate เพราะมันแปลงผ่าน UTC เสมอ
   // ซึ่งจะทำให้วันที่เพี้ยนไปวันก่อนหน้าตอนช่วงเที่ยงคืนถึงก่อน 7 โมงเช้าเวลาไทย เพราะ UTC ยังเป็นเมื่อวานอยู่)
@@ -1246,7 +1275,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     applyDarkModePreference();
 
     const todayStr = localDateStr_(new Date());
-    ['logDateFrom','logDateTo','histDateFrom','histDateTo'].forEach(id => {
+    ['histDateFrom','histDateTo'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = todayStr;
     });
@@ -1372,13 +1401,14 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     if (name === 'companion') loadCompanionTab();
   }
 
-  // สลับแท็บของฝั่งครู (สแกน/ประวัติเช็คชื่อ/คะแนน/ประวัติกิจกรรม/รายชื่อ)
+  // สลับแท็บของฝั่งครู (ภาพรวม/สแกน/คะแนน/บันทึก/รายชื่อ)
   function switchTeacherTab(name, btn) {
     document.querySelectorAll('#teacherSection .tab-panel').forEach(p => p.classList.remove('active'));
     document.getElementById('tTab-' + name).classList.add('active');
     document.querySelectorAll('#teacherSection .bottom-nav .nav-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('scanSelectorStrip').style.display = 'block';
+    if (name === 'overview') loadTeacherOverview();
   }
 
   // ─── META CONFIG ────────────────────────────────────────────
@@ -1391,6 +1421,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   }
 
   // เติมตัวเลือกชั้นเรียน/วิชาในลิสต์ dropdown ต่างๆ ตามค่า meta ที่โหลดมา
+  // พร้อมตั้งค่าเริ่มต้นจาก sharedTeacherSubject/Class (ถ้าเคยเลือกไว้จากแท็บอื่นมาก่อน) และผูก onchange ให้ sync ข้ามแท็บ
   function populateSelects() {
     const cHtml    = metaData.classes.map(c  => `<option value="${c.code}">${c.label}</option>`).join('');
     const sHtml    = metaData.subjects.map(s  => `<option value="${s.code}">${s.label}</option>`).join('');
@@ -1401,13 +1432,84 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
     set('activeSubjSelect',  sHtml);
     set('activeClassSelect', cHtml);
-    set('logSubject',        sAllHtml);
-    set('logClass',          cAllHtml);
     set('vSubject',          sHtml);
     set('vSubClass',         cHtml);
     set('histClass',         cAllHtml);
     set('stuFilterClass',    cAllHtml);
     set('newStuClass',       cHtml);
+
+    syncTeacherSelectorState_();
+    bindTeacherSelectorSync_();
+  }
+
+  // ตั้งค่า dropdown วิชา/ชั้นทุกแท็บให้ตรงกับค่าที่ครูเลือกไว้ล่าสุด (ถ้ามี) — เรียกตอน populate ครั้งแรกและทุกครั้งที่ครูเปลี่ยนค่า
+  function syncTeacherSelectorState_() {
+    const subjIds  = ['activeSubjSelect', 'vSubject'];
+    const classIds = ['activeClassSelect', 'vSubClass', 'histClass', 'stuFilterClass'];
+    if (sharedTeacherSubject) subjIds.forEach(id  => { const el = document.getElementById(id); if (el && [...el.options].some(o => o.value === sharedTeacherSubject)) el.value = sharedTeacherSubject; });
+    if (sharedTeacherClass)   classIds.forEach(id => { const el = document.getElementById(id); if (el && [...el.options].some(o => o.value === sharedTeacherClass))   el.value = sharedTeacherClass; });
+  }
+
+  // ผูก onchange ของทุก dropdown วิชา/ชั้นฝั่งครู ให้อัปเดต state กลาง แล้ว sync กลับไปแท็บอื่นทันที (กันครูต้องเลือกซ้ำทุกครั้งที่สลับแท็บ)
+  function bindTeacherSelectorSync_() {
+    const subjIds  = ['activeSubjSelect', 'vSubject'];
+    const classIds = ['activeClassSelect', 'vSubClass', 'histClass', 'stuFilterClass'];
+    subjIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && !el.dataset.syncBound) {
+        el.dataset.syncBound = '1';
+        el.addEventListener('change', () => { sharedTeacherSubject = el.value; syncTeacherSelectorState_(); });
+      }
+    });
+    classIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && !el.dataset.syncBound) {
+        el.dataset.syncBound = '1';
+        el.addEventListener('change', () => { sharedTeacherClass = el.value; syncTeacherSelectorState_(); });
+      }
+    });
+
+    // บทเรียนของวิชา/ชั้นนี้อาจไม่เท่ากับวิชา/ชั้นอื่น ต้องโหลดจำนวนบทใหม่ทุกครั้งที่เปลี่ยนวิชาหรือชั้นในแท็บสแกน
+    ['activeSubjSelect', 'activeClassSelect'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && !el.dataset.chapterBound) {
+        el.dataset.chapterBound = '1';
+        el.addEventListener('change', refreshChapterButtons_);
+      }
+    });
+    refreshChapterButtons_();
+  }
+
+  // แสดงปุ่มเลือกบทเรียนแทนช่องกรอกตัวเลข แถวละ 5 ปุ่ม ตามจำนวนบทจริงของวิชา+ชั้นที่เลือกอยู่
+  function renderChapterButtons_(totalChapters, selected) {
+    const grid = document.getElementById('chapterButtonGrid');
+    if (!grid) return;
+    selected = Math.min(Math.max(1, selected || 1), totalChapters);
+    document.getElementById('activeChapterInput').value = selected;
+    grid.innerHTML = Array.from({ length: totalChapters }, (_, i) => i + 1).map(n => `
+      <button type="button" class="chapter-btn${n === selected ? ' active' : ''}" onclick="selectChapter_(${n})">${n}</button>
+    `).join('');
+  }
+
+  // ครูกดเลือกบทเรียนจากปุ่ม — อัปเดตค่าจริง (hidden input) และ highlight ปุ่มที่เลือก
+  function selectChapter_(n) {
+    document.getElementById('activeChapterInput').value = n;
+    document.querySelectorAll('#chapterButtonGrid .chapter-btn').forEach((btn, i) => {
+      btn.classList.toggle('active', i + 1 === n);
+    });
+  }
+
+  // โหลดจำนวนบทเรียนจริงของวิชา+ชั้นที่เลือกอยู่ในแท็บสแกน แล้ววาดปุ่มใหม่ (บทเรียนอาจไม่เท่ากันในแต่ละวิชา/ชั้น)
+  function refreshChapterButtons_() {
+    const subj = document.getElementById('activeSubjSelect')?.value;
+    const cls  = document.getElementById('activeClassSelect')?.value;
+    if (!subj || !cls) return;
+    google.script.run.withSuccessHandler(res => {
+      renderChapterButtons_(res.totalChapters, parseInt(document.getElementById('activeChapterInput').value) || 1);
+    }).withFailureHandler(err => {
+      console.error('getChapterCount failed:', err);
+      renderChapterButtons_(10, 1);
+    }).getChapterCount(subj, cls);
   }
 
   // ─── BOOT TEACHER ───────────────────────────────────────────
@@ -1415,6 +1517,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   function bootTeacher() {
     document.getElementById('teacherSection').classList.remove('hidden');
     document.getElementById('scanSelectorStrip').style.display = 'block';
+    loadTeacherOverview(); // แท็บแรกที่ครูเห็นตอนล็อกอินคือ "ภาพรวม" ต้องโหลดเองตอนบูต ไม่รอ click nav
 
     google.script.run.withSuccessHandler(s => {
       document.getElementById('teacherStatsLine').innerText = `นักเรียนทั้งหมด ${s.totalStudents} คน`;
@@ -1440,8 +1543,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // เตรียมข้อมูลเริ่มต้นทั้งหมดของฝั่งนักเรียนหลังล็อกอินสำเร็จ (โหลดแดชบอร์ด/บัตร/คู่หู)
   // เช็คว่ามีรายการให้/หักแต้มพิเศษใหม่ที่นักเรียนยังไม่เคยเห็นไหม (เทียบกับ timestamp ล่าสุดที่เคยเห็นซึ่งเก็บไว้ในเครื่อง)
   // ถ้ามี แสดง popup แจ้งเหตุผลทีละรายการ เรียงจากเก่าไปใหม่ (สีเขียว=ได้แต้ม / สีแดง=ถูกหัก)
-  function checkManualPointNotices(stdId) {
-    google.script.run.withSuccessHandler(list => {
+  // [Perf] preloadedList: ถ้ามีอยู่แล้ว (เช่นมาจาก getStudentBootBundle_ ตอน login) ไม่ต้องยิง google.script.run ซ้ำ
+  function checkManualPointNotices(stdId, preloadedList) {
+    const handle = (list) => {
       if (!list || list.length === 0) return;
       const seenKey  = 'manualPtsSeen_' + stdId;
       const lastSeen = parseInt(localStorage.getItem(seenKey) || '0');
@@ -1473,17 +1577,32 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         }).then(() => { i++; showNext(); });
       }
       showNext();
-    }).getStudentManualPointNotices(stdId);
+    };
+
+    if (preloadedList !== undefined) { handle(preloadedList); return; }
+    google.script.run.withSuccessHandler(handle).getStudentManualPointNotices(stdId);
   }
 
+  // [Perf] เดิมยิง google.script.run แยกกัน 5 ครั้งตอน login (dashboard, แต้มพิเศษ, แจ้งเตือนแต้มจากครู, แต้มวิ่ง, คู่หู)
+  // แต่ละครั้งมี cold-start ของ Apps Script เอง — รวมเป็น getStudentBootBundle_ เดียว แล้วกระจายผลลัพธ์ให้ทุก UI ส่วนที่ต้องใช้
   function bootStudent(stdId) {
     currentLoggedStudentId = stdId;
     document.getElementById('studentSection').classList.remove('hidden');
-    refreshPointsBalance();
-    checkManualPointNotices(stdId);
-    refreshRunSummary_();
 
-    google.script.run.withSuccessHandler(d => {
+    google.script.run.withSuccessHandler(bundle => {
+      // แต้มพิเศษ
+      document.getElementById('stdPointsDisplay').innerHTML = `${bundle.pointsBalance} <small>แต้ม</small>`;
+      const cp = document.getElementById('cardPoints');
+      if (cp) cp.innerText = bundle.pointsBalance;
+
+      // แจ้งเตือนแต้มจากครู (ใช้ list ที่มากับ bundle แล้ว ไม่ต้องยิงซ้ำ)
+      checkManualPointNotices(stdId, bundle.manualNotices);
+
+      // สรุปการวิ่งสะสม
+      const rs = document.getElementById('runSummaryText');
+      if (rs) rs.innerText = `สะสม ${bundle.runningBalance.totalMeters} เมตร · ${bundle.runningBalance.totalSteps || 0} ก้าว · ${bundle.runningBalance.totalPoints} แต้มวิ่ง`;
+
+      const d = bundle.dashboard;
       studentDashboardData = d;
 
       document.getElementById('sNameDisplay').innerText = d.name;
@@ -1582,13 +1701,16 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       // ผลการเรียน
       renderGradeCards(d);
 
+      // คู่หู + การวิ่ง ในบัตรประจำตัว (ใช้ข้อมูลที่มากับ bundle แล้ว ไม่ต้องยิงซ้ำ)
+      loadCardCompanionRun_(stdId, { companion: bundle.companion, running: bundle.runningBalance });
+
     }).withFailureHandler(err => {
-      console.error('getStudentDashboard (boot) failed:', err);
+      console.error('getStudentBootBundle_ (boot) failed:', err);
       Swal.fire({
         title: 'โหลดข้อมูลไม่สำเร็จ', text: 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง',
         icon: 'error', confirmButtonText: 'ลองใหม่'
       }).then(() => bootStudent(stdId));
-    }).getStudentDashboard(stdId);
+    }).getStudentBootBundle_(stdId);
   }
 
   // วาดการ์ดผลการเรียนของนักเรียน (ใช้ทั้งตอน boot และตอน refresh หลังแลกแต้มเป็นคะแนนเก็บ)
@@ -1646,6 +1768,52 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           </div>
         </div>`;
     });
+  }
+
+  // ดึงข้อมูลคู่หู+การวิ่งมาแสดงในบัตรประจำตัว (แยกจาก getStudentDashboard เพราะเป็นคนละระบบ/คนละชีต)
+  // [Perf] preloaded: ถ้ามีอยู่แล้ว (เช่นมาจาก getStudentBootBundle_ ตอน login) ใช้ตรงๆ ไม่ต้องยิงซ้ำ
+  function loadCardCompanionRun_(stdId, preloaded) {
+    const cont = document.getElementById('cardCompanionRun');
+    if (!cont) return;
+
+    if (preloaded) { renderCardCompanionRun_(cont, preloaded); return; }
+
+    let pending = 2;
+    const results = {};
+    const done = () => { if (--pending === 0) renderCardCompanionRun_(cont, results); };
+
+    google.script.run.withSuccessHandler(c => { results.companion = c; done(); })
+      .withFailureHandler(err => { console.error('getCompanionData (card) failed:', err); results.companion = null; done(); })
+      .getCompanionData(stdId);
+
+    google.script.run.withSuccessHandler(r => { results.running = r; done(); })
+      .withFailureHandler(err => { console.error('getRunningPointsBalance (card) failed:', err); results.running = null; done(); })
+      .getRunningPointsBalance(stdId);
+  }
+
+  function renderCardCompanionRun_(cont, results) {
+    const companion = results.companion;
+    const running = results.running || { totalPoints: 0, totalMeters: 0, totalSteps: 0 };
+
+    const companionHtml = companion ? `
+      <div style="display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.08); border-radius:10px; padding:10px;">
+        <div style="font-size:1.6rem;">${companion.isEgg ? '🥚' : companion.petEmoji}</div>
+        <div style="flex:1; color:#fff;">
+          <div style="font-weight:700; font-size:0.8rem;">${companion.isEgg ? 'ยังไม่ฟักไข่' : `${companion.petName || 'คู่หู'} · Lv.${companion.level} ${companion.stage}`}</div>
+          <div style="font-size:0.68rem; color:rgba(255,255,255,0.6);">${companion.isEgg ? '' : `⭐ EXP ${companion.currentExp}/${companion.expTarget} · `}🎟️ ${companion.tickets} ตั๋ว</div>
+        </div>
+      </div>` : '';
+
+    const runHtml = `
+      <div style="display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.08); border-radius:10px; padding:10px;">
+        <div style="font-size:1.6rem;">🏃</div>
+        <div style="flex:1; color:#fff;">
+          <div style="font-weight:700; font-size:0.8rem;">วิ่งสะสม ${running.totalMeters} เมตร</div>
+          <div style="font-size:0.68rem; color:rgba(255,255,255,0.6);">${running.totalPoints} แต้มวิ่ง · ${running.totalSteps || 0} ก้าว</div>
+        </div>
+      </div>`;
+
+    cont.innerHTML = companionHtml + runHtml;
   }
 
   // โหลดข้อมูลแดชบอร์ดใหม่แบบเงียบๆ (ไม่วาด QR/บัตร/ฉายาใหม่) ใช้หลัง action ที่กระทบคะแนนเก็บ เช่นแลกแต้ม
@@ -1841,43 +2009,104 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     startScanner();
   }
 
-  // ─── ATTENDANCE ─────────────────────────────────────────────
-  // โหลดประวัติการเช็คชื่อตามตัวกรองที่ครูเลือกมาแสดงเป็นตาราง
-  function loadAttendanceLog() {
-    const f = {
-      cls:      document.getElementById('logClass').value,
-      subject:  document.getElementById('logSubject').value,
-      dateFrom: document.getElementById('logDateFrom').value,
-      dateTo:   document.getElementById('logDateTo').value
-    };
-    document.getElementById('logTableBody').innerHTML = '<tr><td colspan="6">กำลังโหลด...</td></tr>';
-    google.script.run.withSuccessHandler(list => {
-      document.getElementById('logTableBody').innerHTML = list.map(l => `
-        <tr>
-          <td>${l.date}</td>
-          <td style="text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px;">${l.name}</td>
-          <td>${l.clsLabel}</td>
-          <td>${l.subjectLabel}</td>
-          <td><span class="grade-badge ${l.status === 'present' ? 'g-hi' : l.status === 'absent' ? 'g-lo' : 'g-mid'}">${l.statusLabel}</span></td>
-          <td><button class="btn btn-danger-soft btn-sm" style="padding:6px 10px;" onclick="deleteLogRow(${l.sheetRow},this)"><i class="fa-solid fa-trash"></i></button></td>
-        </tr>`).join('');
-      if (!list.length) document.getElementById('logTableBody').innerHTML = '<tr><td colspan="6">ไม่พบข้อมูล</td></tr>';
-    }).getAttendanceLog(f);
+  // ─── OVERVIEW ───────────────────────────────────────────────
+  // แท็บแรกที่ครูเห็นตอนเปิดแอป: สรุปสิ่งที่ควรรู้/ควรทำ แทนที่จะต้องไล่หาเองในแท็บอื่น
+  function loadTeacherOverview() {
+    const cont = document.getElementById('overviewContainer');
+    cont.innerHTML = '<div style="text-align:center; color:var(--slate); padding:24px;">กำลังโหลด...</div>';
+    google.script.run.withSuccessHandler(ov => {
+      const cards = [];
+
+      cards.push(`
+        <div class="card card-pad" style="margin-bottom:12px; cursor:pointer;" onclick="showInactiveStudents_()">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div style="width:48px; height:48px; border-radius:14px; background:${ov.inactiveStudents.length ? 'rgba(255,92,151,0.15)' : 'rgba(82,196,26,0.12)'}; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
+              ${ov.inactiveStudents.length ? '😴' : '✅'}
+            </div>
+            <div style="flex:1;">
+              <div style="font-weight:700;">นักเรียนเงียบหายไป ${ov.inactiveStudents.length} คน</div>
+              <div style="font-size:0.78rem; color:var(--slate);">ไม่มีความเคลื่อนไหวในช่วง ${ov.inactiveWindowDays} วันล่าสุด</div>
+            </div>
+            <i class="fa-solid fa-chevron-right" style="color:var(--mist);"></i>
+          </div>
+        </div>`);
+
+      cards.push(`
+        <div class="card card-pad" style="margin-bottom:12px; cursor:pointer;" onclick="openSubmissionReviewModal()">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div style="width:48px; height:48px; border-radius:14px; background:${ov.pendingSubmissions ? 'rgba(255,201,60,0.18)' : 'rgba(82,196,26,0.12)'}; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
+              ${ov.pendingSubmissions ? '📥' : '✅'}
+            </div>
+            <div style="flex:1;">
+              <div style="font-weight:700;">งานส่งออนไลน์รอตรวจ ${ov.pendingSubmissions} ชิ้น</div>
+              <div style="font-size:0.78rem; color:var(--slate);">แตะเพื่อเปิดหน้าตรวจงาน</div>
+            </div>
+            <i class="fa-solid fa-chevron-right" style="color:var(--mist);"></i>
+          </div>
+        </div>`);
+
+      cards.push(`
+        <div class="card card-pad" style="margin-bottom:12px; cursor:pointer;" onclick="showStuckRunSessions_()">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div style="width:48px; height:48px; border-radius:14px; background:${ov.stuckRunSessions.length ? 'rgba(255,92,151,0.15)' : 'rgba(82,196,26,0.12)'}; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
+              ${ov.stuckRunSessions.length ? '⏱️' : '✅'}
+            </div>
+            <div style="flex:1;">
+              <div style="font-weight:700;">เซสชันวิ่งค้าง ${ov.stuckRunSessions.length} รายการ</div>
+              <div style="font-size:0.78rem; color:var(--slate);">ค้างจากวันก่อนหน้า ยังไม่ถูกปิด</div>
+            </div>
+            <i class="fa-solid fa-chevron-right" style="color:var(--mist);"></i>
+          </div>
+        </div>`);
+
+      // สรุปกิจกรรมวันนี้ แยกตามประเภท — ครอบคลุมทุกอย่างที่เกิดขึ้นจริง (สแกน/เช็คอิน/คูปอง/เรียนออนไลน์/คู่หู/วิ่ง ฯลฯ) ไม่ใช่แค่ 3 การ์ดข้อยกเว้นด้านบน
+      let activityHtml;
+      if (!ov.todayActivity.length) {
+        activityHtml = `<div style="text-align:center; color:var(--slate); padding:20px;">ยังไม่มีกิจกรรมวันนี้</div>`;
+      } else {
+        activityHtml = `
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            ${ov.todayActivity.map(t => `
+              <div style="background:var(--cloud); border-radius:12px; padding:10px 12px;">
+                <div style="font-size:0.8rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${t.label}</div>
+                <div style="font-size:0.72rem; color:var(--slate); margin-top:2px;">${t.count} ครั้ง${t.points ? ` · ${t.points > 0 ? '+' : ''}${t.points} ${t.unit}` : ''}</div>
+              </div>`).join('')}
+          </div>`;
+      }
+
+      cards.push(`
+        <div class="section-label" style="margin:18px 0 10px;">สรุปกิจกรรมวันนี้ (${ov.todayTotalEvents} รายการ)</div>
+        <div class="card card-pad" style="margin-bottom:12px;">${activityHtml}</div>`);
+
+      cont.innerHTML = cards.join('');
+      window._teacherOverviewData = ov; // เก็บไว้ให้ popup รายชื่อด้านล่างใช้ ไม่ต้องยิงซ้ำ
+    }).withFailureHandler(err => {
+      console.error('getTeacherOverview failed:', err);
+      cont.innerHTML = '<div style="text-align:center; color:var(--coral); padding:24px;">โหลดไม่สำเร็จ กรุณาลองใหม่อีกครั้ง</div>';
+    }).getTeacherOverview();
   }
 
-  // ลบแถวประวัติการเช็คชื่อหนึ่งแถว (ยืนยันก่อนลบ)
-  function deleteLogRow(row, btn) {
-    Swal.fire({ title: 'ลบรายการนี้?', icon: 'warning', showCancelButton: true }).then(r => {
-      if (r.isConfirmed) {
-        google.script.run.withSuccessHandler(m => { Toast(m.message); btn.closest('tr').remove(); })
-          .withFailureHandler(err => { console.error('deleteAttendanceRow failed:', err); Swal.fire('ลบไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error'); })
-          .deleteAttendanceRow(row);
-      }
-    });
+  function showInactiveStudents_() {
+    const list = (window._teacherOverviewData?.inactiveStudents) || [];
+    const html = list.length
+      ? list.map(s => `<div style="text-align:left; padding:6px 0; border-bottom:1px solid var(--mist);">${s.name} <span style="color:var(--slate); font-size:0.8rem;">(${s.clsLabel})</span></div>`).join('')
+      : '<div style="color:var(--slate);">ไม่มี — ทุกคนมีความเคลื่อนไหวล่าสุด 🎉</div>';
+    Swal.fire({ title: '😴 นักเรียนเงียบหายไป', html: `<div style="max-height:300px; overflow-y:auto;">${html}</div>`, confirmButtonText: 'ปิด' });
+  }
+
+  function showStuckRunSessions_() {
+    const list = (window._teacherOverviewData?.stuckRunSessions) || [];
+    const html = list.length
+      ? list.map(s => `<div style="text-align:left; padding:6px 0; border-bottom:1px solid var(--mist);">${s.name} <span style="color:var(--slate); font-size:0.8rem;">(ค้างจาก ${s.dateKey})</span></div>`).join('')
+      : '<div style="color:var(--slate);">ไม่มี — ไม่มีเซสชันค้าง 🎉</div>';
+    Swal.fire({ title: '⏱️ เซสชันวิ่งค้าง', html: `<div style="max-height:300px; overflow-y:auto;">${html}</div>`, confirmButtonText: 'ปิด' });
   }
 
   // ─── SCORE TABLE ────────────────────────────────────────────
   // โหลดตารางคะแนนของวิชา+ชั้นที่เลือกมาแสดงให้ครูแก้ไข
+  // สถานะของแท็บคะแนน: มุมมองที่เลือกอยู่ (คะแนนเก็บ/ปลายภาค/รวม/เกรด), บทที่เลือก (เฉพาะมุมมองคะแนนเก็บ), และข้อมูลทั้งห้องที่โหลดไว้ในเครื่อง
+  let scoreViewState = { view: 'collect', chapter: 1, data: null, totalChapters: 1, subj: '', cls: '' };
+
   function viewClassScores() {
     const s = document.getElementById('vSubject').value;
     const c = document.getElementById('vSubClass').value;
@@ -1885,39 +2114,142 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     document.getElementById('scoreTableBody').innerHTML = '<tr><td colspan="3">กำลังดึงคะแนน...</td></tr>';
     google.script.run.withSuccessHandler(res => {
       if (!res.success || res.data.length === 0) {
+        scoreViewState.data = null;
         document.getElementById('scoreTableBody').innerHTML = '<tr><td colspan="3">ไม่มีข้อมูล</td></tr>';
+        document.getElementById('scoreSummaryCard').style.display = 'none';
+        document.getElementById('scoreChapterPicker').style.display = 'none';
         return;
       }
-      let ths = '<tr><th>รหัส</th><th>ชื่อ-สกุล</th>';
-      for (let i = 1; i <= res.totalChapters; i++) {
-        ths += `<th>บท ${i}<br><small style="font-weight:400; color:var(--slate);">เซ็น / งาน / สอบ</small></th>`;
-      }
-      ths += '<th>เก็บ<br>70%</th><th>ปลายภาค<br>30%</th><th>รวม<br>100</th><th>เกรด</th></tr>';
-      document.getElementById('scoreHead').innerHTML = ths;
-
-      document.getElementById('scoreTableBody').innerHTML = res.data.map(std => {
-        let tds = `<td><b>${std.id}</b></td><td style="text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:110px;">${std.name}</td>`;
-        std.chapters.forEach(ch => {
-          tds += `<td style="background:var(--cloud); white-space:nowrap;">
-            <input class="cell-input" title="✍️ แต้มเซ็น" value="${ch.sig}" onchange="editScoreCell('${s}','${c}','${std.id}','${std.name}',${ch.ch},'sig',this.value)">
-            /<span id="work-${s}-${c}-${std.id}-${ch.ch}" style="color:var(--amber2); font-weight:700;" title="📊 คะแนนงาน (คำนวณอัตโนมัติ)">${ch.work}</span>
-            /<input class="cell-input" title="🎯 คะแนนสอบ" value="${ch.test}" onchange="editScoreCell('${s}','${c}','${std.id}','${std.name}',${ch.ch},'test',this.value)">
-          </td>`;
-        });
-        tds += `<td><b id="norm70-${s}-${c}-${std.id}">${std.norm70}</b></td>
-                <td><input class="cell-input" style="background:#E3F2FD; font-weight:700;" title="คะแนนปลายภาค" value="${std.finalExam}" onchange="editScoreCell('${s}','${c}','${std.id}','${std.name}',1,'final',this.value)"></td>
-                <td><b id="total100-${s}-${c}-${std.id}" style="color:var(--teal2);">${std.total100}</b></td>
-                <td><span id="grade-${s}-${c}-${std.id}" class="grade-badge ${std.grade >= 3 ? 'g-hi' : std.grade <= 1.5 ? 'g-lo' : 'g-mid'}">เกรด ${std.grade}</span></td>`;
-        return `<tr>${tds}</tr>`;
-      }).join('');
+      scoreViewState.subj = s;
+      scoreViewState.cls = c;
+      scoreViewState.data = res.data;
+      scoreViewState.totalChapters = res.totalChapters;
+      scoreViewState.chapter = Math.min(scoreViewState.chapter, res.totalChapters);
+      renderScoreView_();
     }).withFailureHandler(err => {
       console.error('getClassScoreData failed:', err);
       document.getElementById('scoreTableBody').innerHTML = '<tr><td colspan="3">โหลดไม่สำเร็จ กรุณาลองใหม่</td></tr>';
     }).getClassScoreData(s, c);
   }
 
-  // แก้ไขคะแนนช่องใดช่องหนึ่งในตาราง แล้วส่งค่าใหม่ไปบันทึกที่ backend
-  // [Perf] ปกติ backend จะ recalc แค่แถวเดียวและส่งค่ากลับมา -> อัปเดตเฉพาะแถวนี้ในตาราง ไม่ต้องโหลดทั้งตารางใหม่
+  // สลับมุมมองคะแนนเก็บ/ปลายภาค/รวม/เกรด — แต่ละมุมมองแสดงแค่คอลัมน์ที่เกี่ยวข้อง ไม่ต้องเลื่อนจอ
+  function switchScoreView_(view) {
+    scoreViewState.view = view;
+    ['collect', 'final', 'total', 'grade'].forEach(v => {
+      const btn = document.getElementById(`scoreViewBtn-${v}`);
+      if (!btn) return;
+      if (v === view) { btn.className = 'btn btn-sm btn-teal'; btn.style.cssText = 'flex:1; min-width:64px;'; }
+      else { btn.className = 'btn btn-sm'; btn.style.cssText = 'flex:1; min-width:64px; background:var(--mist); color:var(--ink);'; }
+    });
+    renderScoreView_();
+  }
+
+  // ครูกดเลือกบทเรียนในมุมมอง "คะแนนเก็บ" (มีเฉพาะมุมมองนี้ที่แยกตามบท มุมมองอื่นเป็นภาพรวมทั้งเทอมอยู่แล้ว)
+  function selectScoreChapter_(n) {
+    scoreViewState.chapter = n;
+    renderScoreView_();
+  }
+
+  // วาดตาราง+สรุปตามมุมมองปัจจุบัน จากข้อมูลที่โหลดไว้ในเครื่องแล้ว (scoreViewState.data) ไม่ต้องยิง request ใหม่ทุกครั้งที่สลับมุมมอง/บท
+  function renderScoreView_() {
+    const data = scoreViewState.data;
+    const picker = document.getElementById('scoreChapterPicker');
+    const summary = document.getElementById('scoreSummaryCard');
+    const head = document.getElementById('scoreHead');
+    const body = document.getElementById('scoreTableBody');
+    if (!data) return;
+    const s = scoreViewState.subj, c = scoreViewState.cls;
+    const nameCell = name => `<td style="text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px;">${name}</td>`;
+
+    if (scoreViewState.view === 'collect') {
+      picker.style.display = 'block';
+      document.getElementById('scoreChapterGrid').innerHTML = Array.from({ length: scoreViewState.totalChapters }, (_, i) => i + 1).map(n =>
+        `<button type="button" class="chapter-btn${n === scoreViewState.chapter ? ' active' : ''}" onclick="selectScoreChapter_(${n})">${n}</button>`
+      ).join('');
+
+      const ch = scoreViewState.chapter;
+      let sigSum = 0, workSum = 0, testSum = 0, totalSum = 0, zeroCount = 0;
+      data.forEach(std => {
+        const cd = std.chapters.find(x => x.ch === ch) || { sig: 0, work: 0, test: 0, total: 0 };
+        sigSum += Number(cd.sig) || 0; workSum += Number(cd.work) || 0; testSum += Number(cd.test) || 0; totalSum += Number(cd.total) || 0;
+        if (!cd.sig && !cd.test) zeroCount++;
+      });
+      const n = data.length || 1;
+      summary.style.display = 'block';
+      summary.innerHTML = `
+        <div style="font-weight:700; margin-bottom:8px;">สรุปบทที่ ${ch}</div>
+        <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:8px; font-size:0.82rem;">
+          <div>เซ็นเฉลี่ย: <b>${(sigSum / n).toFixed(1)}</b></div>
+          <div>งานเฉลี่ย: <b>${(workSum / n).toFixed(1)}</b></div>
+          <div>สอบเฉลี่ย: <b>${(testSum / n).toFixed(1)}</b></div>
+          <div>รวมเฉลี่ย: <b>${(totalSum / n).toFixed(1)}</b>/20</div>
+        </div>
+        ${zeroCount ? `<div style="margin-top:8px; color:var(--coral); font-size:0.8rem;">⚠️ ยังไม่มีคะแนนบทนี้ ${zeroCount} คน</div>` : ''}`;
+
+      head.innerHTML = `<tr><th>รหัส</th><th>ชื่อ-สกุล</th><th>เซ็น</th><th>งาน</th><th>สอบ</th><th>รวม</th></tr>`;
+      body.innerHTML = data.map(std => {
+        const cd = std.chapters.find(x => x.ch === ch) || { sig: 0, work: 0, test: 0, total: 0 };
+        return `<tr><td><b>${std.id}</b></td>${nameCell(std.name)}
+          <td><input class="cell-input" title="✍️ แต้มเซ็น" value="${cd.sig}" onchange="editScoreCell('${s}','${c}','${std.id}','${std.name}',${ch},'sig',this.value)"></td>
+          <td style="color:var(--amber2); font-weight:700;" title="📊 คำนวณอัตโนมัติ">${cd.work}</td>
+          <td><input class="cell-input" title="🎯 คะแนนสอบ" value="${cd.test}" onchange="editScoreCell('${s}','${c}','${std.id}','${std.name}',${ch},'test',this.value)"></td>
+          <td style="font-weight:700;">${cd.total}</td>
+        </tr>`;
+      }).join('');
+
+    } else if (scoreViewState.view === 'final') {
+      picker.style.display = 'none';
+      let sum = 0, zeroCount = 0;
+      data.forEach(std => { sum += Number(std.finalExam) || 0; if (!std.finalExam) zeroCount++; });
+      const n = data.length || 1;
+      summary.style.display = 'block';
+      summary.innerHTML = `
+        <div style="font-weight:700; margin-bottom:8px;">สรุปคะแนนปลายภาค</div>
+        <div style="font-size:0.82rem;">เฉลี่ย: <b>${(sum / n).toFixed(1)}</b>/30${zeroCount ? ` · ยังไม่กรอก ${zeroCount} คน` : ''}</div>`;
+
+      head.innerHTML = `<tr><th>รหัส</th><th>ชื่อ-สกุล</th><th>คะแนนปลายภาค (30)</th></tr>`;
+      body.innerHTML = data.map(std => `<tr><td><b>${std.id}</b></td>${nameCell(std.name)}
+        <td><input class="cell-input" style="background:#E3F2FD; font-weight:700;" title="คะแนนปลายภาค" value="${std.finalExam}" onchange="editScoreCell('${s}','${c}','${std.id}','${std.name}',1,'final',this.value)"></td>
+      </tr>`).join('');
+
+    } else if (scoreViewState.view === 'total') {
+      picker.style.display = 'none';
+      let sum = 0;
+      data.forEach(std => sum += Number(std.total100) || 0);
+      const n = data.length || 1;
+      const sorted = [...data].sort((a, b) => Number(b.total100) - Number(a.total100));
+      summary.style.display = 'block';
+      summary.innerHTML = `
+        <div style="font-weight:700; margin-bottom:8px;">สรุปคะแนนรวม</div>
+        <div style="font-size:0.82rem;">เฉลี่ย: <b>${(sum / n).toFixed(1)}</b>/100 · สูงสุด: <b>${sorted[0]?.total100 ?? '-'}</b> · ต่ำสุด: <b>${sorted[sorted.length - 1]?.total100 ?? '-'}</b></div>`;
+
+      head.innerHTML = `<tr><th>รหัส</th><th>ชื่อ-สกุล</th><th>เก็บ 70%</th><th>ปลายภาค 30%</th><th>รวม 100</th></tr>`;
+      body.innerHTML = data.map(std => `<tr><td><b>${std.id}</b></td>${nameCell(std.name)}
+        <td>${std.norm70}</td><td>${std.finalExam}</td>
+        <td style="font-weight:700; color:var(--teal2);">${std.total100}</td>
+      </tr>`).join('');
+
+    } else if (scoreViewState.view === 'grade') {
+      picker.style.display = 'none';
+      const dist = {};
+      data.forEach(std => { dist[std.grade] = (dist[std.grade] || 0) + 1; });
+      const gradeOrder = [4, 3.5, 3, 2.5, 2, 1.5, 1, 0];
+      summary.style.display = 'block';
+      summary.innerHTML = `
+        <div style="font-weight:700; margin-bottom:8px;">การแจกแจงเกรด</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px; font-size:0.8rem;">
+          ${gradeOrder.filter(g => dist[g]).map(g => `<span style="background:var(--cloud); padding:4px 10px; border-radius:999px;">เกรด ${g}: ${dist[g]} คน</span>`).join('')}
+        </div>`;
+
+      head.innerHTML = `<tr><th>รหัส</th><th>ชื่อ-สกุล</th><th>เกรด</th></tr>`;
+      body.innerHTML = data.map(std => `<tr><td><b>${std.id}</b></td>${nameCell(std.name)}
+        <td><span class="grade-badge ${std.grade >= 3 ? 'g-hi' : std.grade <= 1.5 ? 'g-lo' : 'g-mid'}">เกรด ${std.grade}</span></td>
+      </tr>`).join('');
+    }
+  }
+
+  // แก้ไขคะแนนช่องใดช่องหนึ่ง แล้วส่งค่าใหม่ไปบันทึกที่ backend
+  // [Perf] ปกติ backend จะ recalc แค่แถวเดียวและส่งค่ากลับมา -> แพตช์ข้อมูลในเครื่องแล้ววาดมุมมองปัจจุบันใหม่ ไม่ต้องโหลดทั้งตารางจาก server ใหม่
   // กรณีหายาก (แก้ 'sig' แล้วไปเปลี่ยนสถิติสูงสุดของห้อง) backend จะส่ง groupChanged:true กลับมา ค่อยโหลดทั้งตารางใหม่
   function editScoreCell(sub, cls, stdId, stdName, ch, field, val) {
     google.script.run.withSuccessHandler(res => {
@@ -1928,29 +2260,19 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         return;
       }
       Toast('บันทึกแล้ว');
-      applyScoreRowUpdate_(sub, cls, res.row);
+      applyScoreRowUpdate_(res.row);
     }).withFailureHandler(err => {
       console.error('updateStudentScoreCell failed:', err);
       Swal.fire('บันทึกไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองแก้คะแนนช่องนี้อีกครั้ง', 'error');
     }).updateStudentScoreCell(sub, cls, stdId, stdName, ch, field, val);
   }
 
-  // [Perf] อัปเดตแค่เซลล์ที่คำนวณใหม่ของแถวเดียว (คะแนนงานต่อบท/เก็บ70/รวม100/เกรด) โดยไม่ต้องโหลดตารางทั้งหมดใหม่
-  function applyScoreRowUpdate_(sub, cls, row) {
-    if (!row) return;
-    row.chapters.forEach(ch => {
-      const el = document.getElementById(`work-${sub}-${cls}-${row.id}-${ch.ch}`);
-      if (el) el.textContent = ch.work;
-    });
-    const norm = document.getElementById(`norm70-${sub}-${cls}-${row.id}`);
-    if (norm) norm.textContent = row.norm70;
-    const total = document.getElementById(`total100-${sub}-${cls}-${row.id}`);
-    if (total) total.textContent = row.total100;
-    const gradeEl = document.getElementById(`grade-${sub}-${cls}-${row.id}`);
-    if (gradeEl) {
-      gradeEl.textContent = `เกรด ${row.grade}`;
-      gradeEl.className = `grade-badge ${row.grade >= 3 ? 'g-hi' : row.grade <= 1.5 ? 'g-lo' : 'g-mid'}`;
-    }
+  // แพตช์ข้อมูลแถวนักเรียนใน state ที่โหลดไว้ในเครื่อง แล้ววาดมุมมองปัจจุบันใหม่ (ไม่ต้องดึงทั้งตารางจาก server ใหม่)
+  function applyScoreRowUpdate_(row) {
+    if (!row || !scoreViewState.data) return;
+    const idx = scoreViewState.data.findIndex(std => String(std.id) === String(row.id));
+    if (idx !== -1) scoreViewState.data[idx] = row;
+    renderScoreView_();
   }
 
   // ─── TEACHER HISTORY ────────────────────────────────────────
@@ -1972,13 +2294,14 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       }
       cont.innerHTML = list.map(item => {
         const typeClass =
-          ['GPS_CHECKIN','SCAN_ATTEND','SCAN_SIGN','STREAK_BONUS'].includes(item.actionType) ? 'history-type-checkin' :
-          item.actionType === 'COUPON' ? 'history-type-coupon' :
+          ['GPS_CHECKIN','SCAN_ATTEND','SCAN_SIGN','SCAN_TEST','STREAK_BONUS'].includes(item.actionType) ? 'history-type-checkin' :
+          ['COUPON','RUN_SESSION','RUN_EXCHANGE'].includes(item.actionType) ? 'history-type-coupon' :
           item.actionType === 'MANUAL_DEDUCT' ? 'history-type-deduct' :
-          item.actionType === 'MANUAL_AWARD'  ? 'history-type-award'  : 'history-type-buy';
+          ['MANUAL_AWARD','COMPANION_HATCH','COMPANION_LEVELUP'].includes(item.actionType) ? 'history-type-award'  : 'history-type-buy';
+        const unit = item.unit || 'แต้ม';
         const ptsHtml = item.points >= 0
-          ? `<div class="hi-pts plus">+${item.points}</div>`
-          : `<div class="hi-pts minus">${item.points}</div>`;
+          ? `<div class="hi-pts plus">+${item.points} <small style="font-weight:600;">${unit}</small></div>`
+          : `<div class="hi-pts minus">${item.points} <small style="font-weight:600;">${unit}</small></div>`;
         return `<div class="history-item ${typeClass}">
           <div class="hi-icon">${item.typeLabel.split(' ')[0]}</div>
           <div class="hi-body">
@@ -2019,67 +2342,105 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   }
 
   // เปิด modal แสดงข้อมูลโปรไฟล์/ผลการเรียนของนักเรียนคนใดคนหนึ่ง
+  // ดึงข้อมูลนักเรียนสำหรับบัตรประจำตัว 3 ทาง (แดชบอร์ด/คู่หู/วิ่ง) พร้อมกัน แล้วค่อยวาดครั้งเดียวเมื่อครบ
   function viewStudentProfile(stdId) {
     Swal.fire({ title: 'กำลังโหลด...', didOpen: () => Swal.showLoading() });
-    google.script.run.withSuccessHandler(d => {
-      if (!d || !d.found) { Swal.fire('ไม่พบข้อมูล', '', 'error'); return; }
+    const results = {};
+    let pending = 3;
+    const done = () => { if (--pending === 0) renderStudentProfile_(stdId, results); };
 
-      const ci = d.checkinStats || { checkinCount: 0, consecutiveDays: 0 };
-      const pd = d.potentialData || {};
+    google.script.run.withSuccessHandler(d => { results.dash = d; done(); })
+      .withFailureHandler(err => { console.error('getStudentDashboard (profile) failed:', err); results.dash = null; done(); })
+      .getStudentDashboard(stdId);
 
-      const gradeHtml = Object.values(d.subjects || {}).map(sub => {
-        const gc = parseFloat(sub.grade) >= 3 ? '#E63D7A' : parseFloat(sub.grade) <= 1.5 ? '#E0245E' : '#E0A800';
-        return `<div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #F5FAFF; font-size:0.83rem;">
-          <span style="color:#6E88A3;">${sub.label}</span>
-          <span style="font-weight:700; color:${gc};">เกรด ${sub.grade} <small style="opacity:0.65;">(${sub.total100} คะแนน)</small></span>
-        </div>`;
-      }).join('');
+    google.script.run.withSuccessHandler(c => { results.companion = c; done(); })
+      .withFailureHandler(err => { console.error('getCompanionData (profile) failed:', err); results.companion = null; done(); })
+      .getCompanionData(stdId);
 
-      const nickHtml = Object.values(d.classNicknames || {}).map(cat => {
-        const myRank = (cat.top3 || []).find(p => String(p.id) === String(stdId));
-        return myRank
-          ? `<span style="background:rgba(255,92,151,0.12); color:#E63D7A; padding:3px 10px; border-radius:999px; font-size:0.75rem; font-weight:700; margin:2px; display:inline-block;">${cat.icon} ${cat.label} อันดับ ${myRank.rank}</span>`
-          : '';
-      }).join('');
+    google.script.run.withSuccessHandler(r => { results.running = r; done(); })
+      .withFailureHandler(err => { console.error('getRunningPointsBalance (profile) failed:', err); results.running = null; done(); })
+      .getRunningPointsBalance(stdId);
+  }
 
-      Swal.fire({
-        html: `
-          <div style="text-align:left;">
-            <div style="background:linear-gradient(135deg,#123C69,#1D63A8); color:white; border-radius:16px; padding:18px 20px; margin-bottom:14px;">
-              <div style="font-size:0.65rem; color:#FF5C97; font-weight:700; letter-spacing:0.12em; margin-bottom:6px;">SMART CLASS · ประจำตัวนักเรียน</div>
-              <div style="font-size:1.3rem; font-weight:700; font-family:'Mitr',Prompt,sans-serif; line-height:1.2; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${d.name}</div>
-              <div style="font-size:0.82rem; color:rgba(255,255,255,0.55);">${d.clsLabel} &nbsp;·&nbsp; รหัส ${stdId}</div>
+  // วาดบัตรประจำตัวนักเรียน (Swal) จากผลลัพธ์ทั้ง 3 ทาง — เรียกเมื่อ viewStudentProfile โหลดครบแล้วเท่านั้น
+  function renderStudentProfile_(stdId, results) {
+    const d = results.dash;
+    if (!d || !d.found) { Swal.fire('ไม่พบข้อมูล', '', 'error'); return; }
+    const companion = results.companion;
+    const running = results.running || { totalPoints: 0, totalMeters: 0, totalSteps: 0 };
+
+    const ci = d.checkinStats || { checkinCount: 0, consecutiveDays: 0 };
+    const pd = d.potentialData || {};
+
+    const gradeHtml = Object.values(d.subjects || {}).map(sub => {
+      const gc = parseFloat(sub.grade) >= 3 ? '#E63D7A' : parseFloat(sub.grade) <= 1.5 ? '#E0245E' : '#E0A800';
+      return `<div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #F5FAFF; font-size:0.83rem;">
+        <span style="color:#6E88A3;">${sub.label}</span>
+        <span style="font-weight:700; color:${gc};">เกรด ${sub.grade} <small style="opacity:0.65;">(${sub.total100} คะแนน)</small></span>
+      </div>`;
+    }).join('');
+
+    const nickHtml = Object.values(d.classNicknames || {}).map(cat => {
+      const myRank = (cat.top3 || []).find(p => String(p.id) === String(stdId));
+      return myRank
+        ? `<span style="background:rgba(255,92,151,0.12); color:#E63D7A; padding:3px 10px; border-radius:999px; font-size:0.75rem; font-weight:700; margin:2px; display:inline-block;">${cat.icon} ${cat.label} อันดับ ${myRank.rank}</span>`
+        : '';
+    }).join('');
+
+    const companionHtml = companion ? `
+      <div style="display:flex; align-items:center; gap:10px; background:#F5FAFF; border-radius:10px; padding:10px; margin-bottom:8px;">
+        <div style="font-size:1.8rem;">${companion.isEgg ? '🥚' : companion.petEmoji}</div>
+        <div style="flex:1;">
+          <div style="font-weight:700; font-size:0.85rem;">${companion.isEgg ? 'ยังไม่ฟักไข่' : `${companion.petName || 'คู่หู'} · Lv.${companion.level} ${companion.stage}`}</div>
+          <div style="font-size:0.72rem; color:#6E88A3;">${companion.isEgg ? '' : `⭐ EXP ${companion.currentExp}/${companion.expTarget} · `}🎟️ ${companion.tickets} ตั๋ว</div>
+        </div>
+      </div>` : '';
+
+    const runHtml = `
+      <div style="display:flex; align-items:center; gap:10px; background:#F5FAFF; border-radius:10px; padding:10px; margin-bottom:12px;">
+        <div style="font-size:1.8rem;">🏃</div>
+        <div style="flex:1;">
+          <div style="font-weight:700; font-size:0.85rem;">วิ่งสะสม ${running.totalMeters} เมตร</div>
+          <div style="font-size:0.72rem; color:#6E88A3;">${running.totalPoints} แต้มวิ่ง · ${running.totalSteps || 0} ก้าว</div>
+        </div>
+      </div>`;
+
+    Swal.fire({
+      html: `
+        <div style="text-align:left;">
+          <div style="background:linear-gradient(135deg,#123C69,#1D63A8); color:white; border-radius:16px; padding:18px 20px; margin-bottom:14px;">
+            <div style="font-size:0.65rem; color:#FF5C97; font-weight:700; letter-spacing:0.12em; margin-bottom:6px;">SMART CLASS · ประจำตัวนักเรียน</div>
+            <div style="font-size:1.3rem; font-weight:700; font-family:'Mitr',Prompt,sans-serif; line-height:1.2; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${d.name}</div>
+            <div style="font-size:0.82rem; color:rgba(255,255,255,0.55);">${d.clsLabel} &nbsp;·&nbsp; รหัส ${stdId}</div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; margin-bottom:14px;">
+            <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
+              <div style="font-size:1.2rem; font-weight:900; color:#E63D7A;">${ci.checkinCount}</div>
+              <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">เช็คอิน</div>
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; margin-bottom:14px;">
-              <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
-                <div style="font-size:1.2rem; font-weight:900; color:#E63D7A;">${ci.checkinCount}</div>
-                <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">เช็คอิน</div>
-              </div>
-              <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
-                <div style="font-size:1.2rem; font-weight:900; color:#FFC93C;">${d.pointsBalance || 0}</div>
-                <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">แต้มสะสม</div>
-              </div>
-              <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
-                <div style="font-size:1.2rem; font-weight:900; color:#E0A800;">${ci.consecutiveDays}🔥</div>
-                <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">ต่อเนื่อง</div>
-              </div>
-              <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
-                <div style="font-size:1.2rem; font-weight:900; color:#123C69;">${pd.myTotalSigs || 0}</div>
-                <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">ลายเซ็น</div>
-              </div>
+            <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
+              <div style="font-size:1.2rem; font-weight:900; color:#FFC93C;">${d.pointsBalance || 0}</div>
+              <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">แต้มสะสม</div>
             </div>
-            ${nickHtml ? `<div style="margin-bottom:12px; flex-wrap:wrap; display:flex; gap:4px;">${nickHtml}</div>` : ''}
-            ${gradeHtml ? `<div style="font-size:0.72rem; font-weight:700; color:#6E88A3; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">ผลการเรียน</div>${gradeHtml}` : ''}
-          </div>`,
-        showConfirmButton: false,
-        showCloseButton: true,
-        width: 'min(92vw, 420px)',
-        padding: '1.5rem'
-      });
-    }).withFailureHandler(err => {
-      console.error('getStudentDashboard (profile) failed:', err);
-      Swal.fire('โหลดไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
-    }).getStudentDashboard(stdId);
+            <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
+              <div style="font-size:1.2rem; font-weight:900; color:#E0A800;">${ci.consecutiveDays}🔥</div>
+              <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">ต่อเนื่อง</div>
+            </div>
+            <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
+              <div style="font-size:1.2rem; font-weight:900; color:#123C69;">${pd.myTotalSigs || 0}</div>
+              <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">ลายเซ็น</div>
+            </div>
+          </div>
+          ${nickHtml ? `<div style="margin-bottom:12px; flex-wrap:wrap; display:flex; gap:4px;">${nickHtml}</div>` : ''}
+          <div style="font-size:0.72rem; font-weight:700; color:#6E88A3; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">คู่หู &amp; การวิ่ง</div>
+          ${companionHtml}${runHtml}
+          ${gradeHtml ? `<div style="font-size:0.72rem; font-weight:700; color:#6E88A3; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">ผลการเรียน</div>${gradeHtml}` : ''}
+        </div>`,
+      showConfirmButton: false,
+      showCloseButton: true,
+      width: 'min(92vw, 420px)',
+      padding: '1.5rem'
+    });
   }
 
   // ─── POINTS & REWARDS ───────────────────────────────────────
@@ -2185,6 +2546,46 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         }).redeemPointsForChapter(currentLoggedStudentId, r.value.subj, r.value.ch, r.value.qty);
       }
     });
+  }
+
+  // เปิดป๊อปอัพให้นักเรียนดูยอดแต้มวิ่งที่แลกได้ก่อน แล้วกดยืนยันแลกทั้งหมดเป็นแต้มพิเศษ (10 แต้มวิ่ง = 1 แต้มพิเศษ)
+  function openRunExchangeModal() {
+    Swal.fire({ title: 'กำลังตรวจสอบยอดแต้มวิ่ง...', didOpen: () => Swal.showLoading() });
+    google.script.run.withSuccessHandler(preview => {
+      if (preview.exchangeableRunPoints <= 0) {
+        Swal.fire('ยังแลกไม่ได้', `ตอนนี้มีแต้มวิ่ง ${preview.availableRunPoints} แต้ม ต้องมีอย่างน้อย ${preview.rate} แต้มถึงจะแลกได้ครับ`, 'info');
+        return;
+      }
+      Swal.fire({
+        title: '🔄 แลกแต้มวิ่งเป็นแต้มพิเศษ',
+        html: `
+          <div style="background:#FFF3CC; border:1px solid #FFC93C; padding:10px; border-radius:10px; margin-bottom:14px; font-size:0.85rem; text-align:left;">
+            <b>อัตราแลกเปลี่ยน:</b> ${preview.rate} แต้มวิ่ง = 1 แต้มพิเศษ
+          </div>
+          <div style="font-size:0.9rem; text-align:left; line-height:1.9;">
+            แต้มวิ่งสะสมทั้งหมด: <b>${preview.availableRunPoints}</b> แต้ม<br>
+            แลกได้ตอนนี้: <b>${preview.exchangeableRunPoints}</b> แต้มวิ่ง<br>
+            จะได้รับ: <b style="color:var(--amber2);">+${preview.specialPointsWouldGain} แต้มพิเศษ</b>
+          </div>`,
+        showCancelButton: true,
+        confirmButtonText: 'ยืนยันแลกทั้งหมด',
+        cancelButtonText: 'ยกเลิก'
+      }).then(r => {
+        if (r.isConfirmed) {
+          Swal.fire({ title: 'กำลังแลก...', didOpen: () => Swal.showLoading() });
+          google.script.run.withSuccessHandler(res => {
+            if (res.success) { Swal.fire('สำเร็จ!', res.message, 'success').then(() => { refreshPointsBalance(); refreshRunSummary_(); }); }
+            else Swal.fire('แลกไม่สำเร็จ', res.message, 'warning');
+          }).withFailureHandler(err => {
+            console.error('exchangeRunPoints failed:', err);
+            Swal.fire('เชื่อมต่อไม่สำเร็จ', 'แลกแต้มวิ่งไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+          }).exchangeRunPoints(currentLoggedStudentId);
+        }
+      });
+    }).withFailureHandler(err => {
+      console.error('getRunExchangePreview failed:', err);
+      Swal.fire('เชื่อมต่อไม่สำเร็จ', 'ตรวจสอบยอดแต้มวิ่งไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
+    }).getRunExchangePreview(currentLoggedStudentId);
   }
 
 // ─── WHEEL SEGMENTS ────────────────────────────────────────
@@ -2513,33 +2914,24 @@ function loadCompanionTab() {
 }
 
 // ─── RENDER ────────────────────────────────────────────────
-// ─── PET 3D ENGINE (Three.js) ────────────────────────────────
-// สร้างตัวคู่หู 3 มิติจากทรงเรขาคณิตพื้นฐานตาม petType ไม่ต้องพึ่งไฟล์โมเดลภายนอกเลย
+// ─── PET 3D ENGINE (Three.js + glTF) ────────────────────────
+// โหลดโมเดลคู่หูจริงจากไฟล์ .gltf (ชุด "Ultimate Monsters" โดย Quaternius, license CC0 ใช้ได้อิสระ)
+// แทนที่ทรงเรขาคณิตพื้นฐานแบบเดิม — แคชโมเดลที่โหลดแล้วต่อชนิดไว้ใน memory กันโหลดซ้ำเวลาสลับแท็บไปมา
 // canvas ตัวเดียวถูกใช้ซ้ำทุกครั้งที่ renderCompanion ทำงาน (ย้าย DOM เข้า container ใหม่ ไม่สร้าง WebGL context ซ้ำ)
-const PET_TYPE_CONFIG = {
-  cat:     { color: 0xFFA94D, ears: 'pointy' },
-  dog:     { color: 0xC9A27E, ears: 'flop' },
-  rabbit:  { color: 0xFFD6E8, ears: 'long' },
-  fox:     { color: 0xFF7A45, ears: 'pointy', tail: true },
-  bear:    { color: 0x8B5E3C, ears: 'round' },
-  panda:   { color: 0xFAFAFA, ears: 'round', patch: 0x232338 },
-  koala:   { color: 0xB3B3B3, ears: 'fluffy' },
-  lion:    { color: 0xF2B33D, ears: 'round', mane: 0xD98A2B },
-  tiger:   { color: 0xFF9640, ears: 'round', patch: 0x33241A },
-  pig:     { color: 0xFFB3C6, ears: 'flop', snout: 0xFF8FAE },
-  monkey:  { color: 0x9C6B4F, ears: 'round', face: 0xF2D9C4 },
-  frog:    { color: 0x7ED957, ears: 'none' },
-  penguin: { color: 0x2B2D42, ears: 'none', belly: 0xFFFFFF },
-  owl:     { color: 0x8D6748, ears: 'tuft' },
-  turtle:  { color: 0x6FBF73, ears: 'none', shell: 0x3E7C3F },
-  octopus: { color: 0xB565D8, ears: 'none', tentacles: true },
-  unicorn: { color: 0xFFF5FB, ears: 'pointy', horn: true, mane: 0xFF8CC8 },
-  dragon:  { color: 0x4CD3A5, ears: 'pointy', wings: true },
+const PET_TYPE_MODEL_PATH = {
+  cat: 'monsters/cat.gltf', dog: 'monsters/dog.gltf', rabbit: 'monsters/rabbit.gltf',
+  fox: 'monsters/fox.gltf', bear: 'monsters/bear.gltf', panda: 'monsters/panda.gltf',
+  koala: 'monsters/koala.gltf', lion: 'monsters/lion.gltf', tiger: 'monsters/tiger.gltf',
+  pig: 'monsters/pig.gltf', monkey: 'monsters/monkey.gltf', frog: 'monsters/frog.gltf',
+  penguin: 'monsters/penguin.gltf', owl: 'monsters/owl.gltf', turtle: 'monsters/turtle.gltf',
+  octopus: 'monsters/octopus.gltf', unicorn: 'monsters/unicorn.gltf', dragon: 'monsters/dragon.gltf',
 };
 
 const CompanionScene = (() => {
   let renderer, scene, camera, creature, container;
-  let currentType = null, bobT = 0, tapT = 0;
+  let currentType = null, bobT = 0, tapT = 0, baseScale = 1, baseY = 0;
+  const gltfLoader  = new THREE.GLTFLoader();
+  const modelCache  = {}; // petType -> โมเดล THREE.Group ที่โหลดสำเร็จแล้ว (โคลนใช้ซ้ำได้ ไม่ต้องยิง fetch ใหม่)
 
   function ensureRenderer() {
     if (renderer) return;
@@ -2548,7 +2940,7 @@ const CompanionScene = (() => {
     camera.position.set(0, 1.1, 6.2);
     camera.lookAt(0, 0.6, 0);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.85));
     const key = new THREE.DirectionalLight(0xffffff, 0.9);
     key.position.set(2, 4, 3);
     scene.add(key);
@@ -2563,164 +2955,56 @@ const CompanionScene = (() => {
     requestAnimationFrame(loop);
   }
 
-  function makeEye(x) {
-    const g = new THREE.Group();
-    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 12), new THREE.MeshStandardMaterial({ color: 0x1A1A2E }));
-    pupil.position.set(x, 0.15, 0.86);
-    g.add(pupil);
-    const shine = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 }));
-    shine.position.set(x + 0.035, 0.19, 0.94);
-    g.add(shine);
-    return g;
+  // จัดขนาด/กึ่งกลางโมเดลอัตโนมัติจาก bounding box เพราะแต่ละตัวในแพ็คสัดส่วน/จุดกำเนิดไม่เท่ากัน
+  function fitToFrame_(g) {
+    const box = new THREE.Box3().setFromObject(g);
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    const scale = 2.3 / maxDim;
+    const center = box.getCenter(new THREE.Vector3());
+    g.scale.set(scale, scale, scale);
+    g.position.set(-center.x * scale, -center.y * scale - 0.1, -center.z * scale);
+    return { scale, y: g.position.y };
   }
 
-  function buildPet(type) {
-    const cfg = PET_TYPE_CONFIG[type] || PET_TYPE_CONFIG.cat;
-    const g = new THREE.Group();
-    const bodyMat = new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.55, metalness: 0.05 });
+  function setCreature_(model) {
+    if (creature) scene.remove(creature);
+    creature = model;
+    const fit = fitToFrame_(creature);
+    baseScale = fit.scale;
+    baseY = fit.y;
+    scene.add(creature);
+  }
 
-    const body = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 20), bodyMat);
-    body.scale.set(1, 0.92, 0.96);
-    g.add(body);
-
-    if (cfg.ears === 'round') {
-      [-0.55, 0.55].forEach(x => {
-        const ear = new THREE.Mesh(new THREE.SphereGeometry(0.3, 14, 14), bodyMat);
-        ear.position.set(x, 0.95, 0);
-        g.add(ear);
-      });
-    } else if (cfg.ears === 'pointy') {
-      [-0.5, 0.5].forEach(x => {
-        const ear = new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.55, 12), bodyMat);
-        ear.position.set(x, 1.1, 0.05);
-        ear.rotation.z = x > 0 ? -0.25 : 0.25;
-        g.add(ear);
-      });
-    } else if (cfg.ears === 'long') {
-      [-0.42, 0.42].forEach(x => {
-        const ear = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.9, 10), bodyMat);
-        ear.position.set(x, 1.35, 0);
-        ear.rotation.z = x > 0 ? -0.12 : 0.12;
-        g.add(ear);
-      });
-    } else if (cfg.ears === 'flop') {
-      [-0.55, 0.55].forEach(x => {
-        const ear = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 12), bodyMat);
-        ear.scale.set(0.7, 1.3, 0.5);
-        ear.position.set(x, 0.55, 0.15);
-        ear.rotation.z = x > 0 ? -0.5 : 0.5;
-        g.add(ear);
-      });
-    } else if (cfg.ears === 'tuft') {
-      [-0.28, 0.28].forEach(x => {
-        const ear = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.32, 8), bodyMat);
-        ear.position.set(x, 1.15, 0.1);
-        g.add(ear);
-      });
-    } else if (cfg.ears === 'fluffy') {
-      [-0.6, 0.6].forEach(x => {
-        const ear = new THREE.Mesh(new THREE.SphereGeometry(0.38, 14, 14), new THREE.MeshStandardMaterial({ color: 0xD8D8D8, roughness: 0.9 }));
-        ear.position.set(x, 0.9, -0.05);
-        g.add(ear);
-      });
-    }
-
-    g.add(makeEye(-0.34));
-    g.add(makeEye(0.34));
-
-    if (cfg.patch) {
-      [-0.34, 0.34].forEach(x => {
-        const patch = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), new THREE.MeshStandardMaterial({ color: cfg.patch }));
-        patch.scale.set(1, 1.2, 0.4);
-        patch.position.set(x, 0.85, 0.55);
-        g.add(patch);
-      });
-    }
-    if (cfg.mane) {
-      const mane = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.28, 10, 20), new THREE.MeshStandardMaterial({ color: cfg.mane }));
-      mane.position.set(0, 0.05, -0.15);
-      g.add(mane);
-    }
-    if (cfg.snout) {
-      const snout = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.22, 14), new THREE.MeshStandardMaterial({ color: cfg.snout }));
-      snout.rotation.x = Math.PI / 2;
-      snout.position.set(0, -0.05, 0.95);
-      g.add(snout);
-    }
-    if (cfg.face) {
-      const face = new THREE.Mesh(new THREE.SphereGeometry(0.55, 16, 16), new THREE.MeshStandardMaterial({ color: cfg.face }));
-      face.scale.set(1, 1, 0.5);
-      face.position.set(0, -0.05, 0.65);
-      g.add(face);
-    }
-    if (cfg.belly) {
-      const belly = new THREE.Mesh(new THREE.SphereGeometry(0.62, 16, 16), new THREE.MeshStandardMaterial({ color: cfg.belly }));
-      belly.scale.set(0.85, 1.05, 0.45);
-      belly.position.set(0, -0.1, 0.7);
-      g.add(belly);
-    }
-    if (cfg.shell) {
-      const shell = new THREE.Mesh(new THREE.SphereGeometry(0.95, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.62), new THREE.MeshStandardMaterial({ color: cfg.shell, roughness: 0.6 }));
-      shell.position.set(0, 0.15, -0.15);
-      g.add(shell);
-    }
-    if (cfg.tentacles) {
-      for (let i = 0; i < 5; i++) {
-        const a = (i / 5) * Math.PI * 2;
-        const t = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.04, 0.6, 8), bodyMat);
-        t.position.set(Math.cos(a) * 0.5, -0.75, Math.sin(a) * 0.5);
-        t.rotation.x = 0.4 * Math.sin(a);
-        t.rotation.z = 0.4 * Math.cos(a);
-        g.add(t);
-      }
-    }
-    if (cfg.horn) {
-      const horn = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.55, 10), new THREE.MeshStandardMaterial({ color: 0xFFD76B, metalness: 0.4, roughness: 0.3 }));
-      horn.position.set(0, 1.35, 0.35);
-      horn.rotation.x = -0.35;
-      g.add(horn);
-    }
-    if (cfg.wings) {
-      [-1, 1].forEach(s => {
-        const wing = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.9, 3), new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.6, side: THREE.DoubleSide }));
-        wing.position.set(s * 0.95, 0.3, -0.3);
-        wing.rotation.z = s * 1.0;
-        wing.rotation.y = 0.3;
-        g.add(wing);
-      });
-    }
-    if (cfg.tail) {
-      const tail = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.75, 10), bodyMat);
-      tail.position.set(0, 0.1, -0.9);
-      tail.rotation.x = Math.PI / 2.3;
-      g.add(tail);
-    }
-
-    g.scale.set(0.62, 0.62, 0.62);
-    g.position.y = -0.15;
-    return g;
+  function loadType_(type) {
+    if (modelCache[type]) { setCreature_(modelCache[type].clone(true)); return; }
+    const path = PET_TYPE_MODEL_PATH[type] || PET_TYPE_MODEL_PATH.cat;
+    gltfLoader.load(path, gltf => {
+      modelCache[type] = gltf.scene;
+      if (currentType === type) setCreature_(gltf.scene.clone(true)); // กันเคสสลับชนิดไปแล้วก่อนโหลดเสร็จ
+    }, undefined, err => console.error('โหลดโมเดลคู่หูไม่สำเร็จ:', path, err));
   }
 
   function loop() {
     requestAnimationFrame(loop);
     if (!creature || !container || !renderer) return;
     bobT += 0.045;
-    creature.position.y = -0.15 + Math.sin(bobT) * 0.06;
+    creature.position.y = baseY + Math.sin(bobT) * 0.06 * baseScale;
     creature.rotation.y += 0.006;
 
     if (tapT > 0) {
       tapT = Math.max(0, tapT - 0.06);
-      const s = 1 + Math.sin(tapT * Math.PI) * 0.18 * tapT;
-      creature.scale.set(0.62 * s, 0.62 * (2 - s), 0.62 * s);
+      const s = 1 + Math.sin(tapT * Math.PI) * 0.15 * tapT;
+      creature.scale.set(baseScale * s, baseScale * s, baseScale * s);
     } else {
-      creature.scale.set(0.62, 0.62, 0.62);
+      creature.scale.set(baseScale, baseScale, baseScale);
     }
     renderer.render(scene, camera);
   }
 
   return {
     // ย้าย canvas เข้า container ใหม่ทุกครั้ง (เพราะ renderCompanion overwrite DOM ด้วย innerHTML)
-    // สร้างโมเดลใหม่เฉพาะตอน petType เปลี่ยนจริงๆ เท่านั้น ไม่ต้องสร้างซ้ำทุกครั้งที่ข้อมูลอัปเดต
+    // โหลด/สร้างโมเดลใหม่เฉพาะตอน petType เปลี่ยนจริงๆ เท่านั้น ไม่ต้องโหลดซ้ำทุกครั้งที่ข้อมูลอัปเดต
     mount(el, type) {
       ensureRenderer();
       container = el;
@@ -2728,10 +3012,8 @@ const CompanionScene = (() => {
       el.appendChild(renderer.domElement);
       renderer.setSize(180, 180);
       if (type !== currentType) {
-        if (creature) scene.remove(creature);
-        creature = buildPet(type);
-        scene.add(creature);
         currentType = type;
+        loadType_(type);
       }
     },
     tap() { tapT = 1; },
@@ -3017,7 +3299,7 @@ function courseErrorHtml_(retryFnCall) {
 // กันผลลัพธ์ของคำขอเก่าที่ยังค้างอยู่ (เช่นแตะเปลี่ยนวิชา/บทเร็วๆ ติดกัน) มาทับ/แทรกเนื้อหาที่นำทางไปที่อื่นแล้ว
 let courseReqToken = 0;
 
-// ── ระดับ 1: เลือกวิชา ──
+// ── ระดับ 1: เลือกวิชา (วิชาบังคับ + วิชาเลือก 1 สาขาที่นักเรียนเลือกไว้) ──
 function renderCourseSubjects() {
   courseSetTitle_('เรียนออนไลน์', false);
   const body = document.getElementById('courseModalBody');
@@ -3025,21 +3307,58 @@ function renderCourseSubjects() {
   body.innerHTML = courseLoadingHtml_();
   google.script.run.withSuccessHandler(subjects => {
     if (myToken !== courseReqToken) return;
-    if (!subjects || subjects.length === 0) {
-      body.innerHTML = '<div style="text-align:center; padding:24px; color:var(--slate);">ยังไม่มีรายวิชา</div>';
-      return;
-    }
-    body.innerHTML = subjects.map(s => `
-      <div class="action-card" onclick="openCourseSubject('${s.code}', '${s.label.replace(/'/g, "\\'")}')">
-        <div class="icon" style="background:rgba(255,92,151,0.12); color:var(--teal2);"><i class="fa-solid fa-book"></i></div>
-        <div class="info"><h4>${s.label}</h4><p>แตะเพื่อดูบทเรียน</p></div>
-        <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
-      </div>`).join('');
+    const hasElective = subjects.some(s => (metaData.electives || []).some(e => e.code === s.code));
+    const subjectCards = (!subjects || subjects.length === 0)
+      ? '<div style="text-align:center; padding:24px; color:var(--slate);">ยังไม่มีรายวิชา</div>'
+      : subjects.map(s => `
+        <div class="action-card" onclick="openCourseSubject('${s.code}', '${s.label.replace(/'/g, "\\'")}')">
+          <div class="icon" style="background:rgba(255,92,151,0.12); color:var(--teal2);"><i class="fa-solid fa-book"></i></div>
+          <div class="info"><h4>${s.label}</h4><p>แตะเพื่อดูบทเรียน</p></div>
+          <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        </div>`).join('');
+
+    const electivePrompt = hasElective
+      ? `<div class="action-card" onclick="openElectivePicker_()" style="background:rgba(255,201,60,0.08);">
+          <div class="icon" style="background:rgba(255,201,60,0.18); color:var(--amber2);"><i class="fa-solid fa-shuffle"></i></div>
+          <div class="info"><h4>เปลี่ยนสาขาวิชาเลือก</h4><p>ตอนนี้เรียนอยู่: ${subjects.find(s => (metaData.electives || []).some(e => e.code === s.code))?.label || ''}</p></div>
+          <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        </div>`
+      : `<div class="action-card" onclick="openElectivePicker_()" style="background:rgba(255,92,151,0.08); border:1.5px dashed var(--teal2);">
+          <div class="icon" style="background:rgba(255,92,151,0.18); color:var(--teal2);"><i class="fa-solid fa-hand-pointer"></i></div>
+          <div class="info"><h4>เลือกสาขาวิชาเลือก</h4><p>ยังไม่ได้เลือก แตะเพื่อเลือก 1 ใน 11 สาขา</p></div>
+          <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        </div>`;
+
+    body.innerHTML = subjectCards + electivePrompt;
   }).withFailureHandler(err => {
     if (myToken !== courseReqToken) return;
-    console.error('getSubjects failed:', err);
+    console.error('getMyCourseSubjects failed:', err);
     body.innerHTML = courseErrorHtml_('renderCourseSubjects()');
-  }).getSubjects();
+  }).getMyCourseSubjects(currentLoggedStudentId);
+}
+
+// นักเรียนเลือก/เปลี่ยนสาขาวิชาเลือกของตัวเอง (1 ใน 11 สาขา)
+function openElectivePicker_() {
+  const options = (metaData.electives || []).map(e => `<option value="${e.code}">${e.label}</option>`).join('');
+  Swal.fire({
+    title: '🎯 เลือกสาขาวิชาเลือก',
+    html: `<select id="electiveSelect" class="field">${options}</select>`,
+    showCancelButton: true,
+    confirmButtonText: 'ยืนยัน',
+    cancelButtonText: 'ยกเลิก'
+  }).then(r => {
+    if (r.isConfirmed) {
+      const code = document.getElementById('electiveSelect').value;
+      Swal.fire({ title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading() });
+      google.script.run.withSuccessHandler(res => {
+        if (res.success) { Swal.fire('สำเร็จ!', res.message, 'success').then(() => renderCourseSubjects()); }
+        else Swal.fire('ไม่สำเร็จ', res.message, 'warning');
+      }).withFailureHandler(err => {
+        console.error('setMyElective failed:', err);
+        Swal.fire('เชื่อมต่อไม่สำเร็จ', 'บันทึกสาขาวิชาไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
+      }).setMyElective(currentLoggedStudentId, code);
+    }
+  });
 }
 
 // ── ระดับ 2: เลือกบท ──
@@ -3161,7 +3480,7 @@ function onYtStateChange_(e) {
       const txt = document.getElementById('watchProgressText');
       if (txt) txt.innerHTML = `ดูไปแล้ว ${pct}% (ต้องดูอย่างน้อย ${ytCurrentTopic.minPercent}%)`;
       pingVideoWatch_(dur);
-    }, 5000);
+    }, 20000); // [Perf] เดิม 5 วิ ยิง backend ถี่เกินไป (ล็อก+สแกนทั้งชีตทุกครั้ง) เพิ่มเป็น 20 วิ ยังคง sync ทันทีตอน pause/จบวิดีโอ (onYtStateChange_/stopVideoTracking_)
   } else {
     if (ytWatchTimer) { clearInterval(ytWatchTimer); ytWatchTimer = null; }
     if (ytPlayer && ytPlayer.getDuration) pingVideoWatch_(Math.floor(ytPlayer.getDuration()));
@@ -3618,7 +3937,7 @@ function startRunTracking_() {
       }
     }).withFailureHandler(err => console.error('updateRunProgress failed:', err))
       .updateRunProgress(currentLoggedStudentId, runStartedAt, runValidMeters, runTotalMeters, runSteps);
-  }, 15000);
+  }, 20000); // [Perf] เดิม 15 วิ เพิ่มเป็น 20 วิ ลดจำนวนรอบ backend ระหว่างวิ่ง (ยังพอสำหรับ threshold หยุดพัก 5 นาที)
 }
 
 function renderRunActiveView_() {
@@ -3769,7 +4088,10 @@ function stopRunTracking_(finalize) {
   google.script.run.withSuccessHandler(res => {
     Swal.close();
     if (res.success) {
-      Swal.fire('เยี่ยมมาก! 🎉', res.message, 'success').then(() => { refreshRunSummary_(); openRunModal(); });
+      Swal.fire('เยี่ยมมาก! 🎉', res.message, 'success').then(() => {
+        refreshRunSummary_();
+        showRunCompanionExpResult_(res.companion, () => openRunModal());
+      });
     } else {
       Swal.fire('แจ้งเตือน', res.message, 'warning');
     }
@@ -3777,6 +4099,31 @@ function stopRunTracking_(finalize) {
     console.error('finishRunSession failed:', err);
     Swal.fire('เชื่อมต่อไม่สำเร็จ', 'บันทึกผลการวิ่งไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดจบการวิ่งอีกครั้ง', 'error');
   }).finishRunSession(currentLoggedStudentId, runStartedAt, runValidMeters, runTotalMeters, runSteps);
+}
+
+// แจ้งผล EXP คู่หูที่ได้จากการวิ่งรอบนี้ (ให้อัตโนมัติทันทีที่จบวิ่ง แยกขาดจากการแลกแต้มพิเศษโดยสิ้นเชิง)
+// ถ้าเลเวลอัปพอดี จะโชว์ป๊อปอัปฉลองแบบเดียวกับตอนหมุนวงล้อคู่หู
+function showRunCompanionExpResult_(companion, onDone) {
+  if (!companion || !companion.expGained) { onDone(); return; }
+
+  if (companion.leveledUp) {
+    Swal.fire({
+      title: '🎊 เลเวลอัป!',
+      html: `<div style="font-size:2rem;margin:8px 0;">${companion.petEmoji}</div>
+             <div style="font-weight:900;color:#FFC93C;">Lv.${companion.level} · ${companion.stage}</div>
+             <div style="margin-top:4px;color:#7ee787;">+${companion.expGained} EXP จากการวิ่ง</div>
+             ${companion.bonusPoints > 0 ? `<div style="margin-top:6px;color:#FF5C97;font-weight:700;">+${companion.bonusPoints} แต้มพิเศษ!</div>` : ''}`,
+      width: '280px',
+      background:'#17518C', color:'#fff', confirmButtonColor:'#FFC93C',
+      timer:3500, timerProgressBar:true, showConfirmButton:false,
+    }).then(() => { if (companion.bonusPoints > 0) refreshPointsBalance(); onDone(); });
+  } else {
+    Swal.fire({
+      toast: true, position: 'top', icon: 'success',
+      title: `คู่หูได้รับ +${companion.expGained} EXP จากการวิ่ง!`,
+      showConfirmButton: false, timer: 2200
+    }).then(() => onDone());
+  }
 }
 
 function refreshRunSummary_() {
