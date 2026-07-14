@@ -1198,11 +1198,12 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <select id="stuFilterClass" class="field"></select>
           <input type="text" id="stuFilterName" class="field" placeholder="ค้นหาชื่อ..." style="min-width:120px;">
           <button class="btn btn-teal btn-sm" onclick="loadStudentList()"><i class="fa-solid fa-magnifying-glass"></i> เช็ค</button>
+          <button class="btn btn-ghost btn-sm" onclick="openElectiveOverviewModal()"><i class="fa-solid fa-shuffle"></i> ภาพรวมสาขาวิชาเลือก</button>
         </div>
         <div class="tbl-wrap">
           <table class="dt">
-            <thead><tr><th>รหัส</th><th style="text-align:left;">ชื่อ-นามสกุล</th><th>ชั้น</th><th>ดู</th></tr></thead>
-            <tbody id="allStuBody"><tr><td colspan="4" style="color:var(--slate);">เลือกชั้นแล้วกด "เช็ค"</td></tr></tbody>
+            <thead><tr><th>รหัส</th><th style="text-align:left;">ชื่อ-นามสกุล</th><th>ชั้น</th><th>สาขาที่เลือก</th><th>ดู</th></tr></thead>
+            <tbody id="allStuBody"><tr><td colspan="5" style="color:var(--slate);">เลือกชั้นแล้วกด "เช็ค"</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -2059,6 +2060,20 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           </div>
         </div>`);
 
+      cards.push(`
+        <div class="card card-pad" style="margin-bottom:12px; cursor:pointer;" onclick="openElectiveOverviewModal()">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div style="width:48px; height:48px; border-radius:14px; background:${ov.unassignedElectiveCount ? 'rgba(255,92,151,0.15)' : 'rgba(82,196,26,0.12)'}; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
+              ${ov.unassignedElectiveCount ? '🎯' : '✅'}
+            </div>
+            <div style="flex:1;">
+              <div style="font-weight:700;">ยังไม่เลือกสาขาวิชาเลือก ${ov.unassignedElectiveCount} คน</div>
+              <div style="font-size:0.78rem; color:var(--slate);">แตะเพื่อดูภาพรวมสาขาวิชาเลือก</div>
+            </div>
+            <i class="fa-solid fa-chevron-right" style="color:var(--mist);"></i>
+          </div>
+        </div>`);
+
       // สรุปกิจกรรมวันนี้ แยกตามประเภท — ครอบคลุมทุกอย่างที่เกิดขึ้นจริง (สแกน/เช็คอิน/คูปอง/เรียนออนไลน์/คู่หู/วิ่ง ฯลฯ) ไม่ใช่แค่ 3 การ์ดข้อยกเว้นด้านบน
       let activityHtml;
       if (!ov.todayActivity.length) {
@@ -2315,30 +2330,90 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   }
 
   // ─── STUDENT LIST ───────────────────────────────────────────
-  // โหลดรายชื่อนักเรียนทั้งหมดมาแสดงในแท็บจัดการรายชื่อ
+  // โหลดรายชื่อนักเรียนทั้งหมดมาแสดงในแท็บจัดการรายชื่อ พร้อมสาขาวิชาเลือกที่แต่ละคนเลือกไว้ (คนละ request แต่ยิงพร้อมกัน ไม่รอกัน)
   function loadStudentList() {
     const clsFilter  = document.getElementById('stuFilterClass').value;
     const nameFilter = (document.getElementById('stuFilterName').value || '').trim().toLowerCase();
 
-    document.getElementById('allStuBody').innerHTML = '<tr><td colspan="4" style="color:var(--slate);">กำลังโหลด...</td></tr>';
-    google.script.run.withSuccessHandler(list => {
-      let filtered = list;
+    document.getElementById('allStuBody').innerHTML = '<tr><td colspan="5" style="color:var(--slate);">กำลังโหลด...</td></tr>';
+    const results = {};
+    let pending = 2;
+    const done = () => {
+      if (--pending > 0) return;
+      if (!results.list) {
+        document.getElementById('allStuBody').innerHTML = '<tr><td colspan="5" style="color:var(--coral);">โหลดไม่สำเร็จ กรุณาลองใหม่</td></tr>';
+        return;
+      }
+      const electives = results.electives || {};
+      let filtered = results.list;
       if (clsFilter && clsFilter !== 'ALL') filtered = filtered.filter(s => s.cls === clsFilter);
       if (nameFilter) filtered = filtered.filter(s => s.name.toLowerCase().includes(nameFilter) || String(s.id).includes(nameFilter));
 
       document.getElementById('allStuBody').innerHTML = filtered.length === 0
-        ? '<tr><td colspan="4" style="color:var(--slate);">ไม่พบนักเรียน</td></tr>'
-        : filtered.map(s => `
+        ? '<tr><td colspan="5" style="color:var(--slate);">ไม่พบนักเรียน</td></tr>'
+        : filtered.map(s => {
+          const mine = electives[s.id];
+          const electiveBadge = mine
+            ? `<span class="pill" style="background:rgba(82,196,26,0.12); color:var(--teal2); font-size:0.72rem;">${mine.label}</span>`
+            : `<span class="pill" style="background:rgba(255,77,109,0.12); color:var(--coral); font-size:0.72rem;">ยังไม่เลือก</span>`;
+          return `
           <tr>
             <td style="font-size:0.8rem;">${s.id}</td>
             <td style="text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px;">${s.name}</td>
             <td>${s.clsLabel}</td>
+            <td>${electiveBadge}</td>
             <td><button class="btn btn-ghost btn-sm" style="padding:6px 12px;" onclick="viewStudentProfile('${s.id}')"><i class="fa-solid fa-eye"></i> ดู</button></td>
-          </tr>`).join('');
+          </tr>`;
+        }).join('');
+    };
+
+    google.script.run.withSuccessHandler(list => { results.list = list; done(); })
+      .withFailureHandler(err => { console.error('getAllStudents failed:', err); done(); })
+      .getAllStudents();
+
+    google.script.run.withSuccessHandler(electives => { results.electives = electives; done(); })
+      .withFailureHandler(err => { console.error('getAllStudentElectives failed:', err); done(); })
+      .getAllStudentElectives();
+  }
+
+  // ─── ELECTIVE ENROLLMENT OVERVIEW (ครู) ──────────────────────
+  // ภาพรวมว่าแต่ละสาขาวิชาเลือกมีนักเรียนกี่คน ใครบ้าง — ยุบเป็น accordion เริ่มต้น (11 สาขา ถ้าเปิดหมดจะยาวเกินไป)
+  function openElectiveOverviewModal() {
+    Swal.fire({ title: 'กำลังโหลด...', didOpen: () => Swal.showLoading() });
+    google.script.run.withSuccessHandler(ov => {
+      const unassignedRow = ov.unassignedCount > 0
+        ? `<div class="card card-pad" style="margin-bottom:10px; background:rgba(255,77,109,0.08); text-align:left;">
+             <b style="color:var(--coral);">⚠️ ยังไม่ได้เลือกสาขา ${ov.unassignedCount} คน</b>
+             <div style="font-size:0.78rem; color:var(--slate); margin-top:4px;">${ov.unassigned.map(s => `${s.name} (${s.clsLabel})`).join(', ')}</div>
+           </div>`
+        : `<div class="card card-pad" style="margin-bottom:10px; background:rgba(82,196,26,0.08); text-align:left;">
+             <b style="color:var(--teal2);">✅ นักเรียนเลือกสาขาครบทุกคนแล้ว</b>
+           </div>`;
+
+      const rows = ov.subjects.map((sub, i) => {
+        const emptyStyle = sub.count === 0 ? 'opacity:0.55; border:1.5px dashed var(--mist);' : '';
+        const namesHtml = sub.students.map(s => `<div style="padding:4px 0; border-bottom:1px solid var(--cloud); font-size:0.82rem;">${s.name} <span style="color:var(--slate);">(${s.clsLabel})</span></div>`).join('')
+          || '<div style="color:var(--slate); font-size:0.82rem; padding:4px 0;">ยังไม่มีคนเลือก</div>';
+        return `
+          <div class="card card-pad" style="margin-bottom:8px; text-align:left; ${emptyStyle}">
+            <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="const b=document.getElementById('elecBody${i}'); b.style.display = b.style.display==='none' ? 'block' : 'none';">
+              <b>${sub.label}</b>
+              <span class="pill" style="background:${sub.count === 0 ? 'rgba(110,136,163,0.15)' : 'rgba(82,196,26,0.15)'}; color:${sub.count === 0 ? 'var(--slate)' : 'var(--teal2)'};">${sub.count} คน</span>
+            </div>
+            <div id="elecBody${i}" style="display:none; margin-top:8px;">${namesHtml}</div>
+          </div>`;
+      }).join('');
+
+      Swal.fire({
+        title: '🎯 ภาพรวมสาขาวิชาเลือก',
+        html: `<div style="max-height:60vh; overflow-y:auto; text-align:left;">${unassignedRow}${rows}</div>`,
+        width: 'min(92vw, 480px)',
+        confirmButtonText: 'ปิด'
+      });
     }).withFailureHandler(err => {
-      console.error('getAllStudents failed:', err);
-      document.getElementById('allStuBody').innerHTML = '<tr><td colspan="4" style="color:var(--coral);">โหลดไม่สำเร็จ กรุณาลองใหม่</td></tr>';
-    }).getAllStudents();
+      console.error('getElectiveEnrollmentOverview failed:', err);
+      Swal.fire('โหลดไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่', 'error');
+    }).getElectiveEnrollmentOverview();
   }
 
   // เปิด modal แสดงข้อมูลโปรไฟล์/ผลการเรียนของนักเรียนคนใดคนหนึ่ง
@@ -2346,7 +2421,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   function viewStudentProfile(stdId) {
     Swal.fire({ title: 'กำลังโหลด...', didOpen: () => Swal.showLoading() });
     const results = {};
-    let pending = 3;
+    let pending = 4;
     const done = () => { if (--pending === 0) renderStudentProfile_(stdId, results); };
 
     google.script.run.withSuccessHandler(d => { results.dash = d; done(); })
@@ -2360,6 +2435,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     google.script.run.withSuccessHandler(r => { results.running = r; done(); })
       .withFailureHandler(err => { console.error('getRunningPointsBalance (profile) failed:', err); results.running = null; done(); })
       .getRunningPointsBalance(stdId);
+
+    google.script.run.withSuccessHandler(e => { results.elective = e; done(); })
+      .withFailureHandler(err => { console.error('getElectiveProgress (profile) failed:', err); results.elective = null; done(); })
+      .getElectiveProgress(stdId);
   }
 
   // วาดบัตรประจำตัวนักเรียน (Swal) จากผลลัพธ์ทั้ง 3 ทาง — เรียกเมื่อ viewStudentProfile โหลดครบแล้วเท่านั้น
@@ -2405,6 +2484,34 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         </div>
       </div>`;
 
+    // สาขาวิชาเลือก — ใช้ progress bar แบบเดียวกับที่นักเรียนเห็นเองในหน้า "เรียนออนไลน์" (loadElectiveScoreCard_) ให้สม่ำเสมอกันทั้งระบบ
+    const ep = results.elective;
+    let electiveHtml = '';
+    if (ep && ep.hasElective) {
+      const s = ep.score || { creditBankScore: 0, videoScore: 0, submissionScore: 0, testScore: 0, total50: 0 };
+      const bar = (label, val, max, color) => `
+        <div style="margin-bottom:6px;">
+          <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:#6E88A3; margin-bottom:2px;">
+            <span>${label}</span><b style="color:#123C69;">${val}/${max}</b>
+          </div>
+          <div style="background:#F5FAFF; height:8px; border-radius:4px; overflow:hidden;">
+            <div style="background:${color}; width:${Math.min(100, Math.round((val / max) * 100))}%; height:100%;"></div>
+          </div>
+        </div>`;
+      electiveHtml = `
+        <div style="font-size:0.72rem; font-weight:700; color:#6E88A3; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">สาขาวิชาเลือก: ${ep.label} (${s.total50}/50)</div>
+        <div style="background:#F5FAFF; border-radius:10px; padding:10px; margin-bottom:14px;">
+          ${bar('🏦 ธนาคารหน่วยกิต', s.creditBankScore, 10, '#123C69')}
+          ${bar('🎬 ดูคลิป', s.videoScore, 10, '#1D63A8')}
+          ${bar('⌨️ ตอบคำถาม', s.submissionScore, 15, '#FFC93C')}
+          ${bar('📝 สอบท้ายหน่วย', s.testScore, 15, '#E63D7A')}
+        </div>`;
+    } else {
+      electiveHtml = `
+        <div style="font-size:0.72rem; font-weight:700; color:#6E88A3; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">สาขาวิชาเลือก</div>
+        <div style="background:#F5FAFF; border-radius:10px; padding:10px; margin-bottom:14px; text-align:center; color:#6E88A3; font-size:0.82rem;">ยังไม่ได้เลือกสาขาวิชาเลือก</div>`;
+    }
+
     Swal.fire({
       html: `
         <div style="text-align:left;">
@@ -2435,6 +2542,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <div style="font-size:0.72rem; font-weight:700; color:#6E88A3; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">คู่หู &amp; การวิ่ง</div>
           ${companionHtml}${runHtml}
           ${gradeHtml ? `<div style="font-size:0.72rem; font-weight:700; color:#6E88A3; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">ผลการเรียน</div>${gradeHtml}` : ''}
+          ${electiveHtml}
         </div>`,
       showConfirmButton: false,
       showCloseButton: true,
