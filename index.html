@@ -896,7 +896,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       <div class="hero-name" id="sNameDisplay">สวัสดี</div>
       <div class="hero-sub" style="margin-bottom:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
         <span class="pill pill-teal" id="sClassDisplay">ชั้นเรียน</span>
-        <button class="credit-bank-btn" onclick="window.open('https://script.google.com/macros/s/AKfycbz7Qkemj78qK4_tQXQgBUqv1r4xMfFybf925gQssMhWYSl3PkcKt_xB2zztot1p5IM/exec','_blank')">
+        <button class="credit-bank-btn" onclick="openCreditBank_()">
           <i class="fa-solid fa-building-columns"></i> ธนาคารหน่วยกิต
         </button>
       </div>
@@ -2444,6 +2444,16 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   }
 
   // ─── POINTS & REWARDS ───────────────────────────────────────
+  // เปิด "ธนาคารหน่วยกิต" (เว็บแอประบบอื่น ไม่มีเนื้อหาในตัวเอง แค่จุดลงชื่อเข้าใช้) — เปิดลิงก์ทันทีไม่รอ backend
+  // แล้วยิงบันทึกการเข้าคู่ขนานไปด้วย (นับคะแนนเทียบสัดส่วนกับคนกดเข้าเยอะสุดในห้อง เต็ม 10 คะแนน ดู logCreditBankVisit)
+  function openCreditBank_() {
+    window.open('https://script.google.com/macros/s/AKfycbz7Qkemj78qK4_tQXQgBUqv1r4xMfFybf925gQssMhWYSl3PkcKt_xB2zztot1p5IM/exec', '_blank');
+    google.script.run.withSuccessHandler(res => {
+      if (res.success && !res.alreadyLogged) Toast('✅ บันทึกการเข้าธนาคารหน่วยกิตวันนี้แล้ว (+คะแนนวิชาเลือก)', 'success');
+    }).withFailureHandler(err => console.error('logCreditBankVisit failed:', err))
+      .logCreditBankVisit(currentLoggedStudentId);
+  }
+
   // โหลดยอดแต้มคงเหลือของนักเรียนที่ล็อกอินอยู่มาอัปเดตหน้าจอ
   function refreshPointsBalance() {
     google.script.run.withSuccessHandler(bal => {
@@ -3329,12 +3339,34 @@ function renderCourseSubjects() {
           <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
         </div>`;
 
-    body.innerHTML = subjectCards + electivePrompt;
+    body.innerHTML = subjectCards + electivePrompt + '<div id="electiveScoreCard"></div>';
+    if (hasElective) loadElectiveScoreCard_(myToken);
   }).withFailureHandler(err => {
     if (myToken !== courseReqToken) return;
     console.error('getMyCourseSubjects failed:', err);
     body.innerHTML = courseErrorHtml_('renderCourseSubjects()');
   }).getMyCourseSubjects(currentLoggedStudentId);
+}
+
+// [Elective] โชว์คะแนนวิชาเลือกสะสม (4 องค์ประกอบ เต็ม 50) ใต้รายการวิชา — โหลดแยกจากรายการวิชาหลัก ไม่บล็อกการแสดงผลหลัก
+function loadElectiveScoreCard_(myToken) {
+  google.script.run.withSuccessHandler(p => {
+    if (myToken !== courseReqToken) return;
+    const el = document.getElementById('electiveScoreCard');
+    if (!el || !p.hasElective) return;
+    const s = p.score || { creditBankScore: 0, videoScore: 0, submissionScore: 0, testScore: 0, total50: 0 };
+    el.innerHTML = `
+      <div class="card card-pad" style="margin-top:10px;">
+        <div style="font-weight:700; margin-bottom:10px;">📊 คะแนนวิชาเลือก (${p.label}) — ${s.total50}/50</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:0.82rem; color:var(--slate);">
+          <div>🏦 ธนาคารหน่วยกิต: <b style="color:var(--ink);">${s.creditBankScore}/10</b></div>
+          <div>🎬 ดูคลิป: <b style="color:var(--ink);">${s.videoScore}/10</b> (${p.videoWatched}/${p.videoTotal})</div>
+          <div>⌨️ ตอบคำถาม: <b style="color:var(--ink);">${s.submissionScore}/15</b> (${p.submissionCorrect}/${p.submissionTotal})</div>
+          <div>📝 สอบท้ายหน่วย: <b style="color:var(--ink);">${s.testScore}/15</b></div>
+        </div>
+      </div>`;
+  }).withFailureHandler(err => console.error('getElectiveProgress failed:', err))
+    .getElectiveProgress(currentLoggedStudentId);
 }
 
 // นักเรียนเลือก/เปลี่ยนสาขาวิชาเลือกของตัวเอง (1 ใน 11 สาขา)
@@ -3391,17 +3423,30 @@ function openCourseSubject(subjectCode, subjectLabel) {
   }).getCourseChapters(subjectCode, clsCode, currentLoggedStudentId);
 }
 
+// เช็คว่ารหัสวิชานี้เป็นสาขาวิชาเลือกหรือไม่ (ใช้ metaData.electives ที่โหลดไว้แล้ว ไม่ต้องยิง backend เพิ่ม)
+function isElectiveSubject_fe_(subjectCode) {
+  return (metaData.electives || []).some(e => e.code === subjectCode);
+}
+
 // ── ระดับ 3: รายการเรื่องย่อยในบท + ปุ่มสอบท้ายบท ──
+// [Elective] วิชาเลือกใช้ระบบคะแนนคนละแบบกับวิชาบังคับ: ไม่มีส่งงานถ่ายรูปรายเรื่อง/สอบจับเวลารายบท
+// แต่เป็น "ตอบคำถามพิมพ์ตอบ" + "สอบปรนัย" ระดับบททั้งบท (ดู Elective_Questions/Elective_Test_Config)
 function openCourseChapter(subjectCode, subjectLabel, chapter) {
   coursePush_(() => openCourseChapter(subjectCode, subjectLabel, chapter));
   courseSetTitle_('บทที่ ' + chapter.chapterNum, true);
   const clsCode = (studentDashboardData && studentDashboardData.cls) || '';
   const body = document.getElementById('courseModalBody');
+  const isElective = isElectiveSubject_fe_(subjectCode);
 
   const topicRows = chapter.topics.map(t => {
     const watchedBadge = t.watched ? '<span class="pill" style="background:rgba(82,196,26,0.15); color:var(--teal2);">✅ ดูจบแล้ว</span>' : '';
-    const subBadge = t.submitted === 'reviewed' ? '<span class="pill" style="background:rgba(82,196,26,0.15); color:var(--teal2);">✅ ตรวจแล้ว</span>'
-                    : t.submitted === 'pending' ? '<span class="pill" style="background:rgba(255,201,60,0.2); color:var(--amber2);">⏳ รอตรวจ</span>' : '';
+    const subBadge = (!isElective && t.submitted === 'reviewed') ? '<span class="pill" style="background:rgba(82,196,26,0.15); color:var(--teal2);">✅ ตรวจแล้ว</span>'
+                    : (!isElective && t.submitted === 'pending') ? '<span class="pill" style="background:rgba(255,201,60,0.2); color:var(--amber2);">⏳ รอตรวจ</span>' : '';
+    // [Elective] ไม่มีปุ่มส่งงานถ่ายรูปรายเรื่อง เพราะวิชาเลือกใช้ "ตอบคำถามพิมพ์ตอบ" ระดับบททั้งบทแทน (ปุ่มอยู่ท้ายหน้านี้)
+    const exerciseBtn = isElective ? '' : `
+          <button class="btn btn-amber btn-sm" style="flex:1;" onclick='openCourseExercise(${JSON.stringify(subjectCode)}, ${JSON.stringify(clsCode)}, ${chapter.chapterNum}, ${JSON.stringify(t)})'>
+            <i class="fa-solid fa-camera"></i> ส่งงาน
+          </button>`;
     return `
       <div class="card card-pad" style="margin-bottom:10px;">
         <div style="font-weight:700; margin-bottom:8px;">${t.topicNum}. ${t.topicName}</div>
@@ -3409,28 +3454,33 @@ function openCourseChapter(subjectCode, subjectLabel, chapter) {
         <div style="display:flex; gap:8px;">
           <button class="btn btn-navy btn-sm" style="flex:1;" onclick='openCourseVideo(${JSON.stringify(subjectCode)}, ${JSON.stringify(clsCode)}, ${chapter.chapterNum}, ${JSON.stringify(t)})'>
             <i class="fa-solid fa-circle-play"></i> ดูวิดีโอ
-          </button>
-          <button class="btn btn-amber btn-sm" style="flex:1;" onclick='openCourseExercise(${JSON.stringify(subjectCode)}, ${JSON.stringify(clsCode)}, ${chapter.chapterNum}, ${JSON.stringify(t)})'>
-            <i class="fa-solid fa-camera"></i> ส่งงาน
-          </button>
+          </button>${exerciseBtn}
         </div>
       </div>`;
   }).join('');
 
-  let examBlock = '';
-  if (chapter.examStatus === 'submitted') {
-    examBlock = `<div class="card card-pad" style="text-align:center; background:rgba(82,196,26,0.08);">
+  let tailBlock = '';
+  if (isElective) {
+    tailBlock = `
+      <button class="btn btn-amber btn-block" style="margin-bottom:10px;" onclick='openElectiveExercise(${JSON.stringify(subjectCode)}, ${JSON.stringify(clsCode)}, ${chapter.chapterNum})'>
+        <i class="fa-solid fa-keyboard"></i> ตอบคำถามท้ายบท
+      </button>
+      <button class="btn btn-teal btn-block" onclick='openElectiveTest(${JSON.stringify(subjectCode)}, ${JSON.stringify(clsCode)}, ${chapter.chapterNum})'>
+        <i class="fa-solid fa-pen"></i> สอบท้ายหน่วย
+      </button>`;
+  } else if (chapter.examStatus === 'submitted') {
+    tailBlock = `<div class="card card-pad" style="text-align:center; background:rgba(82,196,26,0.08);">
       <div style="font-weight:700; color:var(--teal2);">✅ สอบท้ายบทแล้ว — ได้ ${chapter.examScore} คะแนน</div>
     </div>`;
   } else if (chapter.examOpen) {
-    examBlock = `<button class="btn btn-teal btn-block" onclick='openCourseExam(${JSON.stringify(subjectCode)}, ${JSON.stringify(clsCode)}, ${JSON.stringify(chapter)})'>
+    tailBlock = `<button class="btn btn-teal btn-block" onclick='openCourseExam(${JSON.stringify(subjectCode)}, ${JSON.stringify(clsCode)}, ${JSON.stringify(chapter)})'>
       <i class="fa-solid fa-pen"></i> เข้าสอบท้ายบท (${chapter.examDurationMin} นาที)
     </button>`;
   } else if (chapter.examTotalItems > 0) {
-    examBlock = `<div class="card card-pad" style="text-align:center; color:var(--slate);">🔒 ครูยังไม่เปิดสอบท้ายบทนี้</div>`;
+    tailBlock = `<div class="card card-pad" style="text-align:center; color:var(--slate);">🔒 ครูยังไม่เปิดสอบท้ายบทนี้</div>`;
   }
 
-  body.innerHTML = topicRows + (examBlock ? `<div class="divider"></div>${examBlock}` : '');
+  body.innerHTML = topicRows + (tailBlock ? `<div class="divider"></div>${tailBlock}` : '');
 }
 
 // ── วิดีโอ + จับเวลาดูจริง (YouTube IFrame API) ──
@@ -3574,6 +3624,101 @@ function submitCourseExercise_(subjectCode, clsCode, chapterNum, topicNum) {
     else Swal.fire('แจ้งเตือน', res.message, 'warning');
   }).withFailureHandler(err => { Swal.close(); Swal.fire('ผิดพลาด', err.toString(), 'error'); })
     .submitExerciseHomework(currentLoggedStudentId, subjectCode, clsCode, chapterNum, topicNum, courseExercisePhotos);
+}
+
+// ── [Elective] ตอบคำถามพิมพ์ตอบท้ายบท (คนละระบบกับส่งงานถ่ายรูปของวิชาบังคับ ตรวจอัตโนมัติทันที) ──
+function openElectiveExercise(subjectCode, clsCode, chapterNum) {
+  coursePush_(() => openElectiveExercise(subjectCode, clsCode, chapterNum));
+  courseSetTitle_('ตอบคำถามท้ายบท ' + chapterNum, true);
+  const body = document.getElementById('courseModalBody');
+  body.innerHTML = courseLoadingHtml_();
+  google.script.run.withSuccessHandler(questions => {
+    if (!questions || questions.length === 0) {
+      body.innerHTML = '<div style="text-align:center; padding:24px; color:var(--slate);">ยังไม่มีคำถามของบทนี้</div>';
+      return;
+    }
+    const qRows = questions.map(q => `
+      <div class="card card-pad" style="margin-bottom:10px;">
+        <div style="font-weight:700; margin-bottom:8px;">ข้อ ${q.questionNum}. ${q.questionText}</div>
+        <input type="text" class="field elective-answer-input" data-qnum="${q.questionNum}" placeholder="พิมพ์คำตอบที่นี่">
+      </div>`).join('');
+    body.innerHTML = qRows + `
+      <button class="btn btn-teal btn-block" onclick='submitElectiveExercise_(${JSON.stringify(subjectCode)}, ${JSON.stringify(clsCode)}, ${chapterNum})'>
+        <i class="fa-solid fa-paper-plane"></i> ส่งคำตอบ
+      </button>`;
+  }).withFailureHandler(err => {
+    console.error('getElectiveQuestions failed:', err);
+    body.innerHTML = courseErrorHtml_(`openElectiveExercise(${JSON.stringify(subjectCode)}, ${JSON.stringify(clsCode)}, ${chapterNum})`);
+  }).getElectiveQuestions(subjectCode, clsCode, chapterNum);
+}
+function submitElectiveExercise_(subjectCode, clsCode, chapterNum) {
+  const answers = Array.from(document.querySelectorAll('.elective-answer-input')).map(el => ({
+    questionNum: parseInt(el.dataset.qnum), answerText: el.value
+  }));
+  Swal.fire({ title: 'กำลังส่งคำตอบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  google.script.run.withSuccessHandler(res => {
+    Swal.close();
+    if (res.success) { Toast(res.message, 'success'); courseNavBack(); }
+    else Swal.fire('แจ้งเตือน', res.message, 'warning');
+  }).withFailureHandler(err => { Swal.close(); Swal.fire('ผิดพลาด', err.toString(), 'error'); })
+    .submitElectiveAnswers(currentLoggedStudentId, subjectCode, clsCode, chapterNum, answers);
+}
+
+// ── [Elective] สอบปรนัยท้ายหน่วย (ไม่จับเวลา ทำได้สูงสุด 2 รอบ ต้องดูคลิปหรือตอบคำถามให้ครบก่อนถึงจะสอบได้) ──
+let electiveTestAnswers = [];
+function openElectiveTest(subjectCode, clsCode, chapterNum) {
+  const body = document.getElementById('courseModalBody');
+  Swal.fire({ title: 'กำลังเตรียมข้อสอบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  google.script.run.withSuccessHandler(res => {
+    Swal.close();
+    if (!res.success) { Swal.fire('แจ้งเตือน', res.message, 'warning'); return; }
+    coursePush_(() => openElectiveTest(subjectCode, clsCode, chapterNum));
+    courseSetTitle_('สอบท้ายหน่วย ' + chapterNum, true);
+    electiveTestAnswers = new Array(res.questions.length).fill('');
+
+    const qRows = res.questions.map((q, i) => `
+      <div class="card card-pad" style="margin-bottom:10px;">
+        <div style="font-weight:700; margin-bottom:8px;">ข้อ ${i + 1}. ${q.questionText}</div>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          ${['A','B','C','D'].map(opt => `
+            <button class="btn btn-ghost btn-sm elective-test-opt-btn" data-q="${i}" data-opt="${opt}" style="text-align:left;" onclick="selectElectiveTestAnswer_(${i}, '${opt}', this)">${opt}. ${q.choices[opt] || ''}</button>
+          `).join('')}
+        </div>
+      </div>`).join('');
+    body.innerHTML = qRows + `
+      <div style="text-align:center; color:var(--slate); font-size:0.78rem; margin-bottom:10px;">เหลือโอกาสทำ ${res.eligibility.attemptsRemaining} รอบ (ไม่จับเวลา)</div>
+      <button class="btn btn-teal btn-block" onclick="submitElectiveTest_(${JSON.stringify(subjectCode)}, ${JSON.stringify(clsCode)}, ${chapterNum})">
+        <i class="fa-solid fa-paper-plane"></i> ส่งคำตอบ
+      </button>`;
+  }).withFailureHandler(err => { Swal.close(); Swal.fire('ผิดพลาด', err.toString(), 'error'); })
+    .getElectiveTestQuestions(currentLoggedStudentId, subjectCode, clsCode, chapterNum);
+}
+function selectElectiveTestAnswer_(qIdx, opt, btnEl) {
+  electiveTestAnswers[qIdx] = opt;
+  document.querySelectorAll(`.elective-test-opt-btn[data-q="${qIdx}"]`).forEach(b => {
+    b.classList.remove('btn-teal'); b.classList.add('btn-ghost');
+  });
+  btnEl.classList.remove('btn-ghost'); btnEl.classList.add('btn-teal');
+}
+function submitElectiveTest_(subjectCode, clsCode, chapterNum) {
+  const unanswered = electiveTestAnswers.filter(a => !a).length;
+  const doSubmit = () => {
+    const answers = electiveTestAnswers.map((choice, i) => ({ questionNum: i + 1, choice }));
+    Swal.fire({ title: 'กำลังส่งคำตอบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    google.script.run.withSuccessHandler(res => {
+      Swal.close();
+      Swal.fire(res.success ? 'เสร็จสิ้น' : 'แจ้งเตือน', res.message, res.success ? 'success' : 'warning').then(() => courseNavBack());
+    }).withFailureHandler(err => { Swal.close(); Swal.fire('ผิดพลาด', err.toString(), 'error'); })
+      .submitElectiveTest(currentLoggedStudentId, subjectCode, clsCode, chapterNum, answers);
+  };
+  if (unanswered > 0) {
+    Swal.fire({
+      title: 'ยังตอบไม่ครบ', text: `เหลืออีก ${unanswered} ข้อที่ยังไม่ได้ตอบ ต้องการส่งเลยไหม?`,
+      icon: 'question', showCancelButton: true, confirmButtonText: 'ส่งเลย', cancelButtonText: 'ทำต่อ'
+    }).then(r => { if (r.isConfirmed) doSubmit(); });
+  } else {
+    doSubmit();
+  }
 }
 
 // ── สอบท้ายบท (จับเวลา ตอบ ก/ข/ค/ง) ──
