@@ -4180,17 +4180,35 @@ function startRunTracking_() {
   });
   startStepCounter_();
   runTickInterval = setInterval(updateRunLiveUI_, 1000);
-  runSyncInterval = setInterval(() => {
-    google.script.run.withSuccessHandler(res => {
-      // [Fix] เซิร์ฟเวอร์ตรวจจับ "หยุดพักเกิน 5 นาที" เองจากระยะที่ sync เข้ามา (รีเฟรช/เปิดแอปใหม่หลบไม่ได้แล้ว)
-      // ถ้าเซิร์ฟเวอร์ตัดจบเซสชันให้แล้ว ฝั่งนี้ก็แค่หยุดติดตามตาม ไม่ต้องเรียก finishRunSession ซ้ำ (ตัดไปแล้วฝั่งนั้น)
-      if (res && res.forceEnded) {
-        stopRunTracking_(false);
-        Swal.fire('⏱️ หยุดพักนานเกินไป', res.message, 'warning').then(() => { refreshRunSummary_(); openRunModal(); });
-      }
-    }).withFailureHandler(err => console.error('updateRunProgress failed:', err))
-      .updateRunProgress(currentLoggedStudentId, runStartedAt, runValidMeters, runTotalMeters, runSteps);
-  }, 20000); // [Perf] เดิม 15 วิ เพิ่มเป็น 20 วิ ลดจำนวนรอบ backend ระหว่างวิ่ง (ยังพอสำหรับ threshold หยุดพัก 5 นาที)
+  runSyncInterval = setInterval(() => runSyncTick_(), 20000); // [Perf] เดิม 15 วิ เพิ่มเป็น 20 วิ ลดจำนวนรอบ backend ระหว่างวิ่ง (ยังพอสำหรับ threshold หยุดพัก 5 นาที)
+}
+
+// [Offline] ระยะทาง/ก้าววิ่งคำนวณฝั่งเครื่องล้วนๆ (ไม่ต้องพึ่งเน็ต) ค่าที่ sync ไปแต่ละครั้งคือ "ยอดสะสมล่าสุด" ไม่ใช่ผลต่าง
+// ดังนั้นถ้าสัญญาณหลุดชั่วคราว ไม่มีข้อมูลสูญหาย แค่ยังไม่ถึงเซิร์ฟเวอร์ — จุดนี้เพิ่ม retry เร็วขึ้นตอนหลุดสัญญาณ (ไม่ต้องรอ 20 วิเต็ม)
+// กับโชว์สถานะให้เห็นว่ากำลังลองเชื่อมต่อใหม่อยู่ ไม่ใช่ค้าง/หาย
+let runSyncRetryTimeout = null;
+function runSyncTick_() {
+  google.script.run.withSuccessHandler(res => {
+    updateRunSyncStatus_('ok');
+    // [Fix] เซิร์ฟเวอร์ตรวจจับ "หยุดพักเกิน 5 นาที" เองจากระยะที่ sync เข้ามา (รีเฟรช/เปิดแอปใหม่หลบไม่ได้แล้ว)
+    // ถ้าเซิร์ฟเวอร์ตัดจบเซสชันให้แล้ว ฝั่งนี้ก็แค่หยุดติดตามตาม ไม่ต้องเรียก finishRunSession ซ้ำ (ตัดไปแล้วฝั่งนั้น)
+    if (res && res.forceEnded) {
+      stopRunTracking_(false);
+      Swal.fire('⏱️ หยุดพักนานเกินไป', res.message, 'warning').then(() => { refreshRunSummary_(); openRunModal(); });
+    }
+  }).withFailureHandler(err => {
+    console.error('updateRunProgress failed (จะลองใหม่เร็วๆนี้):', err);
+    updateRunSyncStatus_('offline');
+    // ลองใหม่เร็วกว่ารอบปกติ (5 วิ) แทนรอ 20 วิเต็ม ลดโอกาสชนเพดานหยุดพัก 5 นาทีของเซิร์ฟเวอร์ตอนสัญญาณหลุดสั้นๆ
+    if (runSyncRetryTimeout) clearTimeout(runSyncRetryTimeout);
+    runSyncRetryTimeout = setTimeout(() => { if (runSyncInterval) runSyncTick_(); }, 5000);
+  }).updateRunProgress(currentLoggedStudentId, runStartedAt, runValidMeters, runTotalMeters, runSteps);
+}
+// แสดงสถานะการซิงค์เล็กๆ ในหน้าวิ่ง (ok = ซ่อน, offline = "สัญญาณหลุด กำลังลองใหม่")
+function updateRunSyncStatus_(state) {
+  const el = document.getElementById('runSyncStatus');
+  if (!el) return;
+  el.style.display = state === 'offline' ? 'block' : 'none';
 }
 
 function renderRunActiveView_() {
@@ -4202,6 +4220,7 @@ function renderRunActiveView_() {
       <div style="font-size:0.75rem; color:var(--slate); text-transform:uppercase; letter-spacing:0.06em;">กำลังวิ่ง...</div>
       <div id="runDistanceDisplay" style="font-family:'Mitr','Prompt',sans-serif; font-weight:700; font-size:2.2rem; color:var(--amber2);">0 ม.</div>
       <div id="runPointsDisplay" style="color:var(--teal2); font-weight:700;">+0.0 แต้มวิ่ง</div>
+      <div id="runSyncStatus" style="display:none; margin-top:6px; font-size:0.72rem; color:var(--coral);"><i class="fa-solid fa-triangle-exclamation"></i> สัญญาณหลุด กำลังลองเชื่อมต่อใหม่... (ระยะทางยังนับต่อเนื่องปกติ)</div>
     </div>
     <div class="card card-pad" style="margin-bottom:14px;">
       <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
@@ -4329,6 +4348,7 @@ function stopRunTracking_(finalize) {
   if (runWatchId !== null) { navigator.geolocation.clearWatch(runWatchId); runWatchId = null; }
   if (runTickInterval) { clearInterval(runTickInterval); runTickInterval = null; }
   if (runSyncInterval) { clearInterval(runSyncInterval); runSyncInterval = null; }
+  if (runSyncRetryTimeout) { clearTimeout(runSyncRetryTimeout); runSyncRetryTimeout = null; }
   stopStepCounter_();
 
   // เคลียร์สถานะแผนที่ ให้พร้อมสร้างใหม่ตอนวิ่งรอบถัดไป (DOM container เดิมจะถูกแทนที่อยู่แล้วตอน renderRunActiveView_ ครั้งหน้า)
@@ -4337,7 +4357,19 @@ function stopRunTracking_(finalize) {
 
   if (!finalize) return;
 
-  Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  submitFinishRunSession_(runStartedAt, runValidMeters, runTotalMeters, runSteps, 0);
+}
+
+// [Offline] จุดเดียวที่ไม่มีการ retry อัตโนมัติมาก่อน (ต่างจากการ sync ระหว่างวิ่งที่ยิงซ้ำทุก 20 วิอยู่แล้ว) —
+// ถ้าเพิ่งกด "จบการวิ่ง" ตอนสัญญาณหลุดพอดี เดิมจะ error แล้วต้องให้ผู้ใช้กดจบเองใหม่ ตอนนี้ auto-retry ให้ก่อน (3 ครั้ง, หน่วงเพิ่มขึ้นเรื่อยๆ)
+// ตัวเลข (validMeters/totalMeters/steps) คือยอดสะสมสุดท้าย ณ ตอนกดจบ ไม่เปลี่ยนแปลงระหว่างรอ retry จึงส่งซ้ำได้อย่างปลอดภัย
+const RUN_FINISH_RETRY_DELAYS_MS = [3000, 6000, 12000];
+function submitFinishRunSession_(startedAt, validMeters, totalMeters, steps, attempt) {
+  if (attempt === 0) {
+    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  } else {
+    Swal.update({ title: `กำลังลองใหม่... (ครั้งที่ ${attempt + 1})` });
+  }
   google.script.run.withSuccessHandler(res => {
     Swal.close();
     if (res.success) {
@@ -4349,9 +4381,14 @@ function stopRunTracking_(finalize) {
       Swal.fire('แจ้งเตือน', res.message, 'warning');
     }
   }).withFailureHandler(err => {
-    console.error('finishRunSession failed:', err);
-    Swal.fire('เชื่อมต่อไม่สำเร็จ', 'บันทึกผลการวิ่งไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดจบการวิ่งอีกครั้ง', 'error');
-  }).finishRunSession(currentLoggedStudentId, runStartedAt, runValidMeters, runTotalMeters, runSteps);
+    console.error('finishRunSession failed (attempt ' + attempt + '):', err);
+    if (attempt < RUN_FINISH_RETRY_DELAYS_MS.length) {
+      setTimeout(() => submitFinishRunSession_(startedAt, validMeters, totalMeters, steps, attempt + 1), RUN_FINISH_RETRY_DELAYS_MS[attempt]);
+    } else {
+      Swal.close();
+      Swal.fire('เชื่อมต่อไม่สำเร็จ', 'บันทึกผลการวิ่งไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดจบการวิ่งอีกครั้ง', 'error');
+    }
+  }).finishRunSession(currentLoggedStudentId, startedAt, validMeters, totalMeters, steps);
 }
 
 // แจ้งผล EXP คู่หูที่ได้จากการวิ่งรอบนี้ (ให้อัตโนมัติทันทีที่จบวิ่ง แยกขาดจากการแลกแต้มพิเศษโดยสิ้นเชิง)
