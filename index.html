@@ -1186,6 +1186,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <input type="date" id="histDateFrom" class="field">
           <input type="date" id="histDateTo"   class="field">
           <button class="btn btn-teal btn-sm" onclick="loadTeacherHistory()"><i class="fa-solid fa-magnifying-glass"></i> เช็ค</button>
+          <button class="btn btn-amber btn-sm" onclick="openAttendanceModal()"><i class="fa-solid fa-user-check"></i> แก้ไขการเช็คชื่อ</button>
         </div>
         <div id="historyContainer">
           <div style="text-align:center; color:var(--slate); padding:24px;">เลือกตัวกรองแล้วกด "เช็ค"</div>
@@ -2528,6 +2529,138 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         console.error('deleteStudentFromWeb failed:', err);
         Swal.fire('ลบไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
       }).deleteStudentFromWeb(studentId);
+    });
+  }
+
+  // ─── ATTENDANCE LOG MANAGEMENT (ครู) ─────────────────────────
+  // แก้สถานะ/ลบรายการเช็คชื่อที่สแกนผิด — เดิม backend มีฟังก์ชันครบแต่ไม่มี UI เรียกใช้
+  // สแกนผิดคนหรือกดผิดสถานะจึงต้องเข้าไปแก้ใน Google Sheet เองทุกครั้ง
+  let attendanceRows = [];
+
+  function openAttendanceModal() {
+    openFullpageView_('attendanceModal');
+    // เติมตัวเลือกชั้น/วิชาจาก meta (ครั้งแรกที่เปิดเท่านั้น กันทับค่าที่ครูเลือกค้างไว้)
+    const cSel = document.getElementById('attClass'), sSel = document.getElementById('attSubject');
+    if (!cSel.options.length) {
+      cSel.innerHTML = `<option value="ALL">ทุกชั้น</option>` +
+        (metaData.classes || []).map(c => `<option value="${c.code}">${c.label}</option>`).join('');
+      sSel.innerHTML = `<option value="ALL">ทุกวิชา</option>` +
+        (metaData.subjects || []).map(s => `<option value="${s.code}">${s.label}</option>`).join('');
+      // ตั้งช่วงวันเริ่มต้นเป็น 7 วันล่าสุด ครูมักมาแก้ของที่เพิ่งสแกนพลาดไม่นาน
+      const today = new Date(), weekAgo = new Date(Date.now() - 6 * 86400000);
+      const fmt = d => d.toISOString().slice(0, 10);
+      document.getElementById('attDateFrom').value = fmt(weekAgo);
+      document.getElementById('attDateTo').value   = fmt(today);
+    }
+    loadAttendanceLog();
+  }
+
+  function loadAttendanceLog() {
+    const cont = document.getElementById('attendanceContainer');
+    cont.innerHTML = '<div style="text-align:center; color:var(--slate); padding:24px;">กำลังโหลด...</div>';
+    const filters = {
+      cls:      document.getElementById('attClass').value,
+      subject:  document.getElementById('attSubject').value,
+      dateFrom: document.getElementById('attDateFrom').value,
+      dateTo:   document.getElementById('attDateTo').value
+    };
+    google.script.run.withSuccessHandler(list => {
+      attendanceRows = list || [];
+      renderAttendanceLog_();
+    }).withFailureHandler(err => {
+      console.error('getAttendanceLog failed:', err);
+      cont.innerHTML = courseErrorHtml_('loadAttendanceLog()');
+    }).getAttendanceLog(filters);
+  }
+
+  function renderAttendanceLog_() {
+    const cont = document.getElementById('attendanceContainer');
+    if (attendanceRows.length === 0) {
+      cont.innerHTML = '<div style="text-align:center; color:var(--slate); padding:24px;">ไม่พบรายการเช็คชื่อในช่วงที่เลือก</div>';
+      return;
+    }
+    const statusOpts = (code) => (metaData.statuses || [])
+      .map(s => `<option value="${s.code}" ${s.code === code ? 'selected' : ''}>${s.icon} ${s.label}</option>`).join('');
+
+    const rows = attendanceRows.map((r, i) => `
+      <tr>
+        <td style="font-size:0.76rem; white-space:nowrap;">${r.date}</td>
+        <td style="text-align:left; font-size:0.8rem;">
+          ${r.name}<div style="color:var(--slate); font-size:0.7rem;">${r.clsLabel} · ${r.subjectLabel}</div>
+        </td>
+        <td>
+          <select class="field" style="font-size:0.76rem; padding:5px;" onchange="changeAttendanceStatus_(${i}, this.value, this)">
+            ${statusOpts(r.status)}
+          </select>
+        </td>
+        <td>
+          <button class="btn btn-ghost btn-sm" style="padding:6px 9px; color:var(--coral);" title="ลบรายการนี้"
+                  onclick="confirmDeleteAttendance_(${i})"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>`).join('');
+
+    cont.innerHTML = `
+      <div style="font-size:0.76rem; color:var(--slate); margin-bottom:8px;">
+        พบ ${attendanceRows.length} รายการ · เปลี่ยนสถานะได้ทันทีจากช่องเลือก
+      </div>
+      <div class="tbl-wrap">
+        <table class="dt">
+          <thead><tr><th>วันที่</th><th style="text-align:left;">นักเรียน</th><th>สถานะ</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  // เปลี่ยนสถานะทันทีที่เลือก — ส่งข้อมูลยืนยันแถวไปด้วยเสมอ กันกรณีข้อมูลในชีตขยับหลังจากโหลดมา
+  function changeAttendanceStatus_(i, newStatus, selEl) {
+    const r = attendanceRows[i];
+    if (!r) return;
+    const prev = r.status;
+    selEl.disabled = true;
+    google.script.run.withSuccessHandler(res => {
+      selEl.disabled = false;
+      if (res && res.success) { r.status = newStatus; Toast(res.message); }
+      else {
+        selEl.value = prev; // คืนค่าเดิมให้ตรงกับความจริงในชีต
+        if (res && res.stale) { Swal.fire('ข้อมูลไม่ตรงกัน', res.message, 'warning').then(() => loadAttendanceLog()); }
+        else Swal.fire('แก้ไขไม่สำเร็จ', (res && res.message) || 'เกิดข้อผิดพลาด', 'error');
+      }
+    }).withFailureHandler(err => {
+      selEl.disabled = false; selEl.value = prev;
+      console.error('updateAttendanceStatusSafe failed:', err);
+      Swal.fire('แก้ไขไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
+    }).updateAttendanceStatusSafe(r.sheetRow, newStatus, r.studentId, r.date, r.subject);
+  }
+
+  function confirmDeleteAttendance_(i) {
+    const r = attendanceRows[i];
+    if (!r) return;
+    Swal.fire({
+      title: '🗑️ ลบรายการเช็คชื่อ?',
+      html: `<div style="text-align:left; font-size:0.88rem;">
+        <b>${r.name}</b><br>
+        ${r.date} · ${r.subjectLabel} · ${r.statusIcon} ${r.statusLabel}<br><br>
+        <span style="font-size:0.8rem; color:var(--slate);">ลบแล้วจะถือว่านักเรียนคนนี้ไม่ได้เช็คชื่อในวิชานี้ของวันดังกล่าว และสามารถสแกนเช็คชื่อใหม่ได้อีกครั้ง</span>
+      </div>`,
+      icon: 'warning', showCancelButton: true,
+      confirmButtonText: 'ลบเลย', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#FF4D6D'
+    }).then(c => {
+      if (!c.isConfirmed) return;
+      Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      google.script.run.withSuccessHandler(res => {
+        if (res && res.success) {
+          Swal.close(); Toast(res.message);
+          // ต้องโหลดใหม่เสมอ เพราะการลบทำให้เลขแถวของรายการที่เหลือเลื่อนทั้งหมด
+          loadAttendanceLog();
+        } else if (res && res.stale) {
+          Swal.fire('ข้อมูลไม่ตรงกัน', res.message, 'warning').then(() => loadAttendanceLog());
+        } else {
+          Swal.fire('ลบไม่สำเร็จ', (res && res.message) || 'เกิดข้อผิดพลาด', 'error');
+        }
+      }).withFailureHandler(err => {
+        console.error('deleteAttendanceRowSafe failed:', err);
+        Swal.fire('ลบไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
+      }).deleteAttendanceRowSafe(r.sheetRow, r.studentId, r.date, r.subject);
     });
   }
 
@@ -4810,6 +4943,27 @@ function refreshRunSummary_() {
     <button class="btn btn-ghost btn-icon" onclick="closeFullpageView_('examCtrlModal')"><i class="fa-solid fa-xmark"></i></button>
   </div>
   <div id="examCtrlModalBody" class="fullpage-body"></div>
+</div>
+
+<!-- แก้ไขประวัติการเช็คชื่อ (ฝั่งครู)
+     เดิมถ้าสแกนผิดคน/ผิดสถานะ ไม่มีทางแก้จากหน้าเว็บเลย ต้องเปิด Google Sheet ไปแก้เอง -->
+<div id="attendanceModal" class="fullpage-view hidden">
+  <div class="fullpage-head">
+    <div class="section-title" style="margin-bottom:0;"><i class="fa-solid fa-user-check"></i> แก้ไขการเช็คชื่อ</div>
+    <button class="btn btn-ghost btn-icon" onclick="closeFullpageView_('attendanceModal')"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="fullpage-body">
+    <div class="filter-bar" style="margin-bottom:12px;">
+      <select id="attClass" class="field"></select>
+      <select id="attSubject" class="field"></select>
+      <input type="date" id="attDateFrom" class="field">
+      <input type="date" id="attDateTo" class="field">
+      <button class="btn btn-teal btn-sm" onclick="loadAttendanceLog()"><i class="fa-solid fa-magnifying-glass"></i> ค้นหา</button>
+    </div>
+    <div id="attendanceContainer">
+      <div style="text-align:center; color:var(--slate); padding:24px;">เลือกตัวกรองแล้วกด "ค้นหา"</div>
+    </div>
+  </div>
 </div>
 
 <!-- ตั้งค่าระบบ (ฝั่งครู): ชั้นเรียน / รายวิชา / ค่าระบบ
