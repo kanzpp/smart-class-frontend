@@ -2687,6 +2687,60 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     if (tab === 'classes')  renderAdminCodeList_('classes',  'ชั้นเรียน', 'เช่น M1 / ม.1');
     if (tab === 'subjects') renderAdminCodeList_('subjects', 'รายวิชา',  'เช่น MATH / คณิตศาสตร์');
     if (tab === 'settings') renderAdminSettings_();
+    if (tab === 'integrity') runSheetIntegrityCheck_();
+  }
+
+  // ตรวจว่าโครงสร้างคอลัมน์ในชีตยังตรงกับที่ระบบคาดหวังไหม
+  // จำเป็นเพราะโค้ดคิดคะแนน/คู่หู/การวิ่ง อ้างอิงตำแหน่งคอลัมน์แบบตายตัว ถ้าใครแทรกคอลัมน์ด้วยมือ
+  // ระบบจะยังทำงานต่อเงียบๆ แต่อ่าน/เขียนผิดช่องทั้งห้อง โดยไม่มีอะไรฟ้อง
+  function runSheetIntegrityCheck_() {
+    const body = document.getElementById('adminBody');
+    body.innerHTML = '<div style="text-align:center; color:var(--slate); padding:24px;">กำลังตรวจสอบโครงสร้างชีต...</div>';
+    google.script.run.withSuccessHandler(res => {
+      const chapterInfo = (res.chapterCounts || []).length
+        ? `<div class="card card-pad" style="margin-bottom:10px; text-align:left;">
+             <div style="font-weight:700; margin-bottom:6px;"><i class="fa-solid fa-circle-info"></i> จำนวนบทของแต่ละชีตคะแนน</div>
+             <div style="font-size:0.8rem; color:var(--slate);">
+               ${res.chapterCounts.map(c => `${c.sheet} — <b>${c.chapters}</b> บท`).join(' · ')}
+             </div>
+             <div style="font-size:0.74rem; color:var(--slate); margin-top:6px;">
+               แต่ละห้องมีจำนวนบทไม่เท่ากันได้ตามปกติ (ระบบคิดคะแนนตามจำนวนบทจริงของแต่ละชีต)
+               ค่า "จำนวนบททั้งหมด" ในแท็บค่าระบบ (${res.totalChapters}) ใช้ตอนสร้างชีตใหม่และตอนกดซิงค์โครงสร้างเท่านั้น
+             </div>
+           </div>` : '';
+
+      if (res.ok) {
+        body.innerHTML = `
+          <div class="card card-pad" style="margin-bottom:10px; background:rgba(82,196,26,0.08); text-align:left;">
+            <b style="color:var(--teal2);">✅ โครงสร้างชีตถูกต้องทั้งหมด</b>
+            <div style="font-size:0.8rem; color:var(--slate); margin-top:4px;">ตรวจแล้ว ${res.checkedCount} ชีต ไม่พบคอลัมน์ที่ผิดตำแหน่ง</div>
+          </div>
+          ${chapterInfo}
+          <button class="btn btn-ghost btn-block btn-sm" onclick="runSheetIntegrityCheck_()"><i class="fa-solid fa-rotate"></i> ตรวจอีกครั้ง</button>`;
+        return;
+      }
+
+      const probRows = res.problems.map(p => `
+        <div class="card card-pad" style="margin-bottom:8px; text-align:left; background:rgba(255,77,109,0.06);">
+          <b style="color:var(--coral);">${p.sheet}</b>
+          <div style="font-size:0.82rem; margin-top:4px;">${p.message}</div>
+        </div>`).join('');
+
+      body.innerHTML = `
+        <div class="card card-pad" style="margin-bottom:10px; background:rgba(255,77,109,0.08); text-align:left;">
+          <b style="color:var(--coral);">⚠️ พบโครงสร้างชีตผิดปกติ ${res.problemCount} จุด</b>
+          <div style="font-size:0.8rem; color:var(--slate); margin-top:6px;">
+            ระบบอ่าน-เขียนข้อมูลตาม<b>ตำแหน่งคอลัมน์</b> ถ้าคอลัมน์เลื่อน คะแนนหรือข้อมูลของนักเรียนอาจถูกบันทึกผิดช่องโดยไม่มีการแจ้งเตือน<br>
+            <b>วิธีแก้:</b> เปิด Google Sheet แล้วย้าย/ลบคอลัมน์ที่แทรกเพิ่มเข้ามาออก ให้หัวคอลัมน์กลับไปเรียงตามเดิม แล้วกดตรวจอีกครั้ง
+          </div>
+        </div>
+        ${probRows}
+        ${chapterInfo}
+        <button class="btn btn-ghost btn-block btn-sm" onclick="runSheetIntegrityCheck_()"><i class="fa-solid fa-rotate"></i> ตรวจอีกครั้ง</button>`;
+    }).withFailureHandler(err => {
+      console.error('checkSheetIntegrity failed:', err);
+      body.innerHTML = courseErrorHtml_('runSheetIntegrityCheck_()');
+    }).checkSheetIntegrity();
   }
 
   // ตารางแก้ไขรายการ {code, label} ใช้ร่วมกันทั้งชั้นเรียนและรายวิชา (โครงสร้างข้อมูลเหมือนกันเป๊ะ)
@@ -4978,6 +5032,7 @@ function refreshRunSummary_() {
       <button class="btn btn-teal btn-sm admin-tab-btn" data-atab="classes"  onclick="switchAdminTab_('classes', this)"><i class="fa-solid fa-layer-group"></i> ชั้นเรียน</button>
       <button class="btn btn-ghost btn-sm admin-tab-btn" data-atab="subjects" onclick="switchAdminTab_('subjects', this)"><i class="fa-solid fa-book"></i> รายวิชา</button>
       <button class="btn btn-ghost btn-sm admin-tab-btn" data-atab="settings" onclick="switchAdminTab_('settings', this)"><i class="fa-solid fa-sliders"></i> ค่าระบบ</button>
+      <button class="btn btn-ghost btn-sm admin-tab-btn" data-atab="integrity" onclick="switchAdminTab_('integrity', this)"><i class="fa-solid fa-shield-halved"></i> ตรวจสอบชีต</button>
     </div>
     <div id="adminBody"></div>
   </div>
