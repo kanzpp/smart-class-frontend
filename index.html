@@ -4026,6 +4026,9 @@ const RUN_MIN_ACCURACY_M = 30;
 // เบราว์เซอร์ไม่มี API นับก้าวโดยตรง จึงอ่านความเร่งจากเซนเซอร์ (devicemotion) แล้วจับ "จุดสูงสุด"
 // ของแรงเร่งรวมที่ข้ามค่า threshold มาเป็นการนับ 1 ก้าว (debounce กันนับซ้ำในจังหวะเดียวกัน)
 let runMotionActive = false, runMotionAboveThreshold = false, runMotionLastStepAt = 0, runMotionLastSampleAt = 0;
+// [Anti-cheat] เซ็นเซอร์นับก้าวใช้งานได้จริงหรือไม่ ต้องบอกเซิร์ฟเวอร์ให้ชัด เพราะ "0 ก้าวเพราะนั่งเฉยๆ" (ต้องกันโกง)
+// กับ "0 ก้าวเพราะเซ็นเซอร์ใช้ไม่ได้" (คนวิ่งจริง ต้องได้แต้ม) ส่งตัวเลขมาหน้าตาเหมือนกันเป๊ะ แยกกันไม่ออกถ้าไม่บอก
+let runStepSensorOk = false;
 const RUN_STEP_THRESHOLD_MS2 = 11.5;   // ขนาดแรงเร่งรวม (m/s²) ที่ถือว่าเป็นจังหวะก้าวเดิน/วิ่ง (ค่ากลางแรงโน้มถ่วง ~9.8)
 const RUN_STEP_MIN_INTERVAL_MS = 300;  // ห่างกันอย่างน้อยเท่านี้ถึงจะนับก้าวใหม่ (กันสั่นถี่ๆ นับซ้ำ)
 const RUN_MOTION_SAMPLE_MS = 80;       // [Perf] ประมวลผลอย่างมากทุก 80ms (~12Hz) แม้เซนเซอร์บางเครื่องจะยิง event ถี่ถึง 60Hz
@@ -4052,16 +4055,24 @@ function onRunDeviceMotion_(e) {
 
 // เริ่มฟังเซนเซอร์ความเร่ง (ต้องขอสิทธิ์ก่อนบน iOS 13+) ถ้าอุปกรณ์ไม่รองรับก็แค่ไม่นับก้าว ไม่กระทบระยะทาง/แต้มที่คำนวณจาก GPS
 async function startStepCounter_() {
-  if (runMotionActive || typeof DeviceMotionEvent === 'undefined') return;
+  if (runMotionActive) return;
+  if (typeof DeviceMotionEvent === 'undefined') { runStepSensorOk = false; notifyStepSensorUnavailable_(); return; }
   if (typeof DeviceMotionEvent.requestPermission === 'function') {
     try {
       const perm = await DeviceMotionEvent.requestPermission();
-      if (perm !== 'granted') return;
-    } catch (e) { return; }
+      if (perm !== 'granted') { runStepSensorOk = false; notifyStepSensorUnavailable_(); return; }
+    } catch (e) { runStepSensorOk = false; notifyStepSensorUnavailable_(); return; }
   }
   runMotionAboveThreshold = false;
   window.addEventListener('devicemotion', onRunDeviceMotion_);
   runMotionActive = true;
+  runStepSensorOk = true;
+}
+
+// แจ้งนักเรียนตรงๆ เมื่อเซ็นเซอร์นับก้าวใช้ไม่ได้ ไม่ปล่อยให้วิ่งจนจบแล้วค่อยมางงว่าทำไมได้แต้มน้อย
+function notifyStepSensorUnavailable_() {
+  const el = document.getElementById('runSensorWarn');
+  if (el) el.style.display = 'block';
 }
 function stopStepCounter_() {
   if (!runMotionActive) return;
@@ -4202,7 +4213,7 @@ function runSyncTick_() {
     // ลองใหม่เร็วกว่ารอบปกติ (5 วิ) แทนรอ 20 วิเต็ม ลดโอกาสชนเพดานหยุดพัก 5 นาทีของเซิร์ฟเวอร์ตอนสัญญาณหลุดสั้นๆ
     if (runSyncRetryTimeout) clearTimeout(runSyncRetryTimeout);
     runSyncRetryTimeout = setTimeout(() => { if (runSyncInterval) runSyncTick_(); }, 5000);
-  }).updateRunProgress(currentLoggedStudentId, runStartedAt, runValidMeters, runTotalMeters, runSteps);
+  }).updateRunProgress(currentLoggedStudentId, runStartedAt, runValidMeters, runTotalMeters, runSteps, runStepSensorOk);
 }
 // แสดงสถานะการซิงค์เล็กๆ ในหน้าวิ่ง (ok = ซ่อน, offline = "สัญญาณหลุด กำลังลองใหม่")
 function updateRunSyncStatus_(state) {
@@ -4221,6 +4232,7 @@ function renderRunActiveView_() {
       <div id="runDistanceDisplay" style="font-family:'Mitr','Prompt',sans-serif; font-weight:700; font-size:2.2rem; color:var(--amber2);">0 ม.</div>
       <div id="runPointsDisplay" style="color:var(--teal2); font-weight:700;">+0.0 แต้มวิ่ง</div>
       <div id="runSyncStatus" style="display:none; margin-top:6px; font-size:0.72rem; color:var(--coral);"><i class="fa-solid fa-triangle-exclamation"></i> สัญญาณหลุด กำลังลองเชื่อมต่อใหม่... (ระยะทางยังนับต่อเนื่องปกติ)</div>
+      <div id="runSensorWarn" style="display:none; margin-top:6px; font-size:0.72rem; color:var(--coral);"><i class="fa-solid fa-mobile-screen"></i> เครื่องนี้นับก้าวไม่ได้ (ไม่ได้อนุญาตเซ็นเซอร์ หรือเครื่องไม่รองรับ) — ยังวิ่งสะสมระยะได้ปกติ แต่ระบบจะคิดระยะแบบระมัดระวังขึ้น</div>
     </div>
     <div class="card card-pad" style="margin-bottom:14px;">
       <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
@@ -4388,7 +4400,7 @@ function submitFinishRunSession_(startedAt, validMeters, totalMeters, steps, att
       Swal.close();
       Swal.fire('เชื่อมต่อไม่สำเร็จ', 'บันทึกผลการวิ่งไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วกดจบการวิ่งอีกครั้ง', 'error');
     }
-  }).finishRunSession(currentLoggedStudentId, startedAt, validMeters, totalMeters, steps);
+  }).finishRunSession(currentLoggedStudentId, startedAt, validMeters, totalMeters, steps, runStepSensorOk);
 }
 
 // แจ้งผล EXP คู่หูที่ได้จากการวิ่งรอบนี้ (ให้อัตโนมัติทันทีที่จบวิ่ง แยกขาดจากการแลกแต้มพิเศษโดยสิ้นเชิง)
