@@ -1050,6 +1050,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
     <div class="teacher-hero confetti-bg">
       <div class="hero-icon-row">
+        <button class="hero-logout" onclick="openAdminModal()" title="ตั้งค่าระบบ"><i class="fa-solid fa-gear"></i></button>
         <button class="hero-logout" onclick="toggleDarkMode()" title="โหมดมืด"><i class="fa-solid fa-moon" id="darkModeIcon2"></i></button>
         <button class="hero-logout" onclick="logout()" title="ออกจากระบบ"><i class="fa-solid fa-power-off"></i></button>
       </div>
@@ -1199,10 +1200,11 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <input type="text" id="stuFilterName" class="field" placeholder="ค้นหาชื่อ..." style="min-width:120px;">
           <button class="btn btn-teal btn-sm" onclick="loadStudentList()"><i class="fa-solid fa-magnifying-glass"></i> เช็ค</button>
           <button class="btn btn-ghost btn-sm" onclick="openElectiveOverviewModal()"><i class="fa-solid fa-shuffle"></i> ภาพรวมสาขาวิชาเลือก</button>
+          <button class="btn btn-amber btn-sm" onclick="openStudentEditor_()"><i class="fa-solid fa-user-plus"></i> เพิ่มนักเรียน</button>
         </div>
         <div class="tbl-wrap">
           <table class="dt">
-            <thead><tr><th>รหัส</th><th style="text-align:left;">ชื่อ-นามสกุล</th><th>ชั้น</th><th>สาขาที่เลือก</th><th>ดู</th></tr></thead>
+            <thead><tr><th>รหัส</th><th style="text-align:left;">ชื่อ-นามสกุล</th><th>ชั้น</th><th>สาขาที่เลือก</th><th>จัดการ</th></tr></thead>
             <tbody id="allStuBody"><tr><td colspan="5" style="color:var(--slate);">เลือกชั้นแล้วกด "เช็ค"</td></tr></tbody>
           </table>
         </div>
@@ -2384,7 +2386,11 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
             <td style="text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px;">${s.name}</td>
             <td>${s.clsLabel}</td>
             <td>${electiveBadge}</td>
-            <td><button class="btn btn-ghost btn-sm" style="padding:6px 12px;" onclick="viewStudentProfile('${s.id}')"><i class="fa-solid fa-eye"></i> ดู</button></td>
+            <td style="white-space:nowrap;">
+              <button class="btn btn-ghost btn-sm" style="padding:6px 9px;" title="ดูโปรไฟล์" onclick="viewStudentProfile('${s.id}')"><i class="fa-solid fa-eye"></i></button>
+              <button class="btn btn-ghost btn-sm" style="padding:6px 9px;" title="แก้ไข" onclick="openStudentEditor_('${s.id}')"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn btn-ghost btn-sm" style="padding:6px 9px; color:var(--coral);" title="ลบ" onclick="confirmDeleteStudent_('${s.id}', ${JSON.stringify(s.name)})"><i class="fa-solid fa-trash"></i></button>
+            </td>
           </tr>`;
         }).join('');
     };
@@ -2396,6 +2402,292 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     google.script.run.withSuccessHandler(electives => { results.electives = electives; done(); })
       .withFailureHandler(err => { console.error('getAllStudentElectives failed:', err); done(); })
       .getAllStudentElectives();
+  }
+
+  // ─── STUDENT ROSTER MANAGEMENT (ครู) ─────────────────────────
+  // เพิ่ม/แก้ไข/ลบนักเรียนจากหน้าเว็บ — เดิม backend มีฟังก์ชันครบแล้วแต่ไม่มีปุ่มไหนเรียกใช้เลย
+  // ทำให้งานต้นเทอม (เพิ่มนักเรียนใหม่ ย้ายห้อง แก้ชื่อสะกดผิด) ต้องเปิด Google Sheet แก้เองทุกครั้ง
+
+  // ใช้ทั้งตอนเพิ่มใหม่ (ไม่ส่ง studentId) และตอนแก้ไข (ส่ง studentId ของคนที่จะแก้)
+  function openStudentEditor_(studentId) {
+    const isEdit = !!studentId;
+    const classOpts = (metaData.classes || []).map(c => `<option value="${c.code}">${c.label}</option>`).join('');
+    const electiveOpts = `<option value="">— ไม่ระบุ —</option>` +
+      (metaData.electives || []).map(e => `<option value="${e.code}">${e.label}</option>`).join('');
+
+    const build = (cur, curElective) => {
+      Swal.fire({
+        title: isEdit ? '✏️ แก้ไขข้อมูลนักเรียน' : '➕ เพิ่มนักเรียนใหม่',
+        html: `
+          <div style="text-align:left; font-size:0.85rem;">
+            <label style="font-weight:700;">รหัสนักเรียน</label>
+            <input id="seId" class="swal2-input" style="margin:4px 0 10px;" value="${cur ? cur.id : ''}" ${isEdit ? 'disabled' : ''} placeholder="เช่น 2975">
+            <label style="font-weight:700;">ชื่อ-นามสกุล</label>
+            <input id="seName" class="swal2-input" style="margin:4px 0 10px;" value="${cur ? cur.name : ''}" placeholder="เช่น เด็กหญิงอัญมณี ศรีดา">
+            <label style="font-weight:700;">ชั้นเรียน</label>
+            <select id="seCls" class="swal2-input" style="margin:4px 0 10px;">${classOpts}</select>
+            <label style="font-weight:700;">สาขาวิชาเลือก</label>
+            <select id="seElective" class="swal2-input" style="margin:4px 0 10px;">${electiveOpts}</select>
+            <label style="font-weight:700;">PIN ${isEdit ? '(เว้นว่างไว้ = ไม่เปลี่ยน)' : '(เว้นว่าง = ใช้ค่าเริ่มต้น)'}</label>
+            <input id="sePin" class="swal2-input" style="margin:4px 0 0;" placeholder="${isEdit ? 'ไม่เปลี่ยน' : 'ค่าเริ่มต้น'}">
+          </div>`,
+        didOpen: () => {
+          if (cur) document.getElementById('seCls').value = cur.cls;
+          if (curElective) document.getElementById('seElective').value = curElective;
+        },
+        showCancelButton: true, confirmButtonText: 'บันทึก', cancelButtonText: 'ยกเลิก',
+        focusConfirm: false,
+        preConfirm: () => {
+          const id   = document.getElementById('seId').value.trim();
+          const name = document.getElementById('seName').value.trim();
+          if (!id || !name) { Swal.showValidationMessage('กรุณากรอกรหัสและชื่อให้ครบ'); return false; }
+          return {
+            id, name,
+            cls: document.getElementById('seCls').value,
+            elective: document.getElementById('seElective').value,
+            pin: document.getElementById('sePin').value.trim()
+          };
+        }
+      }).then(r => { if (r.isConfirmed && r.value) saveStudent_(r.value, isEdit, curElective); });
+    };
+
+    if (!isEdit) { build(null, ''); return; }
+    // โหมดแก้ไข: ต้องดึงค่าปัจจุบันมาเติมในฟอร์มก่อน ไม่งั้นครูต้องพิมพ์ใหม่ทั้งหมดเสี่ยงพิมพ์ผิด
+    Swal.fire({ title: 'กำลังโหลด...', didOpen: () => Swal.showLoading() });
+    const got = {};
+    let pending = 2;
+    const ready = () => {
+      if (--pending > 0) return;
+      Swal.close();
+      const cur = (got.list || []).find(s => String(s.id) === String(studentId));
+      if (!cur) { Swal.fire('ไม่พบนักเรียน', 'อาจถูกลบไปแล้ว กรุณากด "เช็ค" เพื่อโหลดรายชื่อใหม่', 'warning'); return; }
+      const curElec = (got.electives || {})[studentId];
+      build(cur, curElec ? curElec.subjectCode : '');
+    };
+    google.script.run.withSuccessHandler(l => { got.list = l; ready(); })
+      .withFailureHandler(e => { console.error('getAllStudents failed:', e); got.list = null; ready(); }).getAllStudents();
+    google.script.run.withSuccessHandler(e2 => { got.electives = e2; ready(); })
+      .withFailureHandler(e => { console.error('getAllStudentElectives failed:', e); got.electives = {}; ready(); }).getAllStudentElectives();
+  }
+
+  // บันทึกนักเรียน แล้วค่อยบันทึกสาขาวิชาเลือกต่อ (คนละชีตกัน จึงเป็นคนละ API)
+  function saveStudent_(v, isEdit, prevElective) {
+    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    const afterSave = (res) => {
+      if (!res || !res.success) {
+        Swal.fire('บันทึกไม่สำเร็จ', (res && res.message) || 'เกิดข้อผิดพลาด', 'error');
+        return;
+      }
+      // สาขาวิชาเลือกเก็บแยกในชีต Elective_Enrollment ยิงต่อเฉพาะตอนที่ค่าเปลี่ยนจริง
+      if (v.elective && v.elective !== prevElective) {
+        google.script.run.withSuccessHandler(() => { Swal.close(); Toast(res.message); loadStudentList(); })
+          .withFailureHandler(err => {
+            console.error('setMyElective failed:', err);
+            Swal.fire('บันทึกข้อมูลแล้ว แต่ตั้งสาขาไม่สำเร็จ', 'ข้อมูลนักเรียนถูกบันทึกเรียบร้อย แต่สาขาวิชาเลือกยังไม่ถูกเปลี่ยน กรุณาลองตั้งใหม่อีกครั้ง', 'warning');
+            loadStudentList();
+          }).setMyElective(v.id, v.elective);
+      } else {
+        Swal.close(); Toast(res.message); loadStudentList();
+      }
+    };
+    const fail = (err) => {
+      console.error((isEdit ? 'updateStudentFromWeb' : 'addStudentFromWeb') + ' failed:', err);
+      Swal.fire('บันทึกไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
+    };
+    if (isEdit) {
+      google.script.run.withSuccessHandler(afterSave).withFailureHandler(fail)
+        .updateStudentFromWeb(v.id, v.name, v.cls, v.pin);
+    } else {
+      google.script.run.withSuccessHandler(afterSave).withFailureHandler(fail)
+        .addStudentFromWeb(v.id, v.name, v.cls, v.pin);
+    }
+  }
+
+  // ลบนักเรียน — ต้องเตือนให้ชัดว่าลบแล้วข้อมูลอื่นไม่ได้หายตามไปด้วย
+  // (backend ลบเฉพาะแถวใน Students_Master ส่วนคะแนน/การเช็คชื่อ/แต้ม/คู่หู ยังค้างอยู่ในชีตเดิม)
+  function confirmDeleteStudent_(studentId, studentName) {
+    Swal.fire({
+      title: '🗑️ ลบนักเรียน?',
+      html: `<div style="text-align:left; font-size:0.88rem;">
+        กำลังจะลบ <b>${studentName}</b> (รหัส ${studentId}) ออกจากรายชื่อ<br><br>
+        <div style="background:rgba(255,77,109,0.08); border-radius:10px; padding:10px; color:var(--coral); font-size:0.8rem;">
+          <b>โปรดทราบ:</b> ระบบจะลบเฉพาะรายชื่อเท่านั้น<br>
+          คะแนน การเช็คชื่อ แต้ม และข้อมูลคู่หูของนักเรียนคนนี้ <b>จะยังคงอยู่ในระบบ</b><br>
+          ถ้าเพิ่มรหัสเดิมกลับเข้ามาใหม่ ข้อมูลเก่าจะกลับมาผูกกับรหัสนี้อีกครั้ง
+        </div>
+      </div>`,
+      icon: 'warning', showCancelButton: true,
+      confirmButtonText: 'ลบเลย', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#FF4D6D'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      google.script.run.withSuccessHandler(res => {
+        if (res && res.success) { Swal.close(); Toast(res.message); loadStudentList(); }
+        else Swal.fire('ลบไม่สำเร็จ', (res && res.message) || 'เกิดข้อผิดพลาด', 'error');
+      }).withFailureHandler(err => {
+        console.error('deleteStudentFromWeb failed:', err);
+        Swal.fire('ลบไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
+      }).deleteStudentFromWeb(studentId);
+    });
+  }
+
+  // ─── SYSTEM ADMIN (ครู): ชั้นเรียน / รายวิชา / ค่าระบบ ────────
+  // ทั้ง 3 อย่างนี้ backend รองรับมาตลอด (saveClasses/saveSubjects/saveSettings) แต่ไม่เคยมี UI เรียกใช้
+  // ทำงานกับสำเนาในหน่วยความจำก่อน แล้วค่อยส่งทั้งชุดตอนกดบันทึก (backend รับเป็น list ทั้งก้อน ไม่ใช่ทีละรายการ)
+  let adminDraft = { classes: [], subjects: [] };
+  let adminActiveTab = 'classes';
+
+  function openAdminModal() {
+    openFullpageView_('adminModal');
+    adminDraft.classes  = JSON.parse(JSON.stringify(metaData.classes  || []));
+    adminDraft.subjects = JSON.parse(JSON.stringify(metaData.subjects || []));
+    switchAdminTab_(adminActiveTab);
+  }
+
+  function switchAdminTab_(tab, btn) {
+    adminActiveTab = tab;
+    document.querySelectorAll('.admin-tab-btn').forEach(b => {
+      const on = b.dataset.atab === tab;
+      b.classList.toggle('btn-teal', on);
+      b.classList.toggle('btn-ghost', !on);
+    });
+    if (tab === 'classes')  renderAdminCodeList_('classes',  'ชั้นเรียน', 'เช่น M1 / ม.1');
+    if (tab === 'subjects') renderAdminCodeList_('subjects', 'รายวิชา',  'เช่น MATH / คณิตศาสตร์');
+    if (tab === 'settings') renderAdminSettings_();
+  }
+
+  // ตารางแก้ไขรายการ {code, label} ใช้ร่วมกันทั้งชั้นเรียนและรายวิชา (โครงสร้างข้อมูลเหมือนกันเป๊ะ)
+  function renderAdminCodeList_(kind, title, hint) {
+    const list = adminDraft[kind];
+    const rows = list.map((item, i) => `
+      <tr>
+        <td><input class="field" style="width:88px; font-size:0.8rem;" value="${item.code}" oninput="adminDraft.${kind}[${i}].code=this.value"></td>
+        <td><input class="field" style="width:100%; font-size:0.8rem;" value="${item.label}" oninput="adminDraft.${kind}[${i}].label=this.value"></td>
+        <td><button class="btn btn-ghost btn-sm" style="padding:6px 9px; color:var(--coral);" onclick="adminRemoveRow_('${kind}', ${i})"><i class="fa-solid fa-trash"></i></button></td>
+      </tr>`).join('');
+
+    document.getElementById('adminBody').innerHTML = `
+      <div class="card card-pad" style="margin-bottom:12px; background:rgba(255,193,7,0.08); font-size:0.78rem; text-align:left; color:var(--slate);">
+        <b>⚠️ ระวัง:</b> รหัส (คอลัมน์ซ้าย) คือกุญแจที่ผูกกับคะแนนและประวัติทั้งหมด<br>
+        การ<b>แก้รหัสเดิม</b>หรือ<b>ลบรายการที่มีข้อมูลอยู่แล้ว</b> จะทำให้ข้อมูลเก่าหาไม่เจอ — ถ้าแค่อยากเปลี่ยนชื่อที่แสดง ให้แก้เฉพาะคอลัมน์ขวา
+      </div>
+      <div class="tbl-wrap" style="margin-bottom:12px;">
+        <table class="dt">
+          <thead><tr><th>รหัส</th><th style="text-align:left;">ชื่อที่แสดง</th><th></th></tr></thead>
+          <tbody>${rows || `<tr><td colspan="3" style="color:var(--slate);">ยังไม่มี${title}</td></tr>`}</tbody>
+        </table>
+      </div>
+      <div style="font-size:0.74rem; color:var(--slate); margin-bottom:10px;">${hint}</div>
+      <button class="btn btn-ghost btn-block btn-sm" style="margin-bottom:10px;" onclick="adminAddRow_('${kind}')"><i class="fa-solid fa-plus"></i> เพิ่ม${title}</button>
+      <button class="btn btn-teal btn-block" onclick="saveAdminCodeList_('${kind}')"><i class="fa-solid fa-floppy-disk"></i> บันทึก${title}</button>`;
+  }
+
+  function adminAddRow_(kind) { adminDraft[kind].push({ code: '', label: '' }); switchAdminTab_(kind); }
+  function adminRemoveRow_(kind, i) { adminDraft[kind].splice(i, 1); switchAdminTab_(kind); }
+
+  function saveAdminCodeList_(kind) {
+    const list = adminDraft[kind].filter(x => (x.code || '').trim() || (x.label || '').trim());
+    if (list.length === 0) { Swal.fire('บันทึกไม่ได้', 'ต้องมีอย่างน้อย 1 รายการ', 'warning'); return; }
+    const original = (kind === 'classes' ? metaData.classes : metaData.subjects) || [];
+    const removed = original.filter(o => !list.some(n => n.code === o.code));
+    const proceed = () => {
+      Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      const ok = res => {
+        if (res && res.success) {
+          // โหลด meta ใหม่เพื่อให้ dropdown ทุกจุดในหน้าตรงกับที่เพิ่งบันทึก
+          google.script.run.withSuccessHandler(m => {
+            metaData = m; populateSelects();
+            Swal.close(); Toast(res.message); switchAdminTab_(kind);
+          }).withFailureHandler(() => { Swal.close(); Toast(res.message); }).getMetaConfig();
+        } else Swal.fire('บันทึกไม่สำเร็จ', (res && res.message) || 'เกิดข้อผิดพลาด', 'error');
+      };
+      const fail = err => {
+        console.error('save' + (kind === 'classes' ? 'Classes' : 'Subjects') + ' failed:', err);
+        Swal.fire('บันทึกไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
+      };
+      if (kind === 'classes') google.script.run.withSuccessHandler(ok).withFailureHandler(fail).saveClasses(list);
+      else                    google.script.run.withSuccessHandler(ok).withFailureHandler(fail).saveSubjects(list);
+    };
+
+    if (removed.length > 0) {
+      Swal.fire({
+        title: 'ยืนยันการลบ?',
+        html: `กำลังจะลบ <b>${removed.map(r => r.label).join(', ')}</b><br><br>
+               <span style="font-size:0.8rem; color:var(--coral);">คะแนนและประวัติที่ผูกกับรหัสนี้จะยังอยู่ในชีต แต่จะไม่แสดงในระบบอีกต่อไป</span>`,
+        icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#FF4D6D'
+      }).then(r => { if (r.isConfirmed) proceed(); });
+    } else proceed();
+  }
+
+  // ค่าระบบ: เกณฑ์เกรด + จำนวนบท + PIN เริ่มต้น
+  function renderAdminSettings_() {
+    const s = metaData.settings || {};
+    const gradeKeys = [
+      ['GRADE_4', 'เกรด 4.0'], ['GRADE_3_5', 'เกรด 3.5'], ['GRADE_3', 'เกรด 3.0'],
+      ['GRADE_2_5', 'เกรด 2.5'], ['GRADE_2', 'เกรด 2.0'], ['GRADE_1_5', 'เกรด 1.5'], ['GRADE_1', 'เกรด 1.0']
+    ];
+    const gradeRows = gradeKeys.map(([k, label]) => `
+      <tr>
+        <td style="text-align:left;">${label}</td>
+        <td><input class="field" id="set_${k}" type="number" step="0.5" style="width:90px; font-size:0.8rem;" value="${s[k] ?? ''}"> คะแนนขึ้นไป</td>
+      </tr>`).join('');
+
+    document.getElementById('adminBody').innerHTML = `
+      <div class="card card-pad" style="margin-bottom:12px; text-align:left;">
+        <div style="font-weight:700; margin-bottom:8px;"><i class="fa-solid fa-list-ol"></i> โครงสร้างบทเรียน</div>
+        <label style="font-size:0.8rem;">จำนวนบททั้งหมด</label>
+        <input class="field" id="set_TOTAL_CHAPTERS" type="number" min="1" max="30" style="width:100%; margin-top:4px;" value="${s.TOTAL_CHAPTERS ?? ''}">
+        <div style="font-size:0.74rem; color:var(--coral); margin-top:6px;">
+          ⚠️ การเปลี่ยนค่านี้จะไปเพิ่ม/ลดคอลัมน์ในชีตคะแนนทุกวิชาทุกห้องทันที การลดจำนวนบทจะทำให้คะแนนของบทที่หายไปถูกลบถาวร
+        </div>
+      </div>
+
+      <div class="card card-pad" style="margin-bottom:12px; text-align:left;">
+        <div style="font-weight:700; margin-bottom:8px;"><i class="fa-solid fa-key"></i> PIN เริ่มต้นของนักเรียนใหม่</div>
+        <input class="field" id="set_DEFAULT_PIN" style="width:100%;" value="${s.DEFAULT_PIN ?? ''}">
+      </div>
+
+      <div class="card card-pad" style="margin-bottom:12px; text-align:left;">
+        <div style="font-weight:700; margin-bottom:8px;"><i class="fa-solid fa-award"></i> เกณฑ์ตัดเกรด (เต็ม 100)</div>
+        <div class="tbl-wrap"><table class="dt"><tbody>${gradeRows}</tbody></table></div>
+      </div>
+
+      <button class="btn btn-teal btn-block" onclick="saveAdminSettings_()"><i class="fa-solid fa-floppy-disk"></i> บันทึกค่าระบบ</button>`;
+  }
+
+  function saveAdminSettings_() {
+    const payload = {};
+    ['TOTAL_CHAPTERS', 'DEFAULT_PIN', 'GRADE_4', 'GRADE_3_5', 'GRADE_3', 'GRADE_2_5', 'GRADE_2', 'GRADE_1_5', 'GRADE_1']
+      .forEach(k => {
+        const el = document.getElementById('set_' + k);
+        if (el && el.value !== '') payload[k] = el.value;
+      });
+
+    const oldChapters = parseInt((metaData.settings || {}).TOTAL_CHAPTERS) || 0;
+    const newChapters = parseInt(payload.TOTAL_CHAPTERS) || oldChapters;
+    const run = () => {
+      Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      google.script.run.withSuccessHandler(res => {
+        if (res && res.success) {
+          google.script.run.withSuccessHandler(m => {
+            metaData = m; populateSelects();
+            Swal.close(); Toast(res.message); renderAdminSettings_();
+          }).withFailureHandler(() => { Swal.close(); Toast(res.message); }).getMetaConfig();
+        } else Swal.fire('บันทึกไม่สำเร็จ', (res && res.message) || 'เกิดข้อผิดพลาด', 'error');
+      }).withFailureHandler(err => {
+        console.error('saveSettings failed:', err);
+        Swal.fire('บันทึกไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
+      }).saveSettings(payload);
+    };
+
+    if (newChapters < oldChapters) {
+      Swal.fire({
+        title: 'ลดจำนวนบท?',
+        html: `กำลังจะลดจาก <b>${oldChapters}</b> บท เหลือ <b>${newChapters}</b> บท<br><br>
+               <span style="font-size:0.82rem; color:var(--coral);">คะแนนของบทที่ ${newChapters + 1} ถึง ${oldChapters} ของนักเรียนทุกคนทุกวิชา จะถูกลบถาวร กู้คืนไม่ได้</span>`,
+        icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยันลด', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#FF4D6D'
+      }).then(r => { if (r.isConfirmed) run(); });
+    } else run();
   }
 
   // ─── ELECTIVE ENROLLMENT OVERVIEW (ครู) ──────────────────────
@@ -4518,6 +4810,23 @@ function refreshRunSummary_() {
     <button class="btn btn-ghost btn-icon" onclick="closeFullpageView_('examCtrlModal')"><i class="fa-solid fa-xmark"></i></button>
   </div>
   <div id="examCtrlModalBody" class="fullpage-body"></div>
+</div>
+
+<!-- ตั้งค่าระบบ (ฝั่งครู): ชั้นเรียน / รายวิชา / ค่าระบบ
+     เดิมทั้ง 3 อย่างนี้แก้ได้จากใน Google Sheet เท่านั้น ทั้งที่ backend มีฟังก์ชันรองรับครบอยู่แล้ว -->
+<div id="adminModal" class="fullpage-view hidden">
+  <div class="fullpage-head">
+    <div class="section-title" style="margin-bottom:0;"><i class="fa-solid fa-gear"></i> ตั้งค่าระบบ</div>
+    <button class="btn btn-ghost btn-icon" onclick="closeFullpageView_('adminModal')"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="fullpage-body">
+    <div class="filter-bar" style="margin-bottom:14px;">
+      <button class="btn btn-teal btn-sm admin-tab-btn" data-atab="classes"  onclick="switchAdminTab_('classes', this)"><i class="fa-solid fa-layer-group"></i> ชั้นเรียน</button>
+      <button class="btn btn-ghost btn-sm admin-tab-btn" data-atab="subjects" onclick="switchAdminTab_('subjects', this)"><i class="fa-solid fa-book"></i> รายวิชา</button>
+      <button class="btn btn-ghost btn-sm admin-tab-btn" data-atab="settings" onclick="switchAdminTab_('settings', this)"><i class="fa-solid fa-sliders"></i> ค่าระบบ</button>
+    </div>
+    <div id="adminBody"></div>
+  </div>
 </div>
 
 <!-- กิจกรรมวิ่งแลกแต้มวิ่ง (ฝั่งนักเรียน) -->
