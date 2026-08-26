@@ -1383,6 +1383,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         </div>`;
       }).join('');
       Swal.fire({ title: '🔔 การแจ้งเตือน', html: `<div style="max-height:340px; overflow-y:auto;">${rows}</div>`, confirmButtonText: 'ปิด' });
+    }).withFailureHandler(err => {
+      // นักเรียนกดกระดิ่งแล้วต้องมีอะไรตอบกลับเสมอ ไม่ใช่กดแล้วเงียบเหมือนปุ่มเสีย
+      console.error('getStudentManualPointNotices failed:', err);
+      Swal.fire('โหลดไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
     }).getStudentManualPointNotices(currentLoggedStudentId);
   }
 
@@ -1418,6 +1422,13 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     google.script.run.withSuccessHandler(res => {
       metaData = res;
       populateSelects();
+    }).withFailureHandler(err => {
+      // ค่า meta คือฐานของทุก dropdown ในฝั่งครู ถ้าโหลดไม่ได้แล้วเงียบ ครูจะเจอช่องเลือกว่างเปล่าโดยไม่รู้สาเหตุ
+      console.error('getMetaConfig failed:', err);
+      Swal.fire({
+        title: 'โหลดข้อมูลระบบไม่สำเร็จ', text: 'เชื่อมต่อไม่ได้ ชั้นเรียน/รายวิชาจึงยังไม่แสดง',
+        icon: 'error', confirmButtonText: 'ลองใหม่'
+      }).then(() => loadMetaConfig());
     }).getMetaConfig();
   }
 
@@ -1581,7 +1592,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     };
 
     if (preloadedList !== undefined) { handle(preloadedList); return; }
-    google.script.run.withSuccessHandler(handle).getStudentManualPointNotices(stdId);
+    google.script.run.withSuccessHandler(handle).withFailureHandler(err => {
+      // เป็นการเช็คเบื้องหลัง ไม่ต้องเด้ง popup ขัดจังหวะ แต่ต้องทิ้งร่องรอยไว้ให้ตรวจสอบได้
+      console.error('getStudentManualPointNotices (background check) failed:', err);
+    }).getStudentManualPointNotices(stdId);
   }
 
   // [Perf] เดิมยิง google.script.run แยกกัน 5 ครั้งตอน login (dashboard, แต้มพิเศษ, แจ้งเตือนแต้มจากครู, แต้มวิ่ง, คู่หู)
@@ -1822,6 +1836,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     google.script.run.withSuccessHandler(d => {
       studentDashboardData = d;
       renderGradeCards(d);
+    }).withFailureHandler(err => {
+      // เรียกหลังนักเรียนแลกแต้มเป็นคะแนนเก็บ ถ้าเงียบไปเฉยๆ หน้าจอจะยังโชว์คะแนนเดิมทำให้เข้าใจผิดว่าแลกไม่สำเร็จ
+      console.error('getStudentDashboard (refresh) failed:', err);
+      Toast('อัปเดตคะแนนล่าสุดไม่สำเร็จ ลองรีเฟรชหน้าอีกครั้ง', 'warning');
     }).getStudentDashboard(currentLoggedStudentId);
   }
 
@@ -2326,6 +2344,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           ${ptsHtml}
         </div>`;
       }).join('');
+    }).withFailureHandler(err => {
+      // เดิมถ้าโหลดพลาด กล่องนี้จะค้างคำว่า "กำลังโหลด..." ตลอดไป ครูไม่มีทางรู้ว่าพังหรือแค่ช้า
+      console.error('getTeacherHistory failed:', err);
+      cont.innerHTML = courseErrorHtml_('loadTeacherHistory()');
     }).getTeacherHistory(filters);
   }
 
@@ -2568,6 +2590,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       document.getElementById('stdPointsDisplay').innerHTML = `${bal} <small>แต้ม</small>`;
       const cp = document.getElementById('cardPoints');
       if (cp) cp.innerText = bal;
+    }).withFailureHandler(err => {
+      // ยอดแต้มที่ค้างอยู่บนจอเป็นค่าเก่า ต้องบอกให้รู้ ไม่ให้เข้าใจผิดว่าแต้มที่เพิ่งได้/เพิ่งใช้ไปไม่เข้าระบบ
+      console.error('getStudentPointsBalance (refresh) failed:', err);
+      Toast('อัปเดตยอดแต้มล่าสุดไม่สำเร็จ', 'warning');
     }).getStudentPointsBalance(currentLoggedStudentId);
   }
 
