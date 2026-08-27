@@ -462,6 +462,35 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     .score-legend { font-size: 0.70rem; color: var(--slate); margin-bottom: 8px; display: flex; gap: 10px; flex-wrap: wrap; }
     .score-legend span { display: inline-flex; align-items: center; gap: 4px; }
 
+    /* ── การ์ดรายคน (ใช้แทนตารางที่กว้างเกินจอมือถือ) ─────────────────
+       ตารางรายชื่อนักเรียน (5 คอลัมน์) กับตารางคะแนนรายบท (6 คอลัมน์) กว้างเกินจอ 375px
+       ทำให้ต้องเลื่อนไปทางขวาถึงจะเห็นครบ — จัดใหม่เป็นการ์ดต่อคน วางข้อมูลเป็นชั้นแทนการวางเรียงข้าง
+       ทุกอย่างจึงอยู่ในความกว้างจอเดียว ไม่ต้องเลื่อนอีก */
+    .prow { background: var(--surface); border: 2.5px solid var(--mist); border-radius: 14px;
+            padding: 10px 12px; margin-bottom: 8px; }
+    .prow-top { display: flex; align-items: center; gap: 8px; }
+    .prow-name { font-weight: 700; font-size: 0.88rem; flex: 1; min-width: 0;
+                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .prow-meta { font-size: 0.72rem; color: var(--slate); margin-top: 2px;
+                 display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .prow-acts { display: flex; gap: 2px; flex-shrink: 0; }
+    .prow-acts button { border: none; background: transparent; padding: 7px 8px; border-radius: 9px;
+                        color: var(--slate); cursor: pointer; font-size: 0.9rem; }
+    .prow-acts button:hover { background: var(--cloud); color: var(--navy); }
+    .prow-acts button.danger:hover { color: var(--coral); }
+
+    /* แถวคะแนน 4 ช่องต่อบท — ใช้ grid ให้กว้างเท่ากันพอดีจอ ไม่ล้น */
+    .prow-scores { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 9px; }
+    .pscore { background: var(--cloud); border-radius: 10px; padding: 6px 4px; text-align: center; }
+    .pscore .l { font-size: 0.64rem; color: var(--slate); font-weight: 700; letter-spacing: 0.02em; }
+    .pscore .v { font-size: 0.92rem; font-weight: 800; margin-top: 1px; }
+    .pscore input { width: 100%; text-align: center; border: 2px solid var(--mist); border-radius: 8px;
+                    padding: 3px 2px; font-size: 0.88rem; font-weight: 800; background: var(--surface);
+                    margin-top: 1px; }
+    .pscore input:focus { outline: none; border-color: var(--teal); }
+    .pscore.calc .v { color: var(--amber2); }
+    .pscore.sum  .v { color: var(--teal2); }
+
     /* ROSTER */
     .roster-row { display: flex; align-items: center; justify-content: space-between; padding: 11px 4px; border-bottom: 1.5px solid var(--mist); gap: 10px; }
     .roster-name { font-weight: 600; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1151,7 +1180,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
         <div id="scoreSummaryCard" class="card card-pad" style="margin-bottom:12px; display:none;"></div>
 
-        <div class="tbl-wrap">
+        <!-- มุมมอง "คะแนนเก็บ" ใช้การ์ด (มี 4 ช่องต่อคน ตารางจะกว้างเกินจอ) ส่วนมุมมองอื่นคอลัมน์น้อยกว่า ใช้ตารางได้พอดีจอ -->
+        <div id="scoreCardList"></div>
+        <div id="scoreTableWrap" class="tbl-wrap">
           <table class="dt">
             <thead id="scoreHead"><tr><th>รหัส</th><th>ชื่อ-สกุล</th><th>เกรด</th></tr></thead>
             <tbody id="scoreTableBody"><tr><td colspan="3" style="color:var(--slate);">เลือกวิชาและชั้นแล้วกด "เช็ค"</td></tr></tbody>
@@ -1203,12 +1234,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <button class="btn btn-ghost btn-sm" onclick="openElectiveOverviewModal()"><i class="fa-solid fa-shuffle"></i> ภาพรวมสาขาวิชาเลือก</button>
           <button class="btn btn-amber btn-sm" onclick="openStudentEditor_()"><i class="fa-solid fa-user-plus"></i> เพิ่มนักเรียน</button>
         </div>
-        <div class="tbl-wrap">
-          <table class="dt">
-            <thead><tr><th>รหัส</th><th style="text-align:left;">ชื่อ-นามสกุล</th><th>ชั้น</th><th>สาขาที่เลือก</th><th>จัดการ</th></tr></thead>
-            <tbody id="allStuBody"><tr><td colspan="5" style="color:var(--slate);">เลือกชั้นแล้วกด "เช็ค"</td></tr></tbody>
-          </table>
-        </div>
+        <div id="allStuBody"><div style="text-align:center; color:var(--slate); padding:20px;">เลือกชั้นแล้วกด "เช็ค"</div></div>
       </div>
 
     </div>
@@ -2147,10 +2173,12 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     const s = document.getElementById('vSubject').value;
     const c = document.getElementById('vSubClass').value;
     if (!s || !c) return;
+    setScoreTableMode_(true);
     document.getElementById('scoreTableBody').innerHTML = '<tr><td colspan="3">กำลังดึงคะแนน...</td></tr>';
     google.script.run.withSuccessHandler(res => {
       if (!res.success || res.data.length === 0) {
         scoreViewState.data = null;
+        setScoreTableMode_(true);
         document.getElementById('scoreTableBody').innerHTML = '<tr><td colspan="3">ไม่มีข้อมูล</td></tr>';
         document.getElementById('scoreSummaryCard').style.display = 'none';
         document.getElementById('scoreChapterPicker').style.display = 'none';
@@ -2164,6 +2192,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       renderScoreView_();
     }).withFailureHandler(err => {
       console.error('getClassScoreData failed:', err);
+      setScoreTableMode_(true);
       document.getElementById('scoreTableBody').innerHTML = '<tr><td colspan="3">โหลดไม่สำเร็จ กรุณาลองใหม่</td></tr>';
     }).getClassScoreData(s, c);
   }
@@ -2187,6 +2216,13 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   }
 
   // วาดตาราง+สรุปตามมุมมองปัจจุบัน จากข้อมูลที่โหลดไว้ในเครื่องแล้ว (scoreViewState.data) ไม่ต้องยิง request ใหม่ทุกครั้งที่สลับมุมมอง/บท
+  // สลับระหว่างมุมมองการ์ด (คะแนนเก็บ — 4 ช่องต่อคน) กับมุมมองตาราง (มุมมองอื่นที่คอลัมน์น้อยกว่า)
+  function setScoreTableMode_(useTable) {
+    document.getElementById('scoreTableWrap').style.display = useTable ? 'block' : 'none';
+    document.getElementById('scoreCardList').style.display  = useTable ? 'none'  : 'block';
+    if (useTable) document.getElementById('scoreCardList').innerHTML = '';
+  }
+
   function renderScoreView_() {
     const data = scoreViewState.data;
     const picker = document.getElementById('scoreChapterPicker');
@@ -2222,18 +2258,32 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         </div>
         ${zeroCount ? `<div style="margin-top:8px; color:var(--coral); font-size:0.8rem;">⚠️ ยังไม่มีคะแนนบทนี้ ${zeroCount} คน</div>` : ''}`;
 
-      head.innerHTML = `<tr><th>รหัส</th><th>ชื่อ-สกุล</th><th>เซ็น</th><th>งาน</th><th>สอบ</th><th>รวม</th></tr>`;
-      body.innerHTML = data.map(std => {
+      // [UI] เดิมเป็นตาราง 6 คอลัมน์ กว้าง 404px บนจอมือถือ 375px — ครูต้องเลื่อนขวาถึงจะเห็นช่อง "รวม"
+      // จัดใหม่เป็นการ์ดต่อคน: ชื่ออยู่บรรทัดบน ส่วน 4 ช่องคะแนนวางเป็น grid แบ่งความกว้างเท่ากันพอดีจอ
+      setScoreTableMode_(false);
+      document.getElementById('scoreCardList').innerHTML = data.map(std => {
         const cd = std.chapters.find(x => x.ch === ch) || { sig: 0, work: 0, test: 0, total: 0 };
-        return `<tr><td><b>${std.id}</b></td>${nameCell(std.name)}
-          <td><input class="cell-input" title="✍️ แต้มเซ็น" value="${cd.sig}" onchange="editScoreCell('${s}','${c}','${std.id}','${std.name}',${ch},'sig',this.value)"></td>
-          <td style="color:var(--amber2); font-weight:700;" title="📊 คำนวณอัตโนมัติ">${cd.work}</td>
-          <td><input class="cell-input" title="🎯 คะแนนสอบ" value="${cd.test}" onchange="editScoreCell('${s}','${c}','${std.id}','${std.name}',${ch},'test',this.value)"></td>
-          <td style="font-weight:700;">${cd.total}</td>
-        </tr>`;
+        return `
+        <div class="prow">
+          <div class="prow-top">
+            <div style="flex:1; min-width:0;">
+              <div class="prow-name">${std.name}</div>
+              <div class="prow-meta"><span>${std.id}</span></div>
+            </div>
+          </div>
+          <div class="prow-scores">
+            <div class="pscore"><div class="l">✍️ เซ็น</div>
+              <input value="${cd.sig}" onchange="editScoreCell('${s}','${c}','${std.id}','${std.name}',${ch},'sig',this.value)"></div>
+            <div class="pscore calc"><div class="l">📊 งาน</div><div class="v">${cd.work}</div></div>
+            <div class="pscore"><div class="l">🎯 สอบ</div>
+              <input value="${cd.test}" onchange="editScoreCell('${s}','${c}','${std.id}','${std.name}',${ch},'test',this.value)"></div>
+            <div class="pscore sum"><div class="l">รวม /20</div><div class="v">${cd.total}</div></div>
+          </div>
+        </div>`;
       }).join('');
 
     } else if (scoreViewState.view === 'final') {
+      setScoreTableMode_(true);
       picker.style.display = 'none';
       let sum = 0, zeroCount = 0;
       data.forEach(std => { sum += Number(std.finalExam) || 0; if (!std.finalExam) zeroCount++; });
@@ -2249,6 +2299,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       </tr>`).join('');
 
     } else if (scoreViewState.view === 'total') {
+      setScoreTableMode_(true);
       picker.style.display = 'none';
       let sum = 0;
       data.forEach(std => sum += Number(std.total100) || 0);
@@ -2266,6 +2317,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       </tr>`).join('');
 
     } else if (scoreViewState.view === 'grade') {
+      setScoreTableMode_(true);
       picker.style.display = 'none';
       const dist = {};
       data.forEach(std => { dist[std.grade] = (dist[std.grade] || 0) + 1; });
@@ -2360,13 +2412,14 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     const clsFilter  = document.getElementById('stuFilterClass').value;
     const nameFilter = (document.getElementById('stuFilterName').value || '').trim().toLowerCase();
 
-    document.getElementById('allStuBody').innerHTML = '<tr><td colspan="5" style="color:var(--slate);">กำลังโหลด...</td></tr>';
+    const cont = document.getElementById('allStuBody');
+    cont.innerHTML = '<div style="text-align:center; color:var(--slate); padding:20px;">กำลังโหลด...</div>';
     const results = {};
     let pending = 2;
     const done = () => {
       if (--pending > 0) return;
       if (!results.list) {
-        document.getElementById('allStuBody').innerHTML = '<tr><td colspan="5" style="color:var(--coral);">โหลดไม่สำเร็จ กรุณาลองใหม่</td></tr>';
+        cont.innerHTML = '<div style="text-align:center; color:var(--coral); padding:20px;">โหลดไม่สำเร็จ กรุณาลองใหม่</div>';
         return;
       }
       const electives = results.electives || {};
@@ -2374,25 +2427,30 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       if (clsFilter && clsFilter !== 'ALL') filtered = filtered.filter(s => s.cls === clsFilter);
       if (nameFilter) filtered = filtered.filter(s => s.name.toLowerCase().includes(nameFilter) || String(s.id).includes(nameFilter));
 
-      document.getElementById('allStuBody').innerHTML = filtered.length === 0
-        ? '<tr><td colspan="5" style="color:var(--slate);">ไม่พบนักเรียน</td></tr>'
-        : filtered.map(s => {
+      // [UI] เดิมเป็นตาราง 5 คอลัมน์ ซึ่งกว้าง 417px บนจอมือถือ 375px — ต้องเลื่อนขวาถึงจะเห็นปุ่มจัดการ
+      // เปลี่ยนเป็นการ์ดต่อคน วางชื่อไว้บรรทัดบน รายละเอียดไว้บรรทัดล่าง จึงพอดีจอไม่ต้องเลื่อน
+      cont.innerHTML = filtered.length === 0
+        ? '<div style="text-align:center; color:var(--slate); padding:20px;">ไม่พบนักเรียน</div>'
+        : `<div style="font-size:0.74rem; color:var(--slate); margin-bottom:8px;">${filtered.length} คน</div>` +
+          filtered.map(s => {
           const mine = electives[s.id];
-          const electiveBadge = mine
-            ? `<span class="pill" style="background:rgba(82,196,26,0.12); color:var(--teal2); font-size:0.72rem;">${mine.label}</span>`
-            : `<span class="pill" style="background:rgba(255,77,109,0.12); color:var(--coral); font-size:0.72rem;">ยังไม่เลือก</span>`;
+          const elective = mine
+            ? `<span style="color:var(--teal2); font-weight:700;">${mine.label}</span>`
+            : `<span style="color:var(--coral); font-weight:700;">ยังไม่เลือกสาขา</span>`;
           return `
-          <tr>
-            <td style="font-size:0.8rem;">${s.id}</td>
-            <td style="text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px;">${s.name}</td>
-            <td>${s.clsLabel}</td>
-            <td>${electiveBadge}</td>
-            <td style="white-space:nowrap;">
-              <button class="btn btn-ghost btn-sm" style="padding:6px 9px;" title="ดูโปรไฟล์" onclick="viewStudentProfile('${s.id}')"><i class="fa-solid fa-eye"></i></button>
-              <button class="btn btn-ghost btn-sm" style="padding:6px 9px;" title="แก้ไข" onclick="openStudentEditor_('${s.id}')"><i class="fa-solid fa-pen"></i></button>
-              <button class="btn btn-ghost btn-sm" style="padding:6px 9px; color:var(--coral);" title="ลบ" onclick="confirmDeleteStudent_('${s.id}', ${JSON.stringify(s.name)})"><i class="fa-solid fa-trash"></i></button>
-            </td>
-          </tr>`;
+          <div class="prow">
+            <div class="prow-top">
+              <div style="flex:1; min-width:0;">
+                <div class="prow-name">${s.name}</div>
+                <div class="prow-meta"><span>${s.id}</span><span>·</span><span>${s.clsLabel}</span><span>·</span>${elective}</div>
+              </div>
+              <div class="prow-acts">
+                <button title="ดูโปรไฟล์" onclick="viewStudentProfile('${s.id}')"><i class="fa-solid fa-eye"></i></button>
+                <button title="แก้ไข" onclick="openStudentEditor_('${s.id}')"><i class="fa-solid fa-pen"></i></button>
+                <button class="danger" title="ลบ" onclick="confirmDeleteStudent_('${s.id}', ${JSON.stringify(s.name)})"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </div>
+          </div>`;
         }).join('');
     };
 
