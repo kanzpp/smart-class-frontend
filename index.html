@@ -2875,15 +2875,19 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
       const rows = ov.subjects.map((sub, i) => {
         const emptyStyle = sub.count === 0 ? 'opacity:0.55; border:1.5px dashed var(--mist);' : '';
-        const namesHtml = sub.students.map(s => `<div style="padding:4px 0; border-bottom:1px solid var(--cloud); font-size:0.82rem;">${s.name} <span style="color:var(--slate);">(${s.clsLabel})</span></div>`).join('')
+        // แตะชื่อเพื่อเปิดโปรไฟล์ได้เลย — เดิมเห็นแค่ว่าใครเลือกสาขาอะไร แต่ดูต่อไม่ได้ว่าคนนั้นทำไปถึงไหนแล้ว
+        const namesHtml = sub.students.map(s => `<div style="padding:6px 0; border-bottom:1px solid var(--cloud); font-size:0.82rem; cursor:pointer; display:flex; justify-content:space-between; gap:8px;" onclick="Swal.close(); viewStudentProfile('${s.id}')"><span>${s.name} <span style="color:var(--slate);">(${s.clsLabel})</span></span><i class="fa-solid fa-chevron-right" style="color:var(--mist);"></i></div>`).join('')
           || '<div style="color:var(--slate); font-size:0.82rem; padding:4px 0;">ยังไม่มีคนเลือก</div>';
+        const progressBtn = sub.count > 0
+          ? `<button class="btn btn-ghost btn-sm btn-block" style="margin-top:8px;" onclick="showElectiveClassProgress_('${sub.subjectCode}', ${JSON.stringify(sub.label)})"><i class="fa-solid fa-chart-simple"></i> ดูความคืบหน้ารายคน</button>`
+          : '';
         return `
           <div class="card card-pad" style="margin-bottom:8px; text-align:left; ${emptyStyle}">
             <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="const b=document.getElementById('elecBody${i}'); b.style.display = b.style.display==='none' ? 'block' : 'none';">
               <b>${sub.label}</b>
               <span class="pill" style="background:${sub.count === 0 ? 'rgba(110,136,163,0.15)' : 'rgba(82,196,26,0.15)'}; color:${sub.count === 0 ? 'var(--slate)' : 'var(--teal2)'};">${sub.count} คน</span>
             </div>
-            <div id="elecBody${i}" style="display:none; margin-top:8px;">${namesHtml}</div>
+            <div id="elecBody${i}" style="display:none; margin-top:8px;">${namesHtml}${progressBtn}</div>
           </div>`;
       }).join('');
 
@@ -2897,6 +2901,57 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       console.error('getElectiveEnrollmentOverview failed:', err);
       Swal.fire('โหลดไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่', 'error');
     }).getElectiveEnrollmentOverview();
+  }
+
+  // ความคืบหน้ารายคนของสาขาหนึ่ง เรียงจากคะแนนน้อยไปมาก เพื่อให้ครูเห็น "ใครตามไม่ทัน" ก่อนเป็นอันดับแรก
+  // backend มี getElectiveClassProgress มาตลอดแต่ไม่เคยมีหน้าจอเรียกใช้ ครูจึงดูได้ทีละคนผ่านโปรไฟล์เท่านั้น
+  // รับทีละชั้นเรียน จึงต้องยิงตามจำนวนชั้นที่มีนักเรียนสาขานี้อยู่ แล้วรวมผลก่อนแสดง
+  function showElectiveClassProgress_(subjectCode, subjectLabel) {
+    const classes = (metaData.classes || []).map(c => c.code);
+    if (!classes.length) { Swal.fire('ไม่มีข้อมูลชั้นเรียน', '', 'warning'); return; }
+    Swal.fire({ title: 'กำลังรวบรวมความคืบหน้า...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    let pending = classes.length;
+    const all = [];
+    const done = () => {
+      if (--pending > 0) return;
+      if (all.length === 0) {
+        Swal.fire('ยังไม่มีข้อมูล', 'ยังไม่มีนักเรียนที่มีความคืบหน้าในสาขานี้', 'info');
+        return;
+      }
+      all.sort((a, b) => Number(a.score.total50) - Number(b.score.total50)); // คนคะแนนน้อยสุดขึ้นก่อน
+      const rows = all.map(st => {
+        const total = Number(st.score.total50) || 0;
+        const pct = Math.min(100, Math.round((total / 50) * 100));
+        const color = total >= 35 ? 'var(--teal2)' : total >= 20 ? 'var(--amber2)' : 'var(--coral)';
+        return `
+          <div class="prow" style="cursor:pointer;" onclick="Swal.close(); viewStudentProfile('${st.studentId}')">
+            <div class="prow-top">
+              <div style="flex:1; min-width:0;">
+                <div class="prow-name">${st.name}</div>
+                <div class="prow-meta">🎬 ${st.videoWatched}/${st.videoTotal} · ⌨️ ${st.submissionCorrect}/${st.submissionTotal} · 🏦 ${st.creditBankDays} วัน · 📝 ${st.testAttempts} ครั้ง</div>
+              </div>
+              <div style="font-weight:800; color:${color}; white-space:nowrap;">${total}<span style="font-size:0.7rem; color:var(--slate);">/50</span></div>
+            </div>
+            <div style="height:7px; background:var(--mist); border-radius:999px; margin-top:8px; overflow:hidden;">
+              <div style="height:100%; width:${pct}%; background:${color}; border-radius:999px;"></div>
+            </div>
+          </div>`;
+      }).join('');
+
+      Swal.fire({
+        title: `📊 ${subjectLabel}`,
+        html: `<div style="font-size:0.76rem; color:var(--slate); text-align:left; margin-bottom:8px;">เรียงจากคะแนนน้อยไปมาก · แตะชื่อเพื่อดูโปรไฟล์</div>
+               <div style="max-height:60vh; overflow-y:auto; text-align:left;">${rows}</div>`,
+        width: 'min(92vw, 480px)', confirmButtonText: 'ปิด'
+      });
+    };
+
+    classes.forEach(clsCode => {
+      google.script.run.withSuccessHandler(list => { (list || []).forEach(x => all.push(x)); done(); })
+        .withFailureHandler(err => { console.error('getElectiveClassProgress failed:', err); done(); })
+        .getElectiveClassProgress(subjectCode, clsCode);
+    });
   }
 
   // เปิด modal แสดงข้อมูลโปรไฟล์/ผลการเรียนของนักเรียนคนใดคนหนึ่ง
