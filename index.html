@@ -959,33 +959,19 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           </div>
         </div>
 
-        <div class="card card-pad" style="margin-bottom:16px;">
-          <div style="display:flex; align-items:center; gap:14px; cursor:pointer;" onclick="openRunModal()">
-            <div style="width:52px; height:52px; border-radius:16px; background:rgba(255,201,60,0.18); display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:var(--amber2); flex-shrink:0;">
-              <i class="fa-solid fa-person-running"></i>
-            </div>
-            <div style="flex:1; min-width:0;">
-              <div style="font-weight:700; font-size:0.95rem;">กิจกรรมวิ่งแลกแต้มวิ่ง</div>
-              <div style="font-size:0.78rem; color:var(--slate);" id="runSummaryText">สะสม — เมตร · — ก้าว · — แต้มวิ่ง</div>
-            </div>
-            <i class="fa-solid fa-chevron-right" style="color:var(--mist); flex-shrink:0;"></i>
-          </div>
-          <button onclick="event.stopPropagation(); openRunExchangeModal()"
-            style="width:100%; margin-top:10px; padding:8px; border:none; border-radius:10px; background:rgba(255,201,60,0.15); color:var(--amber2); font-weight:700; font-size:0.8rem; cursor:pointer;">
-            <i class="fa-solid fa-rotate"></i> แลกแต้มวิ่งเป็นแต้มพิเศษ
-          </button>
-        </div>
+        <!-- ความคืบหน้าสาขาวิชาเลือก — เดิมซ่อนอยู่ก้นหน้า "เรียนออนไลน์" ต้องกดเข้าไปหลายชั้นถึงจะเห็น
+             ทั้งที่เป็นคะแนนที่นักเรียนต้องเก็บให้ครบ 50 จึงย้ายมาไว้หน้าแรก โหลดแยกไม่ให้ช้าตอนเข้าระบบ -->
+        <div id="homeElectiveCard" style="display:none; margin-bottom:16px;"></div>
 
         <div class="section-label" style="margin-top:4px;">วิเคราะห์ศักยภาพ</div>
-        <div class="card card-pad" style="margin-bottom:18px;">
+        <div class="card card-pad" style="margin-bottom:16px;">
           <div id="skillMetersContainer" style="display:flex; flex-direction:column; gap:16px;"></div>
         </div>
-      </div>
 
-      <!-- แท็บ: ฉายา -->
-      <div id="sTab-title" class="tab-panel">
-        <div class="section-label" style="margin-bottom:10px;">ฉายาประจำห้อง</div>
-        <div id="nicknameContainer" class="nickname-section"></div>
+        <!-- ฉายาประจำห้อง — เดิมกินพื้นที่เมนูล่างไปทั้งแท็บ ทั้งที่เป็นรายการดูอย่างเดียว ไม่ได้กดทำอะไร
+             ย้ายมารวมที่หน้าแรก เมนูล่างจึงเหลือ 4 ปุ่มที่ล้วนเป็นเรื่องที่ต้องเข้าไปทำจริง -->
+        <div class="section-label" style="margin-top:4px;">ฉายาประจำห้อง</div>
+        <div id="nicknameContainer" class="nickname-section" style="margin-bottom:18px;"></div>
       </div>
 
       <!-- แท็บ: การเรียน -->
@@ -1017,22 +1003,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
             <div class="id-qr-frame"><div id="qrcode"></div></div>
             <div class="id-scan-hint"><i class="fa-solid fa-camera-rotate"></i> ให้ครูสแกน QR นี้เพื่อบันทึกข้อมูล</div>
           </div>
-          <div class="id-stats">
-            <div class="id-stat-cell">
-              <div class="id-stat-n" id="cardPoints">—</div>
-              <div class="id-stat-l">แต้มสะสม</div>
-            </div>
-            <div class="id-stat-cell">
-              <div class="id-stat-n" id="cardCheckin">—</div>
-              <div class="id-stat-l">เช็คอิน GPS</div>
-            </div>
-            <div class="id-stat-cell">
-              <div class="id-stat-n" id="cardStreak">—</div>
-              <div class="id-stat-l">วันต่อเนื่อง 🔥</div>
-            </div>
-          </div>
-          <div id="cardNickname" style="position:relative; display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:14px;"></div>
-          <div id="cardCompanionRun" style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px; text-align:left;"></div>
+          <!-- เดิมบัตรนี้แสดงซ้ำทุกอย่างที่มีในแท็บอื่นอยู่แล้ว (แต้ม/เช็คอิน/วันต่อเนื่อง/ฉายา/คู่หู/การวิ่ง)
+               ทั้งที่หน้าที่จริงของบัตรมีอย่างเดียวคือ "ให้ครูสแกน" — ตัดของซ้ำออก เหลือเฉพาะสิ่งที่ระบุตัวตน
+               QR จึงเด่นขึ้นและครูสแกนได้เร็วขึ้น ส่วนตัวเลขต่างๆ ดูได้ที่หน้าหลักซึ่งเป็นที่ของมันอยู่แล้ว -->
           <div class="id-footer" id="cardStudentId">รหัส: —</div>
         </div>
         <div class="id-card-hint">
@@ -1041,6 +1014,25 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       </div>
 
 <div id="sTab-companion" class="tab-panel">
+  <!-- การวิ่งแลกแต้มย้ายมาอยู่ที่นี่ — เดิมอยู่หน้าแรก ส่วนคู่หูแยกเป็นอีกแท็บ ทั้งที่เป็นกิจกรรมสะสมแต้มเหมือนกัน
+       รวมของประเภทเดียวกันไว้ที่เดียว นักเรียนจึงรู้ว่า "เรื่องเล่นๆ สะสมแต้ม" ต้องมาดูตรงไหน -->
+  <div class="card card-pad" style="margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:14px; cursor:pointer;" onclick="openRunModal()">
+      <div style="width:52px; height:52px; border-radius:16px; background:rgba(255,201,60,0.18); display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:var(--amber2); flex-shrink:0;">
+        <i class="fa-solid fa-person-running"></i>
+      </div>
+      <div style="flex:1; min-width:0;">
+        <div style="font-weight:700; font-size:0.95rem;">กิจกรรมวิ่งแลกแต้มวิ่ง</div>
+        <div style="font-size:0.78rem; color:var(--slate);" id="runSummaryText">สะสม — เมตร · — ก้าว · — แต้มวิ่ง</div>
+      </div>
+      <i class="fa-solid fa-chevron-right" style="color:var(--mist); flex-shrink:0;"></i>
+    </div>
+    <button onclick="event.stopPropagation(); openRunExchangeModal()"
+      style="width:100%; margin-top:10px; padding:8px; border:none; border-radius:10px; background:rgba(255,201,60,0.15); color:var(--amber2); font-weight:700; font-size:0.8rem; cursor:pointer;">
+      <i class="fa-solid fa-rotate"></i> แลกแต้มวิ่งเป็นแต้มพิเศษ
+    </button>
+  </div>
+
   <div id="companionContainer">
     <div style="text-align:center;color:var(--slate);padding:40px 0;">
       <div style="font-size:48px;margin-bottom:8px;">🥚</div>
@@ -1056,17 +1048,14 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     <button class="nav-btn active" onclick="switchStudentTab('overview', this)">
       <i class="fa-solid fa-house"></i> หน้าหลัก
     </button>
-    <button class="nav-btn" onclick="switchStudentTab('title', this)">
-      <i class="fa-solid fa-crown"></i> ฉายา
-    </button>
     <button class="nav-btn" onclick="switchStudentTab('grades', this)">
       <i class="fa-solid fa-book-open"></i> การเรียน
     </button>
+    <button class="nav-btn" onclick="switchStudentTab('companion', this)">
+      <i class="fa-solid fa-paw"></i> เกม
+    </button>
     <button class="nav-btn" onclick="switchStudentTab('card', this)">
       <i class="fa-solid fa-id-card"></i> บัตร
-    </button>
-    <button class="nav-btn" onclick="switchStudentTab('companion', this)">
-      <i class="fa-solid fa-paw"></i> คู่หู
     </button>
   </nav>
 </div>
@@ -1086,11 +1075,6 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       <div class="hero-tag"><i class="fa-solid fa-chalkboard"></i> ครูผู้สอน</div>
       <div class="hero-name">ศูนย์ควบคุม</div>
     </div>
-
-    <div id="teacherStatsLine" style="padding:10px 16px; background:var(--navy); color:var(--white); font-weight:700; text-align:center; font-size:0.9rem;">
-      กำลังโหลดข้อมูลนักเรียน...
-    </div>
-    <div class="teacher-stat-grid" id="teacherStatGrid" style="margin-bottom:16px;"></div>
 
     <div class="content-pad">
 
@@ -1227,6 +1211,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       <!-- แท็บ: รายชื่อนักเรียน -->
       <div id="tTab-stu" class="tab-panel">
         <div class="section-title"><i class="fa-solid fa-address-book"></i> รายชื่อนักเรียน</div>
+        <!-- จำนวนนักเรียนแยกตามชั้น — เดิมเป็นแถบค้างอยู่บนสุดของทุกแท็บ กินพื้นที่จอตลอดเวลา
+             ทั้งที่เป็นข้อมูลทะเบียนที่แทบไม่เปลี่ยน และเกี่ยวข้องกับแท็บนี้แท็บเดียว จึงย้ายมาไว้ที่นี่ -->
+        <div id="teacherStatsLine" style="font-size:0.8rem; color:var(--slate); margin-bottom:8px;">กำลังโหลด...</div>
+        <div class="teacher-stat-grid" id="teacherStatGrid" style="margin-bottom:14px;"></div>
         <div class="filter-bar" style="margin-bottom:12px;">
           <select id="stuFilterClass" class="field"></select>
           <input type="text" id="stuFilterName" class="field" placeholder="ค้นหาชื่อ..." style="min-width:120px;">
@@ -1636,8 +1624,6 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     google.script.run.withSuccessHandler(bundle => {
       // แต้มพิเศษ
       document.getElementById('stdPointsDisplay').innerHTML = `${bundle.pointsBalance} <small>แต้ม</small>`;
-      const cp = document.getElementById('cardPoints');
-      if (cp) cp.innerText = bundle.pointsBalance;
 
       // แจ้งเตือนแต้มจากครู (ใช้ list ที่มากับ bundle แล้ว ไม่ต้องยิงซ้ำ)
       checkManualPointNotices(stdId, bundle.manualNotices);
@@ -1720,33 +1706,16 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         colorDark: "#123C69", colorLight: "#ffffff"
       });
 
-      // บัตรประจำตัว
+      // บัตรประจำตัว — เหลือเฉพาะสิ่งที่ระบุตัวตนสำหรับให้ครูสแกน ตัวเลขสถิติดูที่หน้าหลักแทน
       document.getElementById('cardName').innerText = d.name;
       document.getElementById('cardClass').innerHTML = `<i class="fa-solid fa-school"></i> ${d.clsLabel}`;
       document.getElementById('cardStudentId').innerText = `รหัส: ${stdId}`;
-      document.getElementById('cardCheckin').innerText = d.checkinStats?.checkinCount  ?? 0;
-      document.getElementById('cardStreak').innerText  = d.checkinStats?.consecutiveDays ?? 0;
-
-      // ฉายาในบัตร
-      const nickEl = document.getElementById('cardNickname');
-      let nickHtml = '';
-      if (d.classNicknames) {
-        Object.values(d.classNicknames).forEach(cat => {
-          const myRank = (cat.top3 || []).find(p => String(p.id) === String(stdId));
-          if (myRank) {
-            nickHtml += `<span style="background:rgba(255,92,151,0.2); color:#FF5C97; padding:4px 12px; border-radius:999px; font-size:0.72rem; font-weight:700; border:1px solid rgba(255,92,151,0.4);">
-              ${cat.icon} ${cat.label} อันดับ ${myRank.rank}
-            </span>`;
-          }
-        });
-      }
-      nickEl.innerHTML = nickHtml;
 
       // ผลการเรียน
       renderGradeCards(d);
 
-      // คู่หู + การวิ่ง ในบัตรประจำตัว (ใช้ข้อมูลที่มากับ bundle แล้ว ไม่ต้องยิงซ้ำ)
-      loadCardCompanionRun_(stdId, { companion: bundle.companion, running: bundle.runningBalance });
+      // ความคืบหน้าสาขาวิชาเลือก — โหลดต่อทีหลังแบบไม่บล็อก เพื่อไม่ให้การเข้าระบบช้าลง
+      loadHomeElectiveCard_(stdId);
 
     }).withFailureHandler(err => {
       console.error('getStudentBootBundle_ (boot) failed:', err);
@@ -1814,51 +1783,6 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     });
   }
 
-  // ดึงข้อมูลคู่หู+การวิ่งมาแสดงในบัตรประจำตัว (แยกจาก getStudentDashboard เพราะเป็นคนละระบบ/คนละชีต)
-  // [Perf] preloaded: ถ้ามีอยู่แล้ว (เช่นมาจาก getStudentBootBundle_ ตอน login) ใช้ตรงๆ ไม่ต้องยิงซ้ำ
-  function loadCardCompanionRun_(stdId, preloaded) {
-    const cont = document.getElementById('cardCompanionRun');
-    if (!cont) return;
-
-    if (preloaded) { renderCardCompanionRun_(cont, preloaded); return; }
-
-    let pending = 2;
-    const results = {};
-    const done = () => { if (--pending === 0) renderCardCompanionRun_(cont, results); };
-
-    google.script.run.withSuccessHandler(c => { results.companion = c; done(); })
-      .withFailureHandler(err => { console.error('getCompanionData (card) failed:', err); results.companion = null; done(); })
-      .getCompanionData(stdId);
-
-    google.script.run.withSuccessHandler(r => { results.running = r; done(); })
-      .withFailureHandler(err => { console.error('getRunningPointsBalance (card) failed:', err); results.running = null; done(); })
-      .getRunningPointsBalance(stdId);
-  }
-
-  function renderCardCompanionRun_(cont, results) {
-    const companion = results.companion;
-    const running = results.running || { totalPoints: 0, totalMeters: 0, totalSteps: 0 };
-
-    const companionHtml = companion ? `
-      <div style="display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.08); border-radius:10px; padding:10px;">
-        <div style="font-size:1.6rem;">${companion.isEgg ? '🥚' : companion.petEmoji}</div>
-        <div style="flex:1; color:#fff;">
-          <div style="font-weight:700; font-size:0.8rem;">${companion.isEgg ? 'ยังไม่ฟักไข่' : `${companion.petName || 'คู่หู'} · Lv.${companion.level} ${companion.stage}`}</div>
-          <div style="font-size:0.68rem; color:rgba(255,255,255,0.6);">${companion.isEgg ? '' : `⭐ EXP ${companion.currentExp}/${companion.expTarget} · `}🎟️ ${companion.tickets} ตั๋ว</div>
-        </div>
-      </div>` : '';
-
-    const runHtml = `
-      <div style="display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.08); border-radius:10px; padding:10px;">
-        <div style="font-size:1.6rem;">🏃</div>
-        <div style="flex:1; color:#fff;">
-          <div style="font-weight:700; font-size:0.8rem;">วิ่งสะสม ${running.totalMeters} เมตร</div>
-          <div style="font-size:0.68rem; color:rgba(255,255,255,0.6);">${running.totalPoints} แต้มวิ่ง · ${running.totalSteps || 0} ก้าว</div>
-        </div>
-      </div>`;
-
-    cont.innerHTML = companionHtml + runHtml;
-  }
 
   // โหลดข้อมูลแดชบอร์ดใหม่แบบเงียบๆ (ไม่วาด QR/บัตร/ฉายาใหม่) ใช้หลัง action ที่กระทบคะแนนเก็บ เช่นแลกแต้ม
   function refreshStudentDashboardData() {
@@ -3125,8 +3049,6 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   function refreshPointsBalance() {
     google.script.run.withSuccessHandler(bal => {
       document.getElementById('stdPointsDisplay').innerHTML = `${bal} <small>แต้ม</small>`;
-      const cp = document.getElementById('cardPoints');
-      if (cp) cp.innerText = bal;
     }).withFailureHandler(err => {
       // ยอดแต้มที่ค้างอยู่บนจอเป็นค่าเก่า ต้องบอกให้รู้ ไม่ให้เข้าใจผิดว่าแต้มที่เพิ่งได้/เพิ่งใช้ไปไม่เข้าระบบ
       console.error('getStudentPointsBalance (refresh) failed:', err);
@@ -4020,6 +3942,48 @@ function renderCourseSubjects() {
 }
 
 // [Elective] โชว์คะแนนวิชาเลือกสะสม (4 องค์ประกอบ เต็ม 50) ใต้รายการวิชา — โหลดแยกจากรายการวิชาหลัก ไม่บล็อกการแสดงผลหลัก
+// การ์ดสรุปสาขาวิชาเลือกบน "หน้าหลัก" — ตอบคำถามเดียวว่า "ได้กี่คะแนนแล้ว และเหลืออะไรต้องทำ"
+// รายละเอียดรายบท (คลิปไหน ข้อไหน) ยังอยู่ในหน้าเรียนออนไลน์เหมือนเดิม ที่นี่เอาแค่ภาพรวมพอ
+// โหลดแยกจากตอนเข้าระบบ ถ้าโหลดไม่ได้ก็แค่ไม่แสดงการ์ด ไม่กระทบส่วนอื่นของหน้า
+function loadHomeElectiveCard_(stdId) {
+  google.script.run.withSuccessHandler(p => {
+    const el = document.getElementById('homeElectiveCard');
+    if (!el || !p || !p.hasElective) return;
+    const s = p.score || { creditBankScore:0, videoScore:0, submissionScore:0, testScore:0, total50:0 };
+    const pct = Math.min(100, Math.round((Number(s.total50) / 50) * 100));
+
+    // บอกให้ชัดว่าเหลืออะไร แทนที่จะให้นักเรียนไปนั่งเทียบตัวเลขเอง
+    const todo = [];
+    if (p.videoWatched < p.videoTotal)          todo.push(`ดูคลิปอีก ${p.videoTotal - p.videoWatched} เรื่อง`);
+    if (p.submissionCorrect < p.submissionTotal) todo.push(`ตอบคำถามอีก ${p.submissionTotal - p.submissionCorrect} ข้อ`);
+    if (!p.testAttempts)                         todo.push('ยังไม่ได้สอบท้ายหน่วย');
+    const todoHtml = todo.length
+      ? `<div style="margin-top:10px; font-size:0.78rem; color:var(--coral); font-weight:700;">ยังเหลือ: ${todo.join(' · ')}</div>`
+      : `<div style="margin-top:10px; font-size:0.78rem; color:var(--teal2); font-weight:700;">✅ ทำครบทุกอย่างแล้ว</div>`;
+
+    el.style.display = 'block';
+    el.innerHTML = `
+      <div class="section-label" style="margin-bottom:10px;">สาขาวิชาเลือกของฉัน</div>
+      <div class="card card-pad" style="cursor:pointer;" onclick="openOnlineCourseModal()">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; gap:8px;">
+          <div style="font-weight:700; font-size:0.95rem; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p.label}</div>
+          <div style="font-weight:800; color:var(--teal2); white-space:nowrap;">${s.total50}<span style="font-size:0.75rem; color:var(--slate);">/50</span></div>
+        </div>
+        <div style="height:9px; background:var(--mist); border-radius:999px; margin-top:8px; overflow:hidden;">
+          <div style="height:100%; width:${pct}%; background:linear-gradient(90deg, var(--teal) 0%, var(--teal2) 100%); border-radius:999px;"></div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:4px 10px; margin-top:10px; font-size:0.76rem; color:var(--slate);">
+          <div>🏦 ธนาคารหน่วยกิต <b style="color:var(--ink);">${s.creditBankScore}/10</b></div>
+          <div>🎬 ดูคลิป <b style="color:var(--ink);">${s.videoScore}/10</b></div>
+          <div>⌨️ ตอบคำถาม <b style="color:var(--ink);">${s.submissionScore}/15</b></div>
+          <div>📝 สอบ <b style="color:var(--ink);">${s.testScore}/15</b></div>
+        </div>
+        ${todoHtml}
+      </div>`;
+  }).withFailureHandler(err => console.error('getElectiveProgress (หน้าหลัก) failed:', err))
+    .getElectiveProgress(stdId);
+}
+
 function loadElectiveScoreCard_(myToken) {
   google.script.run.withSuccessHandler(p => {
     if (myToken !== courseReqToken) return;
