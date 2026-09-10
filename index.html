@@ -3535,17 +3535,42 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   }
 
   // เปิด modal ให้นักเรียนเลือกวิชา/บทเรียน เพื่อใช้แต้มแลกคะแนนเก็บ
+  // เกณฑ์การแลกต่างกันไปตามเทอม จึงต้องถามเซิร์ฟเวอร์ก่อนว่าเทอมนี้ใช้เกณฑ์ไหน
+  // เกณฑ์เดิม = เติมรวมทั้งบทจนเต็ม 20 · เกณฑ์ใหม่ = ต้องเลือกว่าจะเติมช่อง "สมุด" หรือ "คะแนนสอบ" ซึ่งมีเพดานคนละตัว
   function openScoreExchangeModal() {
+    Swal.fire({ title: 'กำลังตรวจเกณฑ์ของเทอมนี้...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    google.script.run.withSuccessHandler(rule => { Swal.close(); showScoreExchangeDialog_(rule); })
+      .withFailureHandler(err => {
+        console.error('getRedeemRule failed:', err);
+        Swal.fire('โหลดไม่สำเร็จ', 'ตรวจเกณฑ์การแลกไม่ได้ กรุณาลองใหม่', 'error');
+      }).getRedeemRule();
+  }
+
+  function showScoreExchangeDialog_(rule) {
     const subjOptions = metaData.subjects.map(s => `<option value="${s.code}">${s.label}</option>`).join('');
     const firstSubj   = metaData.subjects[0]?.code || '';
     const chOptions   = getChapterOptions(firstSubj);
+    const split       = rule && rule.mode === 'split';
+
+    const ruleBox = split
+      ? `<b>เกณฑ์เทอมนี้:</b> เติมได้ 2 ช่อง แยกเพดานกัน<br>
+         • คะแนนสมุด/ลายเซ็น — เติมได้จนเต็ม <b>${rule.workMax}</b><br>
+         • คะแนนสอบ — เติมได้ไม่เกิน <b>${rule.testMax}</b> ต่อบท`
+      : `<b>เกณฑ์เทอมนี้:</b> เติมรวมได้จนคะแนนของบทเต็ม <b>${(rule && rule.chapterMax) || 20}</b>`;
+
+    const compPicker = split ? `
+      <div style="text-align:left; font-size:0.80rem; font-weight:700; color:var(--slate); margin-bottom:4px;">3. เลือกช่องที่จะเติม:</div>
+      <select id="exchComp" class="field" style="margin-bottom:10px;">
+        <option value="work">📓 คะแนนสมุด/ลายเซ็น (เต็ม ${rule.workMax})</option>
+        <option value="test">📝 คะแนนสอบ (ไม่เกิน ${rule.testMax})</option>
+      </select>` : '';
 
     Swal.fire({
       title: '🔄 แลกแต้มเพิ่มคะแนนรายบท',
       html: `
         <div style="background:#FFF3CC; border:1px solid #FFC93C; padding:10px; border-radius:10px; margin-bottom:14px; font-size:0.85rem; text-align:left;">
           <b>อัตราแลกเปลี่ยน:</b> 100 แต้มพิเศษ = 1 คะแนนเก็บ<br>
-          <small style="color:var(--coral);">*ระบบจะปฏิเสธหากคะแนนบทนั้นเต็ม 20 แล้ว</small>
+          <div style="margin-top:6px;">${ruleBox}</div>
         </div>
         <div style="text-align:left; font-size:0.80rem; font-weight:700; color:var(--slate); margin-bottom:4px;">1. เลือกรายวิชา:</div>
         <select id="exchSubj" class="field" style="margin-bottom:10px;"
@@ -3554,7 +3579,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         </select>
         <div style="text-align:left; font-size:0.80rem; font-weight:700; color:var(--slate); margin-bottom:4px;">2. เลือกบทเรียนที่ต้องการเติมคะแนน:</div>
         <select id="exchCh" class="field" style="margin-bottom:10px;">${chOptions}</select>
-        <div style="text-align:left; font-size:0.80rem; font-weight:700; color:var(--slate); margin-bottom:4px;">3. ระบุจำนวนคะแนนที่ต้องการซื้อ:</div>
+        ${compPicker}
+        <div style="text-align:left; font-size:0.80rem; font-weight:700; color:var(--slate); margin-bottom:4px;">${split ? '4' : '3'}. ระบุจำนวนคะแนนที่ต้องการซื้อ:</div>
         <input type="number" id="exchQty" class="field" placeholder="เช่น 2 (ใช้ 200 แต้ม)" min="1" max="20">`,
       showCancelButton: true,
       confirmButtonText: 'ยืนยันการแลก',
@@ -3563,8 +3589,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         const subj = document.getElementById('exchSubj').value;
         const ch   = parseInt(document.getElementById('exchCh').value);
         const qty  = parseInt(document.getElementById('exchQty').value);
+        const comp = split ? document.getElementById('exchComp').value : null;
         if (!qty || qty < 1) return Swal.showValidationMessage('กรุณาระบุจำนวนคะแนน 1 ขึ้นไป');
-        return { subj, ch, qty };
+        return { subj, ch, qty, comp };
       }
     }).then(r => {
       if (r.isConfirmed) {
@@ -3575,7 +3602,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         }).withFailureHandler(err => {
           console.error('redeemPointsForChapter failed:', err);
           Swal.fire('เชื่อมต่อไม่สำเร็จ', 'แลกคะแนนไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
-        }).redeemPointsForChapter(currentLoggedStudentId, r.value.subj, r.value.ch, r.value.qty);
+        }).redeemPointsForChapter(currentLoggedStudentId, r.value.subj, r.value.ch, r.value.qty, r.value.comp);
       }
     });
   }
