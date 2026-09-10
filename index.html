@@ -1298,8 +1298,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       if (el) el.value = todayStr;
     });
 
-    loadMetaConfig();
-
+    // [Perf] ไม่ต้องโหลดค่า meta ตรงนี้แล้ว — ทั้ง bootTeacher และ bootStudent ได้ meta มากับก้อนรวมอยู่แล้ว
+    // และหน้าล็อกอินไม่ได้ใช้ค่า meta เลย (ตรวจแล้ว) การเรียกตรงนี้จึงเป็นคำขอที่เสียเปล่า ~2 วินาที
     const sessionData = localStorage.getItem('smartClassSession');
     if (sessionData) {
       const session = JSON.parse(sessionData);
@@ -1543,29 +1543,38 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
   // ─── BOOT TEACHER ───────────────────────────────────────────
   // เตรียมข้อมูลเริ่มต้นทั้งหมดของฝั่งครูหลังล็อกอินสำเร็จ
+  // [Perf] ทุกคำขอมีค่าใช้จ่ายคงที่ ~2 วินาที (วัดแล้ว: ฟังก์ชันที่ไม่แตะชีตเลยก็ใช้เวลาเท่านี้)
+  // เดิมตอนครูเข้าระบบยิง 3 คำขอ (ค่า meta + ภาพรวม + สถิติจำนวนนักเรียน) ≈ 6 วินาทีกว่าจะใช้งานได้
+  // รวมเป็นคำขอเดียวแล้ว ที่เหลือแค่กระจายผลไปตามส่วนต่างๆ ของหน้า
   function bootTeacher() {
     document.getElementById('teacherSection').classList.remove('hidden');
     document.getElementById('scanSelectorStrip').style.display = 'block';
-    loadTeacherOverview(); // แท็บแรกที่ครูเห็นตอนล็อกอินคือ "ภาพรวม" ต้องโหลดเองตอนบูต ไม่รอ click nav
+    document.getElementById('overviewContainer').innerHTML =
+      '<div style="text-align:center; color:var(--slate); padding:24px;">กำลังโหลด...</div>';
 
-    google.script.run.withSuccessHandler(s => {
-      document.getElementById('teacherStatsLine').innerText = `นักเรียนทั้งหมด ${s.totalStudents} คน`;
-      let html = '';
-      Object.keys(s.byClass).forEach(code => {
-        const cls = s.byClass[code];
-        html += `<div class="t-stat-chip">
-          <div class="icon">🎓</div>
-          <div class="info">
-            <div class="n">${cls.count}</div>
-            <div class="l">${cls.label}</div>
-          </div>
-        </div>`;
-      });
-      document.getElementById('teacherStatGrid').innerHTML = html;
+    google.script.run.withSuccessHandler(b => {
+      if (b.meta) { metaData = b.meta; populateSelects(); }
+      if (b.overview) renderTeacherOverview_(b.overview);
+      if (b.stats) renderTeacherStats_(b.stats);
     }).withFailureHandler(err => {
-      console.error('getTeacherDashboardStats failed:', err);
-      document.getElementById('teacherStatsLine').innerText = 'โหลดไม่สำเร็จ กรุณารีเฟรชหน้าเว็บ';
-    }).getTeacherDashboardStats();
+      console.error('getTeacherBootBundle_ failed:', err);
+      Swal.fire({ title: 'โหลดข้อมูลไม่สำเร็จ', text: 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง',
+        icon: 'error', confirmButtonText: 'ลองใหม่' }).then(() => bootTeacher());
+    }).getTeacherBootBundle_();
+  }
+
+  function renderTeacherStats_(s) {
+    const line = document.getElementById('teacherStatsLine');
+    if (line) line.innerText = `นักเรียนทั้งหมด ${s.totalStudents} คน`;
+    const grid = document.getElementById('teacherStatGrid');
+    if (!grid) return;
+    grid.innerHTML = Object.keys(s.byClass).map(code => {
+      const cls = s.byClass[code];
+      return `<div class="t-stat-chip">
+        <div class="icon">🎓</div>
+        <div class="info"><div class="n">${cls.count}</div><div class="l">${cls.label}</div></div>
+      </div>`;
+    }).join('');
   }
 
   // ─── BOOT STUDENT ───────────────────────────────────────────
@@ -1714,8 +1723,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       // ผลการเรียน
       renderGradeCards(d);
 
-      // ความคืบหน้าสาขาวิชาเลือก — โหลดต่อทีหลังแบบไม่บล็อก เพื่อไม่ให้การเข้าระบบช้าลง
-      loadHomeElectiveCard_(stdId);
+      // [Perf] ค่า meta กับความคืบหน้าสาขาวิชาเลือกมากับก้อนรวมแล้ว ไม่ต้องยิงเพิ่มอีก 2 คำขอ
+      if (bundle.meta) { metaData = bundle.meta; populateSelects(); }
+      renderHomeElectiveCard_(bundle.electiveProgress);
 
     }).withFailureHandler(err => {
       console.error('getStudentBootBundle_ (boot) failed:', err);
@@ -1983,10 +1993,22 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
   // ─── OVERVIEW ───────────────────────────────────────────────
   // แท็บแรกที่ครูเห็นตอนเปิดแอป: สรุปสิ่งที่ควรรู้/ควรทำ แทนที่จะต้องไล่หาเองในแท็บอื่น
+  // [Perf] แยกเป็น 2 ส่วน: ตัวดึงข้อมูล กับตัววาดหน้าจอ
+  // ตอนครูเข้าระบบข้อมูลนี้มากับก้อนรวมอยู่แล้ว จึงเรียกตัววาดตรงๆ ได้เลย ไม่ต้องยิงคำขอซ้ำ
   function loadTeacherOverview() {
     const cont = document.getElementById('overviewContainer');
     cont.innerHTML = '<div style="text-align:center; color:var(--slate); padding:24px;">กำลังโหลด...</div>';
-    google.script.run.withSuccessHandler(ov => {
+    google.script.run.withSuccessHandler(ov => renderTeacherOverview_(ov))
+      .withFailureHandler(err => {
+        console.error('getTeacherOverview failed:', err);
+        cont.innerHTML = '<div style="text-align:center; color:var(--coral); padding:24px;">โหลดไม่สำเร็จ กรุณาลองใหม่อีกครั้ง</div>';
+      }).getTeacherOverview();
+  }
+
+  function renderTeacherOverview_(ov) {
+    const cont = document.getElementById('overviewContainer');
+    if (!cont || !ov) return;
+    {
       const cards = [];
 
       cards.push(`
@@ -2066,10 +2088,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
       cont.innerHTML = cards.join('');
       window._teacherOverviewData = ov; // เก็บไว้ให้ popup รายชื่อด้านล่างใช้ ไม่ต้องยิงซ้ำ
-    }).withFailureHandler(err => {
-      console.error('getTeacherOverview failed:', err);
-      cont.innerHTML = '<div style="text-align:center; color:var(--coral); padding:24px;">โหลดไม่สำเร็จ กรุณาลองใหม่อีกครั้ง</div>';
-    }).getTeacherOverview();
+    }
   }
 
   function showInactiveStudents_() {
@@ -2111,6 +2130,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       scoreViewState.subj = s;
       scoreViewState.cls = c;
       scoreViewState.data = res.data;
+      scoreViewState.overrides = res.gradeOverrides || [];   // มากับคำขอเดียวกัน ไม่ต้องยิงซ้ำ
+      scoreViewState.termLocked = !!res.termLocked;
       scoreViewState.totalChapters = res.totalChapters;
       scoreViewState.chapter = Math.min(scoreViewState.chapter, res.totalChapters);
       renderScoreView_();
@@ -2268,7 +2289,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
             <span class="grade-badge ${std.grade >= 3 ? 'g-hi' : std.grade <= 1.5 ? 'g-lo' : 'g-mid'}" style="flex-shrink:0;">เกรด ${std.grade}</span>
           </div>
         </div>`).join('');
-      loadGradeOverrideNotice_();
+      renderGradeOverrideNotice_(scoreViewState.data && scoreViewState.overrides);
     }
   }
 
@@ -2316,17 +2337,15 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   }
 
   // แสดงไว้เหนือตารางว่าเทอมนี้มีใครถูกแก้ผลการเรียนไว้บ้าง เพื่อไม่ให้ลืมว่าเคยแก้
-  function loadGradeOverrideNotice_() {
-    google.script.run.withSuccessHandler(list => {
-      const sum = document.getElementById('scoreSummaryCard');
-      if (!sum || !list || !list.length) return;
-      sum.innerHTML += `
-        <div style="margin-top:10px; padding-top:10px; border-top:1.5px solid var(--mist); font-size:0.78rem; text-align:left;">
-          <b style="color:var(--amber2);">📝 แก้ผลการเรียนไว้ ${list.length} คน</b>
-          ${list.map(o => `<div style="color:var(--slate); margin-top:3px;">${o.name} → เกรด ${o.grade} · ${o.reason}</div>`).join('')}
-        </div>`;
-    }).withFailureHandler(err => console.error('getGradeOverrides failed:', err))
-      .getGradeOverrides(scoreViewState.subj, scoreViewState.cls);
+  // [Perf] รายการแก้ผลการเรียนมากับ getClassScoreData แล้ว จึงวาดจากข้อมูลที่มีอยู่ ไม่ต้องยิงคำขอเพิ่ม
+  function renderGradeOverrideNotice_(list) {
+    const sum = document.getElementById('scoreSummaryCard');
+    if (!sum || !list || !list.length) return;
+    sum.innerHTML += `
+      <div style="margin-top:10px; padding-top:10px; border-top:1.5px solid var(--mist); font-size:0.78rem; text-align:left;">
+        <b style="color:var(--amber2);">📝 แก้ผลการเรียนไว้ ${list.length} คน</b>
+        ${list.map(o => `<div style="color:var(--slate); margin-top:3px;">${o.name} → เกรด ${o.grade} · ${o.reason}</div>`).join('')}
+      </div>`;
   }
 
   // แก้ไขคะแนนช่องใดช่องหนึ่ง แล้วส่งค่าใหม่ไปบันทึกที่ backend
@@ -2447,13 +2466,11 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         }).join('');
     };
 
-    google.script.run.withSuccessHandler(list => { results.list = list; done(); })
-      .withFailureHandler(err => { console.error('getAllStudents failed:', err); done(); })
-      .getAllStudents();
-
-    google.script.run.withSuccessHandler(electives => { results.electives = electives; done(); })
-      .withFailureHandler(err => { console.error('getAllStudentElectives failed:', err); done(); })
-      .getAllStudentElectives();
+    // [Perf] เดิมยิง 2 คำขอพร้อมกัน (รายชื่อ + สาขาวิชาเลือก) รวมเป็นคำขอเดียว
+    pending = 1;
+    google.script.run.withSuccessHandler(b => { results.list = b.students; results.electives = b.electives; done(); })
+      .withFailureHandler(err => { console.error('getStudentListBundle_ failed:', err); done(); })
+      .getStudentListBundle_();
   }
 
   // ─── STUDENT ROSTER MANAGEMENT (ครู) ─────────────────────────
@@ -4402,7 +4419,14 @@ function renderCourseSubjects() {
 // รายละเอียดรายบท (คลิปไหน ข้อไหน) ยังอยู่ในหน้าเรียนออนไลน์เหมือนเดิม ที่นี่เอาแค่ภาพรวมพอ
 // โหลดแยกจากตอนเข้าระบบ ถ้าโหลดไม่ได้ก็แค่ไม่แสดงการ์ด ไม่กระทบส่วนอื่นของหน้า
 function loadHomeElectiveCard_(stdId) {
-  google.script.run.withSuccessHandler(p => {
+  google.script.run.withSuccessHandler(p => renderHomeElectiveCard_(p))
+    .withFailureHandler(err => console.error('getElectiveProgress failed:', err))
+    .getElectiveProgress(stdId);
+}
+
+// วาดการ์ดจากข้อมูลที่มีอยู่แล้ว — ตอนเข้าระบบข้อมูลนี้มากับก้อนรวม จึงไม่ต้องยิงคำขอซ้ำ
+function renderHomeElectiveCard_(p) {
+  {
     const el = document.getElementById('homeElectiveCard');
     if (!el || !p || !p.hasElective) return;
     const s = p.score || { creditBankScore:0, videoScore:0, submissionScore:0, testScore:0, total50:0 };
@@ -4436,8 +4460,7 @@ function loadHomeElectiveCard_(stdId) {
         </div>
         ${todoHtml}
       </div>`;
-  }).withFailureHandler(err => console.error('getElectiveProgress (หน้าหลัก) failed:', err))
-    .getElectiveProgress(stdId);
+  }
 }
 
 function loadElectiveScoreCard_(myToken) {
