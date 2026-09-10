@@ -2795,6 +2795,22 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         <div class="section-label" style="margin-bottom:8px;">ปิด/เปิดเทอมรายชั้น</div>
         ${clsRows}
 
+        <div class="section-label" style="margin-top:16px; margin-bottom:8px;">จบเทอม → เก็บคะแนนแล้วเริ่มเทอมใหม่</div>
+        <div class="card card-pad" style="text-align:left; margin-bottom:12px;">
+          <div style="font-size:0.8rem; color:var(--slate); margin-bottom:10px;">
+            ชีตคะแนนมีช่องเกรดชุดเดียว ถ้าขึ้นเทอมใหม่แล้วให้คะแนนทับ คะแนนเทอมเก่าจะหาย<br>
+            ต้อง<b>เก็บเข้าคลังก่อน</b> แล้วค่อยล้างเพื่อเริ่มนับใหม่
+          </div>
+          ${st.classes.map(c => `
+            <button class="btn btn-ghost btn-block btn-sm" style="margin-bottom:6px;"
+                    onclick="openTermArchiveDialog_('${c.code}', ${JSON.stringify(c.label)})">
+              <i class="fa-solid fa-box-archive"></i> จัดการคะแนนเทอมของ ${c.label}
+            </button>`).join('')}
+          <button class="btn btn-ghost btn-block btn-sm" style="margin-top:4px;" onclick="showTermArchives_()">
+            <i class="fa-solid fa-clock-rotate-left"></i> ดูคลังคะแนนที่เก็บไว้
+          </button>
+        </div>
+
         <div class="section-label" style="margin-top:16px; margin-bottom:8px;">ขึ้นปีการศึกษาใหม่</div>
         <div class="card card-pad" style="text-align:left;">
           <div style="font-size:0.8rem; color:var(--slate); margin-bottom:10px;">
@@ -2845,6 +2861,143 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       </div>`,
       icon: 'warning', showCancelButton: true, confirmButtonText: 'ปิดเทอม', cancelButtonText: 'ยกเลิก'
     }).then(r => { if (r.isConfirmed) doIt(); });
+  }
+
+  // ─── เก็บคะแนนเทอมเข้าคลัง / เริ่มเทอมใหม่ ────────────────────
+  // แยกเป็น 2 ปุ่มตามลำดับที่ปลอดภัย: เก็บก่อน แล้วค่อยล้าง
+  // ปุ่มล้างจะกดไม่ได้จนกว่าจะมีสำเนาแล้ว เพื่อไม่ให้คะแนนหายโดยไม่ได้ตั้งใจ
+  function openTermArchiveDialog_(clsCode, clsLabel) {
+    Swal.fire({ title: 'กำลังตรวจสอบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    google.script.run.withSuccessHandler(p => {
+      const rows = (p.subjects || []).map(s => `
+        <div style="padding:6px 0; border-bottom:1px solid var(--cloud);">
+          <b>${s.subjectLabel}</b> — ${s.students} คน<br>
+          <span style="font-size:0.76rem; color:${s.alreadyArchived ? 'var(--teal2)' : 'var(--slate)'};">
+            ${s.alreadyArchived ? `✅ เก็บแล้ว (${s.archiveSheet} · ${s.archivedStudents} คน)` : `ยังไม่ได้เก็บ → จะเก็บเป็น ${s.archiveSheet}`}
+          </span>
+        </div>`).join('') || '<div style="color:var(--slate);">ไม่พบชีตคะแนนของชั้นนี้</div>';
+      const allArchived = (p.subjects || []).length > 0 && p.subjects.every(s => s.alreadyArchived);
+
+      Swal.fire({
+        title: '📦 คะแนนเทอมของ ' + clsLabel,
+        html: `<div style="text-align:left; font-size:0.85rem;">
+          <div style="color:var(--slate); margin-bottom:8px;">ปีการศึกษา ${p.year} เทอม ${p.term}
+            ${p.locked ? '· <span style="color:var(--coral);">🔒 ปิดเทอมแล้ว</span>' : '· <span style="color:var(--teal2);">🔓 ยังเปิดอยู่</span>'}</div>
+          ${rows}
+          ${!p.locked ? '<div style="margin-top:10px; color:var(--amber2); font-size:0.78rem;">⚠️ ยังไม่ได้ปิดเทอมของชั้นนี้ — ควรตัดเกรดและปิดเทอมก่อนเก็บคะแนน</div>' : ''}
+          <div style="margin-top:12px; font-size:0.78rem; color:var(--slate);">
+            <b>ขั้นที่ 1</b> เก็บเข้าคลัง — คัดลอกอย่างเดียว คะแนนปัจจุบันไม่ถูกแตะ<br>
+            <b>ขั้นที่ 2</b> ล้างเริ่มเทอมใหม่ — ${allArchived ? 'พร้อมแล้ว' : '<span style="color:var(--coral);">ต้องเก็บเข้าคลังให้ครบก่อน</span>'}
+          </div>
+        </div>`,
+        width: 'min(92vw, 460px)',
+        showCancelButton: true, cancelButtonText: 'ปิด',
+        confirmButtonText: allArchived ? '📦 เก็บซ้ำ (ทับของเดิม)' : '📦 ขั้นที่ 1 — เก็บเข้าคลัง',
+        showDenyButton: allArchived,
+        denyButtonText: '🧹 ขั้นที่ 2 — ล้างเริ่มเทอมใหม่',
+        denyButtonColor: '#FF4D6D'
+      }).then(r => {
+        if (r.isConfirmed) doArchiveTerm_(clsCode, clsLabel, allArchived);
+        else if (r.isDenied) confirmResetTerm_(clsCode, clsLabel);
+      });
+    }).withFailureHandler(err => {
+      console.error('previewTermArchive failed:', err);
+      Swal.fire('โหลดไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่', 'error');
+    }).previewTermArchive(clsCode, null, null);
+  }
+
+  function doArchiveTerm_(clsCode, clsLabel, overwrite) {
+    const go = () => {
+      Swal.fire({ title: 'กำลังเก็บเข้าคลัง...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      google.script.run.withSuccessHandler(res => {
+        if (res && res.success) Swal.fire('เก็บแล้ว', res.message, 'success').then(() => openTermArchiveDialog_(clsCode, clsLabel));
+        else Swal.fire('ไม่สำเร็จ', (res && res.message) || 'เกิดข้อผิดพลาด', 'error');
+      }).withFailureHandler(err => {
+        console.error('archiveTermScores failed:', err);
+        Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่', 'error');
+      }).archiveTermScores(clsCode, null, null, !!overwrite);
+    };
+    if (!overwrite) { go(); return; }
+    Swal.fire({
+      title: 'เก็บทับของเดิม?',
+      text: 'คลังเดิมของเทอมนี้จะถูกแทนที่ด้วยคะแนนปัจจุบัน ใช้เมื่อเผลอเก็บตอนคะแนนยังไม่ครบ',
+      icon: 'warning', showCancelButton: true, confirmButtonText: 'เก็บทับ', cancelButtonText: 'ยกเลิก'
+    }).then(r => { if (r.isConfirmed) go(); });
+  }
+
+  function confirmResetTerm_(clsCode, clsLabel) {
+    Swal.fire({
+      title: '🧹 ล้างคะแนนเริ่มเทอมใหม่',
+      html: `<div style="text-align:left; font-size:0.85rem;">
+        คะแนนเก็บ คะแนนสอบ และเกรดของ <b>${clsLabel}</b> จะถูกล้างเป็น 0 ทั้งหมด
+        เพื่อเริ่มนับใหม่ในเทอมถัดไป<br><br>
+        <span style="color:var(--slate);">รายชื่อนักเรียนปัจจุบันจะถูกตั้งกลับเข้าไปพร้อมคะแนน 0
+        · คะแนนเทอมเก่ายังอยู่ในคลัง กู้กลับได้ตลอด</span><br><br>
+        พิมพ์คำว่า <b>เริ่มเทอมใหม่</b> เพื่อยืนยัน
+      </div>`,
+      input: 'text', inputPlaceholder: 'เริ่มเทอมใหม่',
+      showCancelButton: true, confirmButtonText: 'ล้างและเริ่มเทอมใหม่', cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#FF4D6D', width: 'min(92vw, 440px)'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      Swal.fire({ title: 'กำลังล้าง...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      google.script.run.withSuccessHandler(res => {
+        if (res && res.success) Swal.fire('เรียบร้อย', res.message, 'success').then(() => renderAdminTerm_());
+        else Swal.fire('ไม่สำเร็จ', (res && res.message) || 'เกิดข้อผิดพลาด', 'error');
+      }).withFailureHandler(err => {
+        console.error('resetTermScores failed:', err);
+        Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่', 'error');
+      }).resetTermScores(clsCode, r.value, null, null);
+    });
+  }
+
+  // คลังคะแนนที่เก็บไว้ — ดูย้อนหลังและกู้กลับได้
+  function showTermArchives_() {
+    Swal.fire({ title: 'กำลังโหลด...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    google.script.run.withSuccessHandler(list => {
+      if (!list || !list.length) { Swal.fire('ยังไม่มีคลัง', 'ยังไม่เคยเก็บคะแนนเทอมไหนเข้าคลัง', 'info'); return; }
+      const rows = list.map(a => `
+        <div class="prow">
+          <div class="prow-top">
+            <div style="flex:1; min-width:0;">
+              <div class="prow-name">${a.subjectLabel} ${a.classLabel}</div>
+              <div class="prow-meta">ปีการศึกษา ${a.year} เทอม ${a.term} · ${a.students} คน</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" style="flex-shrink:0;"
+                    onclick="confirmRestoreArchive_('${a.classCode}', ${a.year}, ${a.term})">กู้คืน</button>
+          </div>
+        </div>`).join('');
+      Swal.fire({ title: '🗄️ คลังคะแนนที่เก็บไว้',
+        html: `<div style="max-height:60vh; overflow-y:auto; text-align:left;">${rows}</div>`,
+        width: 'min(92vw, 460px)', confirmButtonText: 'ปิด' });
+    }).withFailureHandler(err => {
+      console.error('listTermArchives failed:', err);
+      Swal.fire('โหลดไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่', 'error');
+    }).listTermArchives();
+  }
+
+  function confirmRestoreArchive_(clsCode, year, term) {
+    Swal.fire({
+      title: 'กู้คะแนนกลับ?',
+      html: `<div style="text-align:left; font-size:0.85rem;">
+        จะเอาคะแนนจากคลัง <b>ปีการศึกษา ${year} เทอม ${term}</b> มาทับคะแนนปัจจุบันของชั้นนี้<br><br>
+        <span style="color:var(--coral);">คะแนนที่บันทึกไว้หลังจากเก็บคลังนี้จะถูกแทนที่</span><br><br>
+        พิมพ์คำว่า <b>กู้คืน</b> เพื่อยืนยัน
+      </div>`,
+      input: 'text', inputPlaceholder: 'กู้คืน',
+      showCancelButton: true, confirmButtonText: 'กู้คืน', cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#FF4D6D'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      Swal.fire({ title: 'กำลังกู้คืน...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      google.script.run.withSuccessHandler(res => {
+        if (res && res.success) Swal.fire('เรียบร้อย', res.message, 'success');
+        else Swal.fire('ไม่สำเร็จ', (res && res.message) || 'เกิดข้อผิดพลาด', 'error');
+      }).withFailureHandler(err => {
+        console.error('restoreTermFromArchive failed:', err);
+        Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่', 'error');
+      }).restoreTermFromArchive(clsCode, year, term, r.value);
+    });
   }
 
   // เลื่อนชั้น — แสดงตัวอย่างให้เห็นก่อนว่าใครจะไปไหน ใครจบ แล้วค่อยยืนยันด้วยการพิมพ์
