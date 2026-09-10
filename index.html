@@ -1529,16 +1529,22 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   }
 
   // โหลดจำนวนบทเรียนจริงของวิชา+ชั้นที่เลือกอยู่ในแท็บสแกน แล้ววาดปุ่มใหม่ (บทเรียนอาจไม่เท่ากันในแต่ละวิชา/ชั้น)
+  // [Perf] จำนวนบทมากับค่า meta แล้ว จึงอ่านจากที่เก็บไว้ ไม่ต้องยิงคำขอ
+  // เดิมยิงทุกครั้งที่ครูสลับวิชา/ชั้น ทำให้ระหว่างไล่สแกนทั้งห้องต้องรอ ~2 วินาทีทุกครั้งที่เปลี่ยนห้อง
+  // เผื่อกรณีที่ยังไม่มีค่าใน meta (เช่นเพิ่งเพิ่มวิชาใหม่) ค่อยยิงถามเป็นทางสำรอง
   function refreshChapterButtons_() {
     const subj = document.getElementById('activeSubjSelect')?.value;
     const cls  = document.getElementById('activeClassSelect')?.value;
     if (!subj || !cls) return;
-    google.script.run.withSuccessHandler(res => {
-      renderChapterButtons_(res.totalChapters, parseInt(document.getElementById('activeChapterInput').value) || 1);
-    }).withFailureHandler(err => {
-      console.error('getChapterCount failed:', err);
-      renderChapterButtons_(10, 1);
-    }).getChapterCount(subj, cls);
+    const cur = parseInt(document.getElementById('activeChapterInput').value) || 1;
+    const known = metaData.chapterCounts && metaData.chapterCounts[subj + '_' + cls];
+    if (known) { renderChapterButtons_(known, cur); return; }
+
+    google.script.run.withSuccessHandler(res => renderChapterButtons_(res.totalChapters, cur))
+      .withFailureHandler(err => {
+        console.error('getChapterCount failed:', err);
+        renderChapterButtons_(10, cur);
+      }).getChapterCount(subj, cls);
   }
 
   // ─── BOOT TEACHER ───────────────────────────────────────────
