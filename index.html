@@ -32,7 +32,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-  <meta name="theme-color" content="#123C69">
+  <meta name="theme-color" content="#0B1120">
   <meta name="apple-mobile-web-app-title" content="Smart Class">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -50,68 +50,6 @@
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDaEqUTYzY-Tn0f35qN9Y18w7XlQ-UbUhw&libraries=geometry"></script>
 
   <style>
-    :root {
-      /* ชื่อตัวแปรเดิมคงไว้ (ให้ CSS ส่วนที่เหลือใช้ var() แบบเดิมได้หมด) แต่เปลี่ยนค่าเป็นธีมใหม่:
-         --navy* กลายเป็นน้ำเงินเข้ม (โทนหลักพื้นเข้ม), --teal* กลายเป็นชมพู (สีหลัก), --amber* กลายเป็นเหลือง */
-      --navy:    #123C69;
-      --navy2:   #17518C;
-      --navy3:   #1D63A8;
-      --teal:    #FF5C97;
-      --teal2:   #E63D7A;
-      --amber:   #FFC93C;
-      --amber2:  #E0A800;
-      --coral:   #E0245E;
-      --cloud:   #F5FAFF;
-      --mist:    #E4F1FC;
-      --slate:   #6E88A3;
-      --white:   #FFFFFF;
-
-      /* ชื่อเรียกใหม่ (alias เดียวกับด้านบน) ใช้ในส่วนที่เขียนเพิ่มจากนี้ ให้อ่านง่ายขึ้น */
-      --grape:   var(--navy);
-      --grape2:  var(--navy2);
-      --grape3:  var(--navy3);
-      --grass:   var(--teal);
-      --grass2:  var(--teal2);
-      --tang:    var(--amber);
-      --tang2:   var(--amber2);
-      --berry:   var(--coral);
-      --sky:     #2AABEE;
-      --sky2:    #1C86C4;
-      --sun:     #FFD23F;
-      --cream:   #FFFBF0;
-
-      --r-sm:    14px;
-      --r-md:    22px;
-      --r-lg:    30px;
-      --r-xl:    38px;
-      --shadow-sm: 0 2px 8px rgba(18,60,105,0.10);
-      --shadow-md: 0 6px 24px rgba(18,60,105,0.14);
-      --shadow-lg: 0 16px 48px rgba(18,60,105,0.22);
-      --shadow-teal: 0 6px 24px rgba(255,92,151,0.30);
-      --shadow-amber: 0 6px 20px rgba(255,201,60,0.35);
-
-      /* ── โทเค็นใหม่: ปุ่ม/การ์ดสไตล์เกม 3 มิติ (ขอบล่างหนา กดแล้วยุบ) ── */
-      --bevel-grass:  #C42862;
-      --bevel-tang:   #C68A00;
-      --bevel-sky:    #16739E;
-      --bevel-berry:  #B01248;
-      --bevel-grape:  #0B2847;
-      --border-ink:   rgba(11,40,71,0.28);
-
-      /* ── โหมดมืด: โทเค็นใหม่แยกต่างหาก ── */
-      /* --white คงที่เสมอ (ใช้กับตัวหนังสือขาวบนพื้นเข้ม/กรอบ QR) ส่วน --surface คือพื้นการ์ด/ช่องกรอกที่จะสลับเป็นเข้มได้ */
-      --surface: #FFFFFF;
-      --ink:     var(--navy);
-    }
-
-    /* โหมดมืด: สลับเฉพาะพื้นผิว/ตัวหนังสือ/เส้นขอบ — สีธีมหลัก (ชมพู/ฟ้า/เหลือง) และพื้นเข้ม hero/login คงเดิมทั้งสองโหมด */
-    body.dark-mode {
-      --cloud:   #0F1B2E;
-      --mist:    #24354F;
-      --slate:   #93A6BF;
-      --surface: #1B2A44;
-      --ink:     #E8F0FB;
-    }
 
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -835,6 +773,589 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     font-family: 'Mitr','Prompt',sans-serif; font-size: 17px; font-weight: 800; margin-bottom: 18px; text-align: center;
   }
 
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     STUDIO — ชุดหน้าตาใหม่ (ก.ย. 2569)
+     ═══════════════════════════════════════════════════════════════════════
+     ของเดิมเป็นธีมลูกกวาด: ชมพู-กรมท่า พื้นไล่สี ปุ่มนูนมีขอบล่างหนา มีจุดคอนเฟตติ
+     ของใหม่ตั้งใจให้ต่างออกไปคนละทาง — พื้นเข้ม เส้นขอบบาง ไม่มีเงานูน
+     ให้ "ตัวเลข" เป็นพระเอกแทน "กล่อง" เพราะสิ่งที่ครูกับนักเรียนมาดูจริงๆ คือตัวเลข
+
+     กฎของชุดนี้
+       1. พื้นเข้มเป็นค่าเริ่มต้น สลับเป็นสว่างได้ที่ปุ่มเดิม (body.light-mode)
+       2. ยกระดับความสำคัญด้วย "พื้นผิวที่สว่างขึ้นทีละขั้น" ไม่ใช่ด้วยเงา
+       3. สีเน้นใช้ทีละสีต่อหนึ่งความหมาย ม่วง=หลัก เขียวมิ้นต์=ได้/บวก
+          เหลือง=แต้ม ชมพูแดง=เสีย/ลบ ฟ้า=ข้อมูล
+       4. มุมโค้งลดลง (การ์ด 18px ปุ่ม 12px) วงกลมเต็มใช้เฉพาะชิปกับแถบนำทาง
+     ═══════════════════════════════════════════════════════════════════════ */
+
+  :root {
+    /* ── พื้นผิว (เข้ม = ค่าเริ่มต้น) ─────────────────────────────── */
+    --bg:        #0B1120;   /* พื้นหลังสุดของหน้า */
+    --bg-2:      #111827;   /* แถบบน / แถบล่าง */
+    --surface:   #151D2E;   /* การ์ด */
+    --surface-2: #1D2739;   /* ช่องย่อยในการ์ด */
+    --line:      #263149;   /* เส้นขอบบาง */
+    --line-soft: #1B2436;
+    --ink:       #E9EFFA;   /* ตัวหนังสือหลัก */
+    --ink-2:     #93A3BF;   /* ตัวหนังสือรอง */
+    --ink-3:     #5F6E8A;
+
+    /* ── สีเน้น ─────────────────────────────────────────────────── */
+    --violet:    #7B61FF;
+    --violet-2:  #9B85FF;
+    --violet-dim:rgba(123,97,255,0.14);
+    --mint:      #00D9A3;
+    --mint-dim:  rgba(0,217,163,0.14);
+    --gold:      #FFB020;
+    --gold-dim:  rgba(255,176,32,0.14);
+    --rose:      #FF4D6D;
+    --rose-dim:  rgba(255,77,109,0.14);
+    --sky:       #38BDF8;
+    --sky-dim:   rgba(56,189,248,0.14);
+
+    /* ── ชื่อเดิม: แม็พมาที่ชุดใหม่ เพื่อให้ CSS/JS เก่าที่อ้าง var() เดิมยังทำงานได้ ──
+       (ห้ามลบ — มีหลายร้อยจุดในไฟล์นี้ที่ยังเรียกชื่อเหล่านี้อยู่) */
+    --navy:   var(--bg-2);
+    --navy2:  var(--surface);
+    --navy3:  var(--surface-2);
+    --teal:   var(--violet);
+    --teal2:  var(--violet-2);
+    --amber:  var(--gold);
+    --amber2: var(--gold);
+    --coral:  var(--rose);
+    --cloud:  var(--bg);
+    --mist:   var(--line);
+    --slate:  var(--ink-2);
+    --white:  #FFFFFF;
+    --grape:  var(--bg-2);   --grape2: var(--surface); --grape3: var(--surface-2);
+    --grass:  var(--violet); --grass2: var(--violet-2);
+    --tang:   var(--gold);   --tang2:  var(--gold);
+    --berry:  var(--rose);   --sky2:   var(--sky);
+    --sun:    var(--gold);   --cream:  var(--surface-2);
+    --bevel-grass: transparent; --bevel-tang: transparent; --bevel-sky: transparent;
+    --bevel-berry: transparent; --bevel-grape: transparent;
+    --border-ink: var(--line);
+
+    /* ── รูปทรง ─────────────────────────────────────────────────── */
+    --r-sm: 12px;
+    --r-md: 18px;
+    --r-lg: 22px;
+    --r-xl: 26px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.30);
+    --shadow-md: 0 8px 24px rgba(0,0,0,0.36);
+    --shadow-lg: 0 20px 50px rgba(0,0,0,0.50);
+    --shadow-teal: 0 6px 22px rgba(123,97,255,0.32);
+    --shadow-amber: 0 6px 22px rgba(255,176,32,0.28);
+    --glow: 0 0 0 1px var(--line), 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  /* โหมดสว่าง — ใช้โครงเดียวกันทุกอย่าง เปลี่ยนแค่พื้นผิวกับตัวหนังสือ
+     สีเน้นทั้ง 5 สีคงเดิมทั้งสองโหมด ผู้ใช้จึงจำความหมายของสีได้ชุดเดียว */
+  body.light-mode {
+    --bg:        #F4F6FB;
+    --bg-2:      #FFFFFF;
+    --surface:   #FFFFFF;
+    --surface-2: #F1F4FA;
+    --line:      #E1E7F2;
+    --line-soft: #EDF1F8;
+    --ink:       #131A2A;
+    --ink-2:     #64748B;
+    --ink-3:     #94A3B8;
+    --violet-dim:rgba(123,97,255,0.10);
+    --mint-dim:  rgba(0,183,138,0.12);
+    --gold-dim:  rgba(214,142,0,0.12);
+    --rose-dim:  rgba(255,77,109,0.10);
+    --sky-dim:   rgba(14,165,233,0.10);
+    --mint:      #00A87E;
+    --gold:      #C98700;
+    --shadow-sm: 0 1px 2px rgba(19,26,42,0.06);
+    --shadow-md: 0 8px 24px rgba(19,26,42,0.10);
+    --shadow-lg: 0 20px 50px rgba(19,26,42,0.16);
+    --glow: 0 0 0 1px var(--line), 0 6px 18px rgba(19,26,42,0.06);
+  }
+
+  html, body {
+    background: var(--bg); color: var(--ink);
+    font-family: 'Sarabun', sans-serif;
+  }
+
+  /* แสงออโรราจางๆ บนสุดของหน้า — แทนลายจุดคอนเฟตติของเดิม
+     ให้พื้นเข้มไม่ตันจนดูทึบ แต่ไม่รบกวนการอ่านเพราะจางและอยู่หลังทุกอย่าง */
+  body::before {
+    content: ''; position: fixed; inset: 0 0 auto 0; height: 420px; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(60% 100% at 15% 0%, rgba(123,97,255,0.20) 0%, transparent 70%),
+      radial-gradient(50% 100% at 90% 5%, rgba(0,217,163,0.12) 0%, transparent 70%);
+  }
+  body.light-mode::before { opacity: 0.55; }
+  #studentSection, #teacherSection, #loginSection { position: relative; z-index: 1; }
+
+  /* ยกเลิกลายจุดคอนเฟตติทั้งไฟล์ (ของเดิมพ่นลายจุดขาวทับทุกพื้นเข้ม) */
+  .confetti-bg::after { display: none !important; }
+
+  ::-webkit-scrollbar-thumb { background: var(--line); }
+
+  /* ═══════ ปุ่ม ═══════════════════════════════════════════════════
+     เดิมเป็นปุ่มนูนสไตล์เกม (ไล่สี + ขอบล่างหนา 5px + กดแล้วยุบ)
+     ใหม่เป็นปุ่มแบน สีทึบ มุม 12px กดแล้วแค่หรี่ลง — อ่านง่ายและดูโตขึ้น */
+  .btn {
+    padding: 12px 20px; border-radius: var(--r-sm); font-weight: 700; font-size: 0.9rem;
+    letter-spacing: 0; top: 0 !important; box-shadow: none;
+    transition: background .15s, opacity .15s, transform .1s, border-color .15s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-teal, .btn-teal:hover, .btn-teal:active {
+    background: var(--violet); color: #fff; text-shadow: none; box-shadow: none;
+  }
+  .btn-teal:hover { background: var(--violet-2); }
+  .btn-amber, .btn-amber:hover, .btn-amber:active {
+    background: var(--gold); color: #16202F; text-shadow: none; box-shadow: none;
+  }
+  .btn-amber:hover { filter: brightness(1.08); }
+  .btn-navy, .btn-navy:hover, .btn-navy:active {
+    background: var(--surface-2); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .btn-navy:hover { background: var(--line); }
+  .btn-glass { background: rgba(255,255,255,0.08); color: var(--ink); border: 1px solid var(--line); }
+  .btn-ghost, .btn-ghost:hover, .btn-ghost:active {
+    background: transparent; color: var(--ink-2); border: 1px solid var(--line); box-shadow: none;
+  }
+  .btn-ghost:hover { color: var(--ink); border-color: var(--ink-2); background: var(--surface-2); }
+  .btn-danger-soft { background: var(--rose-dim); color: var(--rose); border: 1px solid transparent; }
+  .btn-danger-soft:hover { background: var(--rose); color: #fff; border-color: var(--rose); }
+  .btn-sm { padding: 8px 14px; font-size: 0.79rem; }
+
+  /* ปุ่มริบบิ้นของเดิม (มีหางสามเหลี่ยมสองข้าง) — เปลี่ยนเป็นป้ายหัวข้อเรียบๆ */
+  .ribbon-title, .ribbon-title.tang, .ribbon-title.sky, .wheel-title {
+    background: var(--surface-2) !important; color: var(--ink) !important;
+    border: 1px solid var(--line) !important; border-radius: var(--r-sm) !important;
+    box-shadow: none !important; text-shadow: none !important;
+    padding: 8px 18px !important; font-size: 0.9rem;
+  }
+  .ribbon-title::before, .ribbon-title::after,
+  .wheel-title::before, .wheel-title::after { display: none !important; }
+
+  /* ═══════ ช่องกรอก ═════════════════════════════════════════════ */
+  .field, .cell-input, .pscore input, select.field {
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--ink);
+    border-radius: var(--r-sm);
+  }
+  .field { padding: 11px 14px; font-size: 0.9rem; }
+  .field:focus, .cell-input:focus, .pscore input:focus {
+    outline: none; border-color: var(--violet); box-shadow: 0 0 0 3px var(--violet-dim);
+  }
+  .field-label { color: var(--ink-2); letter-spacing: 0.08em; font-size: 0.7rem; }
+  select.field option { background: var(--surface); color: var(--ink); }
+
+  .chapter-btn {
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2);
+    border-radius: var(--r-sm); font-weight: 700;
+  }
+  .chapter-btn.active { background: var(--violet); border-color: var(--violet); color: #fff; }
+  .chapter-btn:not(.active):hover { border-color: var(--violet); color: var(--ink); }
+
+  /* ═══════ หน้าเข้าสู่ระบบ ═══════════════════════════════════════
+     เดิมเป็นกล่องแก้วลอยกลางจอบนพื้นไล่สีน้ำเงิน มีลูกกลมเบลอสามลูก
+     ใหม่: จัดชิดล่างแบบแอปมือถือ ชื่อแอปตัวใหญ่อยู่บน ฟอร์มอยู่ในระยะนิ้วโป้ง */
+  .login-wrap {
+    background: transparent;   /* ปล่อยให้เห็นแสงออโรราที่พื้นหลังของ body */
+    align-items: stretch; justify-content: flex-start;
+    flex-direction: column; padding: 0;
+  }
+  .login-orb { display: none; }
+  .login-box {
+    background: transparent; backdrop-filter: none; border: none; box-shadow: none;
+    border-radius: 0; padding: 0 24px calc(28px + env(safe-area-inset-bottom));
+    max-width: 460px; margin: auto auto 0; width: 100%;
+  }
+  /* ชิดลงมาหาฟอร์ม ไม่ใช่ลอยกลางช่องว่าง — บนจอยาวๆ การจัดกึ่งกลางทำให้เกิดแถบว่างคั่นกลางจนดูขาดเป็นสองส่วน */
+  .login-brand-top {
+    max-width: 460px; width: 100%; margin: 0 auto; padding: 0 24px 30px;
+    flex: 1; display: flex; flex-direction: column; justify-content: flex-end; min-height: 34vh;
+  }
+  .login-mark {
+    width: 56px; height: 56px; border-radius: 16px; margin: 0 0 20px;
+    background: var(--violet); box-shadow: var(--shadow-teal); transform: none;
+    font-size: 1.4rem;
+  }
+  .login-title {
+    text-align: left; font-size: 2.5rem; line-height: 1.08; color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+  .login-title .accent { color: var(--violet); }
+  .login-sub { text-align: left; color: var(--ink-2); margin: 10px 0 0; font-size: 0.9rem; }
+  .role-pill {
+    background: var(--surface-2); border: 1px solid var(--line); padding: 4px;
+    border-radius: var(--r-sm); margin-bottom: 14px;
+  }
+  .role-pill button { color: var(--ink-2); border-radius: 9px; }
+  .role-pill button.active { background: var(--violet); color: #fff; box-shadow: none; }
+  .login-field {
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--ink);
+    border-radius: var(--r-sm); padding: 14px 16px; margin-bottom: 10px;
+  }
+  .login-field::placeholder { color: var(--ink-3); }
+  .login-field:focus { border-color: var(--violet); background: var(--surface-2); box-shadow: 0 0 0 3px var(--violet-dim); }
+
+  /* ═══════ โครงหน้าแอป ══════════════════════════════════════════ */
+  .app-shell { max-width: 560px; padding-bottom: 96px; }
+  @media (min-width: 540px) { .app-shell { background: transparent; } }
+  .content-pad { padding: 18px 16px; }
+
+  /* ── แถบบน — แทนหัวไล่สีสูง 130px ของเดิมด้วยแถบบางที่ติดขอบจอ
+        ได้พื้นที่เนื้อหาคืนมาเกือบ 100px และยังเห็นชื่อ/ปุ่มตลอดเวลาที่เลื่อน ── */
+  .topbar {
+    position: sticky; top: 0; z-index: 800;
+    display: flex; align-items: center; gap: 12px;
+    padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .topbar-avatar {
+    width: 42px; height: 42px; border-radius: 13px; flex-shrink: 0;
+    background: var(--violet); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Mitr','Prompt',sans-serif; font-weight: 700; font-size: 1.1rem;
+  }
+  .topbar-id { flex: 1; min-width: 0; }
+  .topbar-name {
+    font-family: 'Mitr','Prompt',sans-serif; font-weight: 600; font-size: 1.02rem;
+    color: var(--ink); line-height: 1.25;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .topbar-meta {
+    font-size: 0.75rem; color: var(--ink-2); margin-top: 1px;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .topbar-acts { display: flex; gap: 6px; flex-shrink: 0; }
+  .hero-icon-row { position: static; display: flex; gap: 6px; }
+  .hero-logout {
+    width: 36px; height: 36px; border-radius: 11px;
+    background: var(--surface-2); border: 1px solid var(--line);
+    color: var(--ink-2); font-size: 0.85rem;
+  }
+  .hero-logout:hover { background: var(--line); color: var(--ink); }
+  .hero-logout .notif-dot { top: 5px; right: 6px; background: var(--rose); border-color: var(--bg); }
+
+  /* หัวเดิม — ยุบให้ไม่กินที่ เผื่อจุดไหนยังอ้างคลาสนี้อยู่ */
+  .hero-header, .teacher-hero { background: transparent; padding: 0; }
+  .hero-header::before, .teacher-hero::before { display: none; }
+  .hero-tag { color: var(--violet-2); }
+  .hero-name { color: var(--ink); }
+  .hero-sub { color: var(--ink-2); }
+
+  /* ── ตัวเลขพระเอก (แต้มสะสม) ─────────────────────────────────
+        เดิมเป็นการ์ดสีเหลืองนูนที่ลอยเกยหัว ใหม่เป็นแผงเรียบตัวเลขใหญ่
+        ปุ่มลัดย้ายลงมาเป็นแถวแยก แตะง่ายขึ้นและไม่เบียดตัวเลข ── */
+  .points-card {
+    margin: 4px 16px 0; background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r-md); padding: 18px 18px 14px; box-shadow: none;
+    position: relative; overflow: hidden;
+  }
+  .points-card::before {
+    content: ''; position: absolute; right: -40px; top: -60px;
+    width: 180px; height: 180px; border-radius: 50%;
+    background: radial-gradient(circle, var(--gold-dim) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .points-card .lbl {
+    color: var(--ink-2); opacity: 1; font-size: 0.7rem; letter-spacing: 0.1em;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .points-card .val {
+    color: var(--gold); font-size: 2.9rem; letter-spacing: -0.03em; margin-top: 2px;
+  }
+  .points-card .val small { color: var(--ink-2); font-size: 0.85rem; opacity: 1; margin-left: 4px; }
+  .points-card .actions {
+    display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px;
+    margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line);
+  }
+  .points-card .actions button {
+    background: transparent; color: var(--ink-2); border-radius: var(--r-sm);
+    padding: 9px 6px; font-size: 0.78rem; font-weight: 600;
+    flex-direction: column; gap: 5px; border: 1px solid var(--line);
+  }
+  .points-card .actions button i { font-size: 1rem; color: var(--violet-2); }
+  .points-card .actions button:hover { background: var(--surface-2); color: var(--ink); }
+
+  /* ═══════ การ์ดและพื้นผิว ═══════════════════════════════════════
+     กฎเดียวทั้งแอป: พื้น surface + เส้นขอบ 1px ไม่มีเงานูน ไม่มีขอบในสีขาว */
+  .card,
+  .checkin-stat-card, .stat-chip, .nickname-card, .prow,
+  .history-item, .grade-summary-card, .t-stat-chip, .action-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md);
+    box-shadow: none;
+  }
+  .card-pad { padding: 16px; }
+  .divider { background: var(--line); height: 1px; }
+  .section-label { color: var(--ink-3); letter-spacing: 0.1em; font-size: 0.7rem; }
+  .section-title { color: var(--ink); font-size: 0.95rem; }
+  .section-title i { color: var(--violet-2); }
+
+  /* ── ไทล์ตัวเลข ── */
+  .checkin-stats-grid { gap: 10px; }
+  .checkin-stat-card, .stat-chip { padding: 14px; text-align: left; }
+  .checkin-stat-card .cs-icon { font-size: 1.05rem; margin-bottom: 6px; opacity: 0.9; }
+  .checkin-stat-card .cs-num, .stat-chip .n {
+    font-size: 1.9rem; letter-spacing: -0.02em; color: var(--ink);
+  }
+  .checkin-stat-card .cs-label, .stat-chip .l {
+    color: var(--ink-2); font-size: 0.7rem; letter-spacing: 0.04em; text-transform: none;
+  }
+  .checkin-stat-card.teal .cs-num, .stat-chip.teal .n { color: var(--violet-2); }
+  .checkin-stat-card.amber .cs-num, .stat-chip.amber .n { color: var(--gold); }
+  .stat-chip.coral .n { color: var(--rose); }
+  .stat-chip.navy .n { color: var(--ink); }
+
+  .t-stat-chip { background: var(--surface); padding: 11px 14px; }
+  .t-stat-chip .info .n { color: var(--ink); }
+  .t-stat-chip .info .l { color: var(--ink-2); text-transform: none; letter-spacing: 0.02em; }
+  .teacher-stat-grid { background: transparent; border-bottom: none; padding: 0; }
+
+  /* ── แถวปุ่มโหมดสแกน — เดิมแยกสีที่ "กรอบ" ทั้งใบ ทำให้ทุกใบตะโกนพร้อมกัน
+        ใหม่ใช้แถบสีบางที่ขอบซ้าย + ไอคอนสีเดียวกัน สายตาจึงไล่ลำดับได้ ── */
+  .action-card {
+    padding: 14px 16px; gap: 14px; margin-bottom: 8px;
+    border-left: 3px solid var(--line); border-radius: var(--r-sm);
+  }
+  .action-card:hover { transform: none; background: var(--surface-2); box-shadow: none; }
+  .action-card:active { transform: scale(0.99); }
+  .action-card .icon { width: 42px; height: 42px; border-radius: 12px; font-size: 1.1rem; }
+  .action-card .info h4 { font-size: 0.92rem; color: var(--ink); }
+  .action-card .info p { color: var(--ink-2); font-size: 0.75rem; }
+  .action-card .arrow { color: var(--ink-3); }
+  .action-card.mode-att        { border-left-color: var(--violet); }
+  .action-card.mode-att .icon  { background: var(--violet-dim); color: var(--violet-2); }
+  .action-card.mode-work       { border-left-color: var(--gold); }
+  .action-card.mode-work .icon { background: var(--gold-dim); color: var(--gold); }
+  .action-card.mode-exam       { border-left-color: var(--sky); }
+  .action-card.mode-exam .icon { background: var(--sky-dim); color: var(--sky); }
+  .action-card.mode-deduct       { border-left-color: var(--rose); }
+  .action-card.mode-deduct .icon { background: var(--rose-dim); color: var(--rose); }
+  .action-card.mode-award        { border-left-color: var(--mint); }
+  .action-card.mode-award .icon  { background: var(--mint-dim); color: var(--mint); }
+  .action-card.mode-review       { border-left-color: var(--sky); }
+  .action-card.mode-review .icon { background: var(--sky-dim); color: var(--sky); }
+  .action-card.mode-exam-ctrl       { border-left-color: var(--gold); }
+  .action-card.mode-exam-ctrl .icon { background: var(--gold-dim); color: var(--gold); }
+  .action-card:hover[class*="mode-"] { border-color: var(--line); }
+
+  /* ═══════ แถบนำทางล่าง ═════════════════════════════════════════
+     เดิมเป็นแคปซูลลอย ปุ่มที่เลือกเป็นเม็ดสีชมพูเต็มใบ
+     ใหม่เป็นแท่นติดขอบจอ ปุ่มที่เลือกบอกด้วยขีดสั้นด้านบน + สี ไม่ใช่พื้นเต็ม
+     สะอาดกว่า และเหลือที่ให้ตัวหนังสือมากขึ้นเวลาเมนูมี 5 ปุ่ม */
+  .bottom-nav {
+    left: 0; right: 0; bottom: 0; transform: none; width: 100%; max-width: 100%;
+    border-radius: 0; padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--bg-2) 92%, transparent);
+    backdrop-filter: blur(18px);
+    border: none; border-top: 1px solid var(--line);
+    box-shadow: none;
+  }
+  .bottom-nav { justify-content: center; gap: 2px; }
+  .nav-btn {
+    position: relative; color: var(--ink-3); border-radius: 12px; padding: 9px 4px 7px;
+    font-size: 0.65rem; font-weight: 600; max-width: 112px; gap: 4px;
+  }
+  .nav-btn i { font-size: 1.05rem; }
+  .nav-btn.active { background: transparent; color: var(--violet-2); box-shadow: none; font-weight: 700; }
+  .nav-btn.active::before {
+    content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 22px; height: 3px; border-radius: 0 0 3px 3px; background: var(--violet);
+  }
+  .nav-btn:hover { color: var(--ink-2); }
+
+  /* ═══════ ชิป ═════════════════════════════════════════════════ */
+  .pill { padding: 4px 10px; font-size: 0.72rem; font-weight: 600; border-radius: 8px; }
+  .pill-teal  { background: var(--violet-dim); color: var(--violet-2); }
+  .pill-amber { background: var(--gold-dim); color: var(--gold); }
+  #sClassDisplay {
+    font-size: 0.75rem; padding: 4px 10px; font-family: 'Sarabun', sans-serif; font-weight: 600;
+    background: var(--violet-dim); color: var(--violet-2); box-shadow: none; border-radius: 8px;
+  }
+  .credit-bank-btn {
+    font-size: 0.75rem; padding: 4px 10px; font-family: 'Sarabun', sans-serif; font-weight: 600;
+    background: var(--sky-dim); color: var(--sky); box-shadow: none; border-radius: 8px;
+  }
+  .grade-badge { border-radius: 8px; font-weight: 700; padding: 3px 9px; }
+  .g-hi  { background: var(--mint-dim); color: var(--mint); }
+  .g-mid { background: var(--gold-dim); color: var(--gold); }
+  .g-lo  { background: var(--rose-dim); color: var(--rose); }
+
+  /* ═══════ ผลการเรียน ══════════════════════════════════════════ */
+  .grade-summary-card { margin-bottom: 10px; }
+  .grade-summary-card .gsc-head {
+    background: transparent; color: var(--ink); padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .grade-summary-card .gsc-head .subj-name { font-family: 'Mitr','Prompt',sans-serif; font-weight: 600; }
+  .grade-summary-card .gsc-head .grade-big {
+    background: var(--violet-dim); color: var(--violet-2); box-shadow: none;
+    border-radius: 10px; padding: 5px 14px; font-size: 1.05rem;
+  }
+  .grade-summary-card .gsc-body { padding: 12px 16px 14px; }
+  .grade-summary-card .score-row { border-bottom: 1px solid var(--line-soft); }
+  .grade-summary-card .score-row .label { color: var(--ink-2); }
+  .grade-summary-card .score-row .val { color: var(--ink); }
+  .grade-summary-card .progress-bar { background: var(--surface-2); height: 6px; }
+
+  .meter-head { color: var(--ink-2); }
+  .meter-head b, .meter-head strong { color: var(--ink); }
+
+  /* ═══════ ฉายา / อันดับ ═══════════════════════════════════════ */
+  .nickname-card { padding: 14px 16px; }
+  .nickname-card .nc-title { color: var(--ink); }
+  .nickname-card .nc-desc { color: var(--ink-2); }
+  .nc-rank-row { background: var(--surface-2); border-radius: 10px; }
+  .nc-rank-row .rank-val { color: var(--violet-2); }
+  .rank-1 { background: var(--gold); color: #2A1C00; }
+  .rank-2 { background: var(--ink-2); color: var(--bg); }
+  .rank-3 { background: #8A5A2B; color: #fff; }
+
+  /* ═══════ ตาราง / การ์ดรายคน ═══════════════════════════════════ */
+  .tbl-wrap { border: 1px solid var(--line); border-radius: var(--r-md); }
+  table.dt { background: var(--surface); }
+  table.dt th { background: var(--surface-2); color: var(--ink-2); text-transform: none; letter-spacing: 0.02em; }
+  table.dt td { border-top: 1px solid var(--line-soft); color: var(--ink); }
+  table.dt td.name-cell:hover { color: var(--violet-2); }
+  .prow { padding: 11px 13px; border-radius: var(--r-sm); }
+  .prow-name { color: var(--ink); }
+  .prow-meta { color: var(--ink-2); }
+  .prow-acts button { color: var(--ink-3); }
+  .prow-acts button:hover { background: var(--surface-2); color: var(--ink); }
+  .prow-acts button.danger:hover { color: var(--rose); }
+  .pscore { background: var(--surface-2); border-radius: 9px; }
+  .pscore .l { color: var(--ink-3); }
+  .pscore .v { color: var(--ink); }
+  .pscore.calc .v { color: var(--gold); }
+  .pscore.sum  .v { color: var(--violet-2); }
+  .score-legend { color: var(--ink-3); }
+  .roster-row { border-bottom: 1px solid var(--line-soft); }
+  .status-btns button { border: 1px solid var(--line); background: var(--surface-2); border-radius: 11px; }
+  .status-btns button.sel-present { background: var(--mint); border-color: var(--mint); }
+  .status-btns button.sel-late    { background: var(--gold); border-color: var(--gold); }
+  .status-btns button.sel-leave   { background: var(--ink-2); border-color: var(--ink-2); }
+  .status-btns button.sel-absent  { background: var(--rose); border-color: var(--rose); }
+
+  /* ═══════ ไทม์ไลน์กิจกรรม ═════════════════════════════════════ */
+  .history-item { padding: 12px 14px; border-radius: var(--r-sm); border-left: 3px solid var(--line); }
+  .history-item .hi-name { color: var(--ink); }
+  .history-item .hi-meta { color: var(--ink-2); }
+  .history-item .hi-pts.plus { color: var(--mint); }
+  .history-item .hi-pts.minus { color: var(--rose); }
+  .history-type-checkin { border-left-color: var(--violet); }
+  .history-type-coupon  { border-left-color: var(--gold); }
+  .history-type-buy     { border-left-color: var(--sky); }
+  .history-type-deduct  { border-left-color: var(--rose); background: var(--surface); }
+  .history-type-award   { border-left-color: var(--mint); background: var(--surface); }
+
+  /* ═══════ บัตรนักเรียน ════════════════════════════════════════
+     เดิมเป็นบัตรน้ำเงินไล่สีมีแสงฟุ้ง ใหม่เป็นบัตรดำเรียบ ให้ QR เด่นที่สุด
+     เพราะหน้าที่เดียวของหน้านี้คือให้ครูสแกน */
+  .student-id-card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r-lg); box-shadow: none; padding: 22px 20px;
+  }
+  .student-id-card::before { display: none; }
+  .id-brand { color: var(--ink-3); letter-spacing: 0.14em; }
+  .id-name { color: var(--ink); font-weight: 600; }
+  .id-class { background: var(--violet-dim); color: var(--violet-2); border: none; border-radius: 8px; font-weight: 600; }
+  .id-qr-frame { background: #fff; border-radius: 16px; padding: 14px; box-shadow: none; }
+  .id-scan-hint { color: var(--ink-2); }
+  .id-footer { color: var(--ink-3); }
+  .id-card-hint { color: var(--ink-3); }
+
+  /* ═══════ หน้าเต็มจอ / ป๊อปอัป ════════════════════════════════ */
+  .fullpage-view { background: var(--bg); }
+  .fullpage-head { background: var(--bg-2); border-bottom: 1px solid var(--line); }
+  /* บนจอกว้าง หน้าเต็มจอเดิมยืดไปจนสุดขอบจอ ทำให้แถวข้อมูลยาวจนสายตาไล่ไม่ทัน
+     บีบเป็นคอลัมน์กว้างเท่าตัวแอป (560px) ด้วยการเติมระยะขอบซ้าย-ขวาให้เท่ากัน */
+  @media (min-width: 620px) {
+    .fullpage-head, .fullpage-body {
+      padding-left: calc((100% - 560px) / 2); padding-right: calc((100% - 560px) / 2);
+    }
+  }
+  .swal2-popup { background: var(--surface) !important; color: var(--ink) !important; border-radius: var(--r-md) !important; }
+  .swal2-title, .swal2-html-container { color: var(--ink) !important; }
+  .swal2-input, .swal2-textarea, .swal2-select {
+    background: var(--surface-2) !important; color: var(--ink) !important;
+    border: 1px solid var(--line) !important; border-radius: var(--r-sm) !important;
+  }
+  .swal2-styled.swal2-confirm { background: var(--violet) !important; border-radius: var(--r-sm) !important; }
+  .swal2-styled.swal2-cancel  { background: var(--surface-2) !important; color: var(--ink) !important; border-radius: var(--r-sm) !important; }
+
+  /* ═══════ คู่หู / วงล้อ ═══════════════════════════════════════ */
+  .cp-card, .wheel-sheet {
+    background: var(--surface) !important; border: 1px solid var(--line) !important;
+    border-radius: var(--r-lg) !important; box-shadow: none !important;
+  }
+  .cp-card::before { display: none; }
+  .cp-ticket { background: var(--gold-dim); border-color: transparent; color: var(--gold); border-radius: 8px; }
+  .cp-bubble { background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2); box-shadow: none; }
+  .cp-bubble::after { border-bottom-color: var(--line); }
+  .cp-bubble::before { border-bottom-color: var(--surface-2); }
+  .cp-name { color: var(--ink); }
+  .cp-stage { color: var(--violet-2); }
+  .cp-bar-head { color: var(--ink-2); }
+  .cp-bar-track { background: var(--surface-2); }
+  .cp-btn { border-radius: 12px; border-width: 1px; }
+  .cp-btn-label { color: var(--ink); }
+  .cp-btn-cost { color: var(--ink-3); }
+  .cp-btn-hatch { background: var(--violet-dim); border: 1px solid var(--violet); border-radius: 12px; }
+  .cp-btn-hatch-label { color: var(--violet-2); }
+  .cp-btn-hatch-sub { color: var(--ink-3); }
+  .cp-low-tk { color: var(--ink-3); }
+  .wheel-close { background: var(--surface-2); color: var(--ink-2); border-radius: 10px; }
+  .wheel-center { background: var(--surface-2); border-color: var(--line); }
+  #wheelEl { border-color: var(--line); box-shadow: none; }
+  .wheel-pointer { color: var(--gold); }
+  .wheel-spin-btn {
+    background: var(--violet); box-shadow: none; border-radius: var(--r-sm);
+    text-shadow: none; top: 0 !important;
+  }
+  .wheel-spin-btn:active { box-shadow: none; }
+  .wheel-result-text { color: var(--ink); }
+
+  .pulse { animation: none; }
+
+  /* ═══════ สวิตช์เปิด/ปิดฟีเจอร์ (หน้าตั้งค่าครู) ═══════════════ */
+  .feat-row {
+    display: flex; align-items: flex-start; gap: 12px; padding: 14px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .feat-row:last-child { border-bottom: none; }
+  .feat-body { flex: 1; min-width: 0; }
+  .feat-name { font-weight: 700; font-size: 0.9rem; color: var(--ink); }
+  .feat-desc { font-size: 0.76rem; color: var(--ink-2); margin-top: 2px; line-height: 1.45; }
+  .feat-usage {
+    font-size: 0.72rem; margin-top: 6px; display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 9px; border-radius: 7px; background: var(--surface-2); color: var(--ink-2);
+  }
+  .feat-usage.zero { background: var(--rose-dim); color: var(--rose); }
+  .switch { position: relative; width: 46px; height: 28px; flex-shrink: 0; }
+  .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 2; }
+  .switch .track {
+    position: absolute; inset: 0; border-radius: 999px; background: var(--line);
+    transition: background .18s;
+  }
+  .switch .track::after {
+    content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px;
+    border-radius: 50%; background: #fff; transition: transform .18s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .switch input:checked + .track { background: var(--violet); }
+  .switch input:checked + .track::after { transform: translateX(18px); }
+
+  /* แถบสถานะ "กำลังอัปเดต / ออฟไลน์" ให้เข้ากับชุดใหม่ */
+  #staleBadge {
+    background: var(--surface-2) !important; color: var(--ink-2) !important;
+    border: 1px solid var(--line); box-shadow: var(--shadow-md) !important;
+    border-radius: 10px !important; font-weight: 600 !important;
+    bottom: calc(84px + env(safe-area-inset-bottom)) !important;
+  }
+
   </style>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -884,14 +1405,15 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 <!-- ═══════════════════════════════════════════════════════════
      LOGIN
      ═══════════════════════════════════════════════════════════ -->
-<div id="loginSection" class="login-wrap confetti-bg">
-  <div class="login-orb login-orb-1"></div>
-  <div class="login-orb login-orb-2"></div>
-  <div class="login-orb login-orb-3"></div>
-  <div class="login-box">
+<!-- เดิมเป็นกล่องแก้วลอยกลางจอ ฟอร์มจึงอยู่สูงเกินกว่านิ้วโป้งจะถึงบนมือถือจอยาว
+     ใหม่: ชื่อแอปอยู่ครึ่งบน ฟอร์มยึดครึ่งล่าง กดได้ด้วยมือเดียว -->
+<div id="loginSection" class="login-wrap">
+  <div class="login-brand-top">
     <div class="login-mark"><i class="fa-solid fa-chalkboard-user"></i></div>
-    <div class="login-title">Smart Class</div>
-    <div class="login-sub">ระบบจัดการชั้นเรียน Ultra Pro Max</div>
+    <div class="login-title">Smart<br><span class="accent">Class</span></div>
+    <div class="login-sub">เช็คชื่อ · คะแนน · แต้มสะสม — ที่เดียวจบ</div>
+  </div>
+  <div class="login-box">
     <div class="role-pill" id="roleTabs">
       <button class="active" onclick="setRole('student', this)">
         <i class="fa-solid fa-user-graduate"></i> นักเรียน
@@ -913,30 +1435,35 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
      ═══════════════════════════════════════════════════════════ -->
 <div id="studentSection" class="hidden">
   <div class="app-shell">
-    <div class="hero-header confetti-bg">
+    <!-- เดิมเป็นหัวไล่สีสูง ~130px ที่มีแต่ชื่อกับชั้นเรียน แล้วมีการ์ดแต้มลอยเกยขึ้นไปทับ
+         เปลี่ยนเป็นแถบบางที่ติดขอบจอ (sticky) — ได้พื้นที่เนื้อหาคืนเกือบ 100px
+         และชื่อ/ปุ่มออกจากระบบยังอยู่ให้เห็นตลอดแม้เลื่อนลงไปไกล -->
+    <div class="topbar">
+      <div class="topbar-avatar" id="sAvatar">·</div>
+      <div class="topbar-id">
+        <div class="topbar-name" id="sNameDisplay">สวัสดี</div>
+        <div class="topbar-meta">
+          <span class="pill pill-teal" id="sClassDisplay">ชั้นเรียน</span>
+          <button class="credit-bank-btn" id="creditBankBtn" onclick="openCreditBank_()">
+            <i class="fa-solid fa-building-columns"></i> หน่วยกิต
+          </button>
+        </div>
+      </div>
       <div class="hero-icon-row">
         <button class="hero-logout" onclick="openNotificationCenter()" title="การแจ้งเตือน">
           <i class="fa-solid fa-bell"></i><span class="notif-dot" id="studentNotifDot"></span>
         </button>
-        <button class="hero-logout" onclick="toggleDarkMode()" title="โหมดมืด"><i class="fa-solid fa-moon" id="darkModeIcon1"></i></button>
+        <button class="hero-logout" onclick="toggleDarkMode()" title="สลับโหมดสว่าง/มืด"><i class="fa-solid fa-sun" id="darkModeIcon1"></i></button>
         <button class="hero-logout" onclick="logout()" title="ออกจากระบบ"><i class="fa-solid fa-power-off"></i></button>
-      </div>
-      <div class="hero-tag"><i class="fa-solid fa-graduation-cap"></i> Smart Class</div>
-      <div class="hero-name" id="sNameDisplay">สวัสดี</div>
-      <div class="hero-sub" style="margin-bottom:10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-        <span class="pill pill-teal" id="sClassDisplay">ชั้นเรียน</span>
-        <button class="credit-bank-btn" onclick="openCreditBank_()">
-          <i class="fa-solid fa-building-columns"></i> ธนาคารหน่วยกิต
-        </button>
       </div>
     </div>
 
     <div class="points-card">
-      <div class="lbl">✨ แต้มสะสมพิเศษ</div>
+      <div class="lbl"><i class="fa-solid fa-star"></i> แต้มสะสมพิเศษ</div>
       <div class="val" id="stdPointsDisplay">0 <small>แต้ม</small></div>
       <div class="actions">
-        <button onclick="tryGpsCheckin()"><i class="fa-solid fa-location-dot"></i> เช็คอิน GPS</button>
-        <button onclick="tryRedeemCouponUI()"><i class="fa-solid fa-ticket"></i> คูปอง</button>
+        <button id="actGpsCheckin" onclick="tryGpsCheckin()"><i class="fa-solid fa-location-dot"></i> เช็คอิน</button>
+        <button id="actCoupon" onclick="tryRedeemCouponUI()"><i class="fa-solid fa-ticket"></i> คูปอง</button>
         <button onclick="openScoreExchangeModal()"><i class="fa-solid fa-rotate"></i> แลกคะแนน</button>
       </div>
     </div>
@@ -976,7 +1503,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
       <!-- แท็บ: การเรียน -->
       <div id="sTab-grades" class="tab-panel">
-        <div class="card card-pad" style="margin-bottom:16px; cursor:pointer;" onclick="openOnlineCourseModal()">
+        <div class="card card-pad" id="onlineCourseCard" style="margin-bottom:16px; cursor:pointer;" onclick="openOnlineCourseModal()">
           <div style="display:flex; align-items:center; gap:14px;">
             <div style="width:52px; height:52px; border-radius:16px; background:rgba(255,92,151,0.12); display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:var(--teal2); flex-shrink:0;">
               <i class="fa-solid fa-play"></i>
@@ -1016,7 +1543,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 <div id="sTab-companion" class="tab-panel">
   <!-- การวิ่งแลกแต้มย้ายมาอยู่ที่นี่ — เดิมอยู่หน้าแรก ส่วนคู่หูแยกเป็นอีกแท็บ ทั้งที่เป็นกิจกรรมสะสมแต้มเหมือนกัน
        รวมของประเภทเดียวกันไว้ที่เดียว นักเรียนจึงรู้ว่า "เรื่องเล่นๆ สะสมแต้ม" ต้องมาดูตรงไหน -->
-  <div class="card card-pad" style="margin-bottom:16px;">
+  <div class="card card-pad" id="runCard" style="margin-bottom:16px;">
     <div style="display:flex; align-items:center; gap:14px; cursor:pointer;" onclick="openRunModal()">
       <div style="width:52px; height:52px; border-radius:16px; background:rgba(255,201,60,0.18); display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:var(--amber2); flex-shrink:0;">
         <i class="fa-solid fa-person-running"></i>
@@ -1051,7 +1578,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     <button class="nav-btn" onclick="switchStudentTab('grades', this)">
       <i class="fa-solid fa-book-open"></i> การเรียน
     </button>
-    <button class="nav-btn" onclick="switchStudentTab('companion', this)">
+    <button class="nav-btn" id="navBtn-companion" onclick="switchStudentTab('companion', this)">
       <i class="fa-solid fa-paw"></i> เกม
     </button>
     <button class="nav-btn" onclick="switchStudentTab('card', this)">
@@ -1066,14 +1593,21 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 <div id="teacherSection" class="hidden">
   <div class="app-shell">
 
-    <div class="teacher-hero confetti-bg">
+    <!-- แถบบนของครู — เพิ่มชิปบอกปีการศึกษา/เทอมที่กำลังทำงานอยู่ ซึ่งเดิมต้องเข้าไปดูในหน้าตั้งค่า
+         ทั้งที่เป็นบริบทสำคัญของทุกอย่างที่กดในหน้านี้ (คะแนนที่บันทึกจะเข้าเทอมไหน) -->
+    <div class="topbar">
+      <div class="topbar-avatar"><i class="fa-solid fa-chalkboard-user" style="font-size:1rem;"></i></div>
+      <div class="topbar-id">
+        <div class="topbar-name">ศูนย์ควบคุม</div>
+        <div class="topbar-meta">
+          <span class="pill pill-teal" id="teacherTermChip">กำลังโหลด...</span>
+        </div>
+      </div>
       <div class="hero-icon-row">
         <button class="hero-logout" onclick="openAdminModal()" title="ตั้งค่าระบบ"><i class="fa-solid fa-gear"></i></button>
-        <button class="hero-logout" onclick="toggleDarkMode()" title="โหมดมืด"><i class="fa-solid fa-moon" id="darkModeIcon2"></i></button>
+        <button class="hero-logout" onclick="toggleDarkMode()" title="สลับโหมดสว่าง/มืด"><i class="fa-solid fa-sun" id="darkModeIcon2"></i></button>
         <button class="hero-logout" onclick="logout()" title="ออกจากระบบ"><i class="fa-solid fa-power-off"></i></button>
       </div>
-      <div class="hero-tag"><i class="fa-solid fa-chalkboard"></i> ครูผู้สอน</div>
-      <div class="hero-name">ศูนย์ควบคุม</div>
     </div>
 
     <div class="content-pad">
@@ -1104,7 +1638,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <input type="hidden" id="activeChapterInput" value="1">
           <div id="chapterButtonGrid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:8px;"></div>
         </div>
-        <div class="action-card mode-att" onclick="triggerModeSetup('att')">
+        <div class="action-card mode-att" id="modeCard-att" onclick="triggerModeSetup('att')">
           <div class="icon"><i class="fa-solid fa-user-check"></i></div>
           <div class="info"><h4>เช็คชื่อเข้าเรียน</h4><p>สแกนต่อเนื่อง บันทึกสถานะอัตโนมัติ</p></div>
           <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
@@ -1129,12 +1663,12 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <div class="info"><h4>ให้แต้มพิเศษ</h4><p>เพิ่มแต้มพร้อมระบุเหตุผล แจ้งนักเรียนอัตโนมัติ</p></div>
           <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
         </div>
-        <div class="action-card mode-review" onclick="openSubmissionReviewModal()">
+        <div class="action-card mode-review" id="modeCard-review" onclick="openSubmissionReviewModal()">
           <div class="icon"><i class="fa-solid fa-images"></i></div>
           <div class="info"><h4>ตรวจงานส่ง (เรียนออนไลน์)</h4><p>ดูรูปแบบฝึกหัดที่นักเรียนส่งมา แล้วให้ลายเซ็น</p></div>
           <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
         </div>
-        <div class="action-card mode-exam-ctrl" onclick="openExamControlModal()">
+        <div class="action-card mode-exam-ctrl" id="modeCard-examctrl" onclick="openExamControlModal()">
           <div class="icon"><i class="fa-solid fa-clock"></i></div>
           <div class="info"><h4>คุมสอบท้ายบท (เรียนออนไลน์)</h4><p>เปิด/ปิดให้นักเรียนเข้าสอบตามบทที่เลือกไว้ด้านบน</p></div>
           <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
@@ -1219,7 +1753,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <select id="stuFilterClass" class="field"></select>
           <input type="text" id="stuFilterName" class="field" placeholder="ค้นหาชื่อ..." style="min-width:120px;">
           <button class="btn btn-teal btn-sm" onclick="loadStudentList()"><i class="fa-solid fa-magnifying-glass"></i> เช็ค</button>
-          <button class="btn btn-ghost btn-sm" onclick="openElectiveOverviewModal()"><i class="fa-solid fa-shuffle"></i> ภาพรวมสาขาวิชาเลือก</button>
+          <button class="btn btn-ghost btn-sm" id="electiveOverviewBtn" onclick="openElectiveOverviewModal()"><i class="fa-solid fa-shuffle"></i> ภาพรวมสาขาวิชาเลือก</button>
           <button class="btn btn-amber btn-sm" onclick="openStudentEditor_()"><i class="fa-solid fa-user-plus"></i> เพิ่มนักเรียน</button>
         </div>
         <div id="allStuBody"><div style="text-align:center; color:var(--slate); padding:20px;">เลือกชั้นแล้วกด "เช็ค"</div></div>
@@ -1359,21 +1893,24 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // ล้างข้อมูลผู้ใช้ปัจจุบันและกลับไปหน้าล็อกอิน
   // ─── DARK MODE ──────────────────────────────────────────────
   // สลับโหมดมืด/สว่าง จำค่าไว้ใน localStorage ใช้ได้ทั้งฝั่งครูและนักเรียน
+  // ชุดหน้าตาใหม่ยึด "พื้นเข้ม" เป็นค่าเริ่มต้น (เดิมเริ่มที่พื้นสว่าง) โหมดสว่างจึงกลายเป็นตัวเลือก
+  // ยังเคารพค่าที่ผู้ใช้เคยเลือกไว้: ใครเคยกดปิดโหมดมืด (ค่า '0') ก็ยังได้พื้นสว่างเหมือนเดิม
   function applyDarkModePreference() {
-    const on = localStorage.getItem('smartClassDarkMode') === '1';
-    document.body.classList.toggle('dark-mode', on);
-    updateDarkModeIcons(on);
+    const saved = localStorage.getItem('smartClassDarkMode'); // '1' มืด · '0' สว่าง · null ยังไม่เคยเลือก
+    const dark = saved === null ? true : saved === '1';
+    document.body.classList.toggle('light-mode', !dark);
+    updateDarkModeIcons(dark);
   }
   function toggleDarkMode() {
-    const on = !document.body.classList.contains('dark-mode');
-    document.body.classList.toggle('dark-mode', on);
-    localStorage.setItem('smartClassDarkMode', on ? '1' : '0');
-    updateDarkModeIcons(on);
+    const dark = document.body.classList.contains('light-mode'); // กำลังสว่างอยู่ → กดแล้วเป็นมืด
+    document.body.classList.toggle('light-mode', !dark);
+    localStorage.setItem('smartClassDarkMode', dark ? '1' : '0');
+    updateDarkModeIcons(dark);
   }
-  function updateDarkModeIcons(on) {
+  function updateDarkModeIcons(dark) {
     ['darkModeIcon1', 'darkModeIcon2'].forEach(id => {
       const el = document.getElementById(id);
-      if (el) el.className = on ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+      if (el) el.className = dark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
     });
   }
 
@@ -1555,7 +2092,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // ─── จำข้อมูลล่าสุดไว้ในเครื่อง เพื่อให้เปิดแอปครั้งถัดไปเห็นทันที ───────────
   // เก็บเฉพาะข้อมูลที่ใช้วาดหน้าจอตอนเปิดแอป ไม่ใช่ข้อมูลลับ และอยู่ในเครื่องผู้ใช้เองเท่านั้น
   // มีเลขรุ่นกำกับ เผื่อโครงสร้างข้อมูลเปลี่ยนในอนาคตจะได้ไม่เอาของเก่าคนละแบบมาวาด
-  var BOOT_CACHE_VERSION = 1;
+  var BOOT_CACHE_VERSION = 2;  // 2 = meta มี features (สวิตช์เปิด/ปิดฟีเจอร์) เพิ่มเข้ามา
   var BOOT_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // เกิน 1 วันถือว่าเก่าเกินจะเอามาโชว์
 
   function saveBootCache_(key, data) {
@@ -1623,9 +2160,70 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   }
 
   function renderTeacherBoot_(b) {
-    if (b.meta) { metaData = b.meta; populateSelects(); }
+    if (b.meta) { metaData = b.meta; populateSelects(); applyFeatureFlags_(); }
     if (b.overview) renderTeacherOverview_(b.overview);
     if (b.stats) renderTeacherStats_(b.stats);
+    if (b.term) renderTermChip_(b.term);
+  }
+
+  // ชิปบอกว่าตอนนี้กำลังทำงานอยู่ในเทอมไหน และห้องไหนถูกปิดเทอมไปแล้ว
+  // เดิมต้องเข้าไปเปิดหน้าตั้งค่าถึงจะรู้ ทั้งที่มันเป็นบริบทของทุกปุ่มในหน้านี้
+  function renderTermChip_(t) {
+    const el = document.getElementById('teacherTermChip');
+    if (!el || !t) return;
+    const locked = (t.classes || []).filter(c => c.locked);
+    el.innerText = `ปี ${t.year} เทอม ${t.term}` + (locked.length ? ` · ปิดแล้ว ${locked.map(c => c.label).join(' ')}` : '');
+    el.className = locked.length ? 'pill pill-amber' : 'pill pill-teal';
+  }
+
+  // ─── สวิตช์เปิด/ปิดฟีเจอร์ ───────────────────────────────────
+  // ครูปิดฟีเจอร์ที่ไม่ได้ใช้จากหน้าตั้งค่าได้ ที่นี่คือฝั่งที่เอาผลไปซ่อน UI จริง
+  // ปิด = ซ่อนอย่างเดียว ไม่ลบข้อมูลและไม่ปิดทางฝั่งหลังบ้าน เปิดกลับมาก็เห็นของเดิมครบ
+  function featOn_(key) {
+    const f = metaData && metaData.features;
+    if (!f || f[key] === undefined) return true;   // ยังไม่รู้ค่า ให้ถือว่าเปิดไว้ก่อน จะได้ไม่ซ่อนของที่ยังใช้อยู่
+    return f[key] === 1;
+  }
+  function showIf_(id, on) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = on ? '' : 'none';
+  }
+  function applyFeatureFlags_() {
+    const online = featOn_('FEAT_ONLINE'), run = featOn_('FEAT_RUN'), comp = featOn_('FEAT_COMPANION');
+
+    // ฝั่งนักเรียน
+    showIf_('actGpsCheckin', featOn_('FEAT_GPS'));
+    showIf_('actCoupon',     featOn_('FEAT_COUPON'));
+    showIf_('creditBankBtn', featOn_('FEAT_ELECTIVE'));
+    showIf_('onlineCourseCard', online);
+    showIf_('runCard', run);
+    showIf_('companionContainer', comp);
+    // แท็บ "เกม" มีแค่การวิ่งกับคู่หู ถ้าปิดทั้งคู่ก็ไม่เหลืออะไรให้ดู ซ่อนทั้งแท็บ
+    showIf_('navBtn-companion', run || comp);
+    if (!run && !comp) {
+      const panel = document.getElementById('sTab-companion');
+      if (panel && panel.classList.contains('active')) {
+        const home = document.querySelector('#studentSection .bottom-nav .nav-btn');
+        if (home) switchStudentTab('overview', home);
+      }
+    }
+
+    // ฝั่งครู
+    showIf_('modeCard-att', featOn_('FEAT_ATT_SCAN'));
+    showIf_('modeCard-review', online);
+    showIf_('modeCard-examctrl', online);
+    showIf_('electiveOverviewBtn', featOn_('FEAT_ELECTIVE'));
+
+    // ตัวกรองในบันทึกกิจกรรม — เอาประเภทที่ปิดไปแล้วออกจากรายการ ไม่ให้ครูเลือกแล้วเจอค่าว่างเปล่า
+    const hideTypes = []
+      .concat(online ? [] : ['ONLINE_WATCH', 'ONLINE_SIGN', 'ONLINE_TEST'])
+      .concat(run    ? [] : ['RUN_SESSION', 'RUN_EXCHANGE'])
+      .concat(comp   ? [] : ['COMPANION_HATCH', 'COMPANION_LEVELUP'])
+      .concat(featOn_('FEAT_GPS')    ? [] : ['GPS_CHECKIN', 'STREAK_BONUS'])
+      .concat(featOn_('FEAT_COUPON') ? [] : ['COUPON'])
+      .concat(featOn_('FEAT_ATT_SCAN') ? [] : ['SCAN_ATTEND']);
+    const sel = document.getElementById('histType');
+    if (sel) Array.from(sel.options).forEach(o => { o.hidden = hideTypes.indexOf(o.value) >= 0; });
   }
 
   function renderTeacherStats_(s) {
@@ -1732,6 +2330,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
       document.getElementById('sNameDisplay').innerText = d.name;
       document.getElementById('sClassDisplay').innerText = d.clsLabel;
+      // อักษรย่อในวงกลม — ทำให้แถบบนแยกออกทันทีว่าเป็นบัญชีของใคร (สำคัญเวลาใช้เครื่องร่วมกัน)
+      const av = document.getElementById('sAvatar');
+      if (av) av.innerText = (String(d.name || '').trim().replace(/^(เด็กชาย|เด็กหญิง|นาย|นางสาว|น\.ส\.|ด\.ช\.|ด\.ญ\.)\s*/, '')[0] || '·');
       document.getElementById('csCheckinCount').innerText = d.checkinStats?.checkinCount  ?? 0;
       document.getElementById('csStreakCount').innerText  = d.checkinStats?.consecutiveDays ?? 0;
 
@@ -1810,7 +2411,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       renderGradeCards(d);
 
       // [Perf] ค่า meta มากับก้อนรวมแล้ว ไม่ต้องยิงเพิ่ม
-      if (bundle.meta) { metaData = bundle.meta; populateSelects(); }
+      if (bundle.meta) { metaData = bundle.meta; populateSelects(); applyFeatureFlags_(); }
       // ส่วนความคืบหน้าสาขาวิชาเลือกอ่าน 4 ชีต ใช้เวลาราว 2 วินาที จึงโหลดต่อทีหลังแบบไม่บล็อก
       // นักเรียนได้เห็นแดชบอร์ดก่อน แล้วการ์ดนี้ค่อยเติมเข้ามาเอง
       loadHomeElectiveCard_(stdId);
@@ -2836,8 +3437,75 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     if (tab === 'term')     renderAdminTerm_();
     if (tab === 'classes')  renderAdminCodeList_('classes',  'ชั้นเรียน', 'เช่น M1 / ม.1');
     if (tab === 'subjects') renderAdminCodeList_('subjects', 'รายวิชา',  'เช่น MATH / คณิตศาสตร์');
+    if (tab === 'features') renderAdminFeatures_();
     if (tab === 'settings') renderAdminSettings_();
     if (tab === 'integrity') runSheetIntegrityCheck_();
+  }
+
+  // ─── เปิด/ปิดฟีเจอร์ ─────────────────────────────────────────
+  // แสดง "จำนวนครั้งที่ใช้จริง" ไว้ข้างสวิตช์ทุกตัว เพื่อให้ตัดสินใจจากตัวเลข ไม่ใช่จากความรู้สึก
+  // ปิดแล้วแค่ซ่อนหน้าจอ ข้อมูลเดิมยังอยู่ครบและกลับมาเห็นทันทีที่เปิดใหม่ (ตามนโยบายสำรองข้อมูล)
+  function renderAdminFeatures_() {
+    const body = document.getElementById('adminBody');
+    body.innerHTML = '<div style="text-align:center; color:var(--slate); padding:24px;">กำลังโหลด...</div>';
+
+    google.script.run.withSuccessHandler(res => {
+      const rows = (res.features || []).map(f => {
+        const u = f.usage || {};
+        let usageHtml = '';
+        if (u.tracked) {
+          const last = u.lastAt ? new Date(u.lastAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : null;
+          usageHtml = `<div class="feat-usage${u.count === 0 ? ' zero' : ''}">
+            <i class="fa-solid fa-chart-simple"></i>
+            ${u.count === 0 ? 'ยังไม่เคยถูกใช้เลย' : `ใช้ไปแล้ว ${u.count} ครั้ง${last ? ' · ล่าสุด ' + last : ''}`}
+          </div>`;
+        }
+        return `<div class="feat-row">
+          <div class="feat-body">
+            <div class="feat-name">${f.label}</div>
+            <div class="feat-desc">${f.desc}</div>
+            ${usageHtml}
+          </div>
+          <label class="switch">
+            <input type="checkbox" data-feat="${f.key}" ${f.on ? 'checked' : ''}>
+            <span class="track"></span>
+          </label>
+        </div>`;
+      }).join('');
+
+      body.innerHTML = `
+        <div class="card card-pad" style="margin-bottom:12px;">
+          <div style="font-size:0.8rem; color:var(--slate); line-height:1.6;">
+            ปิดฟีเจอร์ที่ไม่ได้ใช้ เพื่อให้หน้าจอของทั้งครูและนักเรียนเหลือเฉพาะสิ่งที่ใช้จริง<br>
+            <b style="color:var(--ink);">ปิดแล้วข้อมูลเดิมไม่หาย</b> — เป็นการซ่อนหน้าจอเท่านั้น เปิดกลับมาเมื่อไหร่ก็เห็นครบเหมือนเดิม
+          </div>
+        </div>
+        <div class="card card-pad">${rows}</div>
+        <button class="btn btn-teal btn-block" style="margin-top:14px;" onclick="saveAdminFeatures_()">
+          <i class="fa-solid fa-check"></i> บันทึกการเปิด/ปิด
+        </button>`;
+    }).withFailureHandler(err => {
+      console.error('getFeatureSettings failed:', err);
+      body.innerHTML = courseErrorHtml_("switchAdminTab_('features')");
+    }).getFeatureSettings();
+  }
+
+  function saveAdminFeatures_() {
+    const flags = {};
+    document.querySelectorAll('#adminBody input[data-feat]').forEach(i => { flags[i.dataset.feat] = i.checked ? 1 : 0; });
+    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    google.script.run.withSuccessHandler(res => {
+      if (res && res.success) {
+        Swal.close(); Toast(res.message);
+        // อัปเดตค่าที่หน้าเว็บถืออยู่ทันที ไม่ต้องรอเข้าระบบใหม่
+        if (metaData) metaData.features = res.features;
+        try { localStorage.removeItem('bootCache_teacher'); } catch (e) {}
+        applyFeatureFlags_();
+      } else Swal.fire('ไม่สำเร็จ', (res && res.message) || 'เกิดข้อผิดพลาด', 'error');
+    }).withFailureHandler(err => {
+      console.error('saveFeatureFlags failed:', err);
+      Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่', 'error');
+    }).saveFeatureFlags(flags);
   }
 
   // ─── ปีการศึกษา / เทอม ────────────────────────────────────────
@@ -4510,6 +5178,7 @@ function renderHomeElectiveCard_(p) {
   {
     const el = document.getElementById('homeElectiveCard');
     if (!el || !p || !p.hasElective) return;
+    if (!featOn_('FEAT_ELECTIVE')) { el.style.display = 'none'; return; }
     const s = p.score || { creditBankScore:0, videoScore:0, submissionScore:0, testScore:0, total50:0 };
     const pct = Math.min(100, Math.round((Number(s.total50) / 50) * 100));
 
@@ -5614,6 +6283,7 @@ function refreshRunSummary_() {
       <button class="btn btn-teal btn-sm admin-tab-btn" data-atab="term" onclick="switchAdminTab_('term', this)"><i class="fa-solid fa-calendar-check"></i> ปีการศึกษา</button>
       <button class="btn btn-ghost btn-sm admin-tab-btn" data-atab="classes"  onclick="switchAdminTab_('classes', this)"><i class="fa-solid fa-layer-group"></i> ชั้นเรียน</button>
       <button class="btn btn-ghost btn-sm admin-tab-btn" data-atab="subjects" onclick="switchAdminTab_('subjects', this)"><i class="fa-solid fa-book"></i> รายวิชา</button>
+      <button class="btn btn-ghost btn-sm admin-tab-btn" data-atab="features" onclick="switchAdminTab_('features', this)"><i class="fa-solid fa-toggle-on"></i> ฟีเจอร์</button>
       <button class="btn btn-ghost btn-sm admin-tab-btn" data-atab="settings" onclick="switchAdminTab_('settings', this)"><i class="fa-solid fa-sliders"></i> ค่าระบบ</button>
       <button class="btn btn-ghost btn-sm admin-tab-btn" data-atab="integrity" onclick="switchAdminTab_('integrity', this)"><i class="fa-solid fa-shield-halved"></i> ตรวจสอบชีต</button>
     </div>
