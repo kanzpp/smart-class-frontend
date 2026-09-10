@@ -32,13 +32,13 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-  <meta name="theme-color" content="#0B1120">
+  <meta name="theme-color" content="#0E6FD1">
   <meta name="apple-mobile-web-app-title" content="Smart Class">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
 
-  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800;900&family=Sarabun:wght@400;500;600;700&family=Mitr:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Noto+Sans+Thai:wght@400;500;600;700&family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=Mitr:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
@@ -774,586 +774,507 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   }
 
 
-  /* ═══════════════════════════════════════════════════════════════════════
-     STUDIO — ชุดหน้าตาใหม่ (ก.ย. 2569)
-     ═══════════════════════════════════════════════════════════════════════
-     ของเดิมเป็นธีมลูกกวาด: ชมพู-กรมท่า พื้นไล่สี ปุ่มนูนมีขอบล่างหนา มีจุดคอนเฟตติ
-     ของใหม่ตั้งใจให้ต่างออกไปคนละทาง — พื้นเข้ม เส้นขอบบาง ไม่มีเงานูน
-     ให้ "ตัวเลข" เป็นพระเอกแทน "กล่อง" เพราะสิ่งที่ครูกับนักเรียนมาดูจริงๆ คือตัวเลข
 
-     กฎของชุดนี้
-       1. พื้นเข้มเป็นค่าเริ่มต้น สลับเป็นสว่างได้ที่ปุ่มเดิม (body.light-mode)
-       2. ยกระดับความสำคัญด้วย "พื้นผิวที่สว่างขึ้นทีละขั้น" ไม่ใช่ด้วยเงา
-       3. สีเน้นใช้ทีละสีต่อหนึ่งความหมาย ม่วง=หลัก เขียวมิ้นต์=ได้/บวก
-          เหลือง=แต้ม ชมพูแดง=เสีย/ลบ ฟ้า=ข้อมูล
-       4. มุมโค้งลดลง (การ์ด 18px ปุ่ม 12px) วงกลมเต็มใช้เฉพาะชิปกับแถบนำทาง
+  /* ═══════════════════════════════════════════════════════════════════════
+     BANK — ชุดหน้าตา (11 ก.ย. 2569) แทนชุด STUDIO ที่ใช้อยู่ก่อนหน้า
+     ═══════════════════════════════════════════════════════════════════════
+     ยืมระเบียบของแอปธนาคารไทยมาใช้ เพราะมันแก้ปัญหาเดียวกับที่ระบบนี้มี:
+     ของเยอะ แต่ต้องหาเจอใน 1 วินาที
+
+     ระเบียบ 5 ข้อที่ยึด — แก้อะไรในไฟล์นี้ให้เช็คว่ายังไม่ขัดกับ 5 ข้อนี้
+       1. ตัวเลขสำคัญที่สุดอยู่บนสุด ก้อนเดียว บนการ์ดไล่สี (.sc-head + .sc-amount)
+       2. ปุ่มที่กดบ่อยที่สุด 4 ปุ่ม แถวเดียว เกยขึ้นไปบนการ์ดครึ่งหนึ่ง (.sc-quick)
+       3. เรื่องที่ต้องลงมือขึ้นเป็นแถวแจ้งเตือน มีลูกศรกดต่อ (.sc-alert)
+       4. ที่เหลือทั้งหมดยุบเป็นตารางเมนู 4 ช่อง (.sc-grid) ไม่กองในหน้าแรก
+       5. ปุ่มที่ใช้บ่อยสุดของแต่ละบทบาทลอยกลางแถบล่าง (.sc-fab)
+
+     พื้นสว่างเป็นค่าเริ่มต้น (แอปธนาคารเป็นแบบนั้น) สลับเป็นพื้นเข้มได้ที่ปุ่มเดิม
+     ชื่อโทเคนเดิมทั้งหมดยัง map มาที่ชุดนี้ — ห้ามลบ มีหลายร้อยจุดในไฟล์ที่ยังเรียกอยู่
      ═══════════════════════════════════════════════════════════════════════ */
 
   :root {
-    /* ── พื้นผิว (เข้ม = ค่าเริ่มต้น) ─────────────────────────────── */
-    --bg:        #0B1120;   /* พื้นหลังสุดของหน้า */
-    --bg-2:      #111827;   /* แถบบน / แถบล่าง */
-    --surface:   #151D2E;   /* การ์ด */
-    --surface-2: #1D2739;   /* ช่องย่อยในการ์ด */
-    --line:      #263149;   /* เส้นขอบบาง */
-    --line-soft: #1B2436;
-    --ink:       #E9EFFA;   /* ตัวหนังสือหลัก */
-    --ink-2:     #93A3BF;   /* ตัวหนังสือรอง */
-    --ink-3:     #5F6E8A;
+    /* ── พื้นผิว ── */
+    --bg:        #F2F5F9;   /* พื้นหลังของหน้า (เทาอมฟ้า ให้การ์ดขาวลอยขึ้นมา) */
+    --surface:   #FFFFFF;   /* การ์ด */
+    --surface-2: #EDF1F6;   /* ช่องย่อยในการ์ด */
+    --line:      #E3E9F0;
+    --line-soft: #EEF2F7;
+    --ink:       #0E1B2A;
+    --ink-2:     #62758A;
+    --ink-3:     #96A6B7;
 
-    /* ── สีเน้น ─────────────────────────────────────────────────── */
-    --violet:    #7B61FF;
-    --violet-2:  #9B85FF;
-    --violet-dim:rgba(123,97,255,0.14);
-    --mint:      #00D9A3;
-    --mint-dim:  rgba(0,217,163,0.14);
-    --gold:      #FFB020;
-    --gold-dim:  rgba(255,176,32,0.14);
-    --rose:      #FF4D6D;
-    --rose-dim:  rgba(255,77,109,0.14);
-    --sky:       #38BDF8;
-    --sky-dim:   rgba(56,189,248,0.14);
+    /* ── สีเน้น: ฟ้าเป็นสีหลัก ที่เหลือมีความหมายตายตัว ── */
+    --blue:      #0E6FD1;
+    --blue-2:    #35B7F2;
+    --blue-dim:  #E4F0FC;
+    --mint:      #00875A;   /* ได้ / บวก / ผ่าน */
+    --mint-dim:  #DDF5EC;
+    --gold:      #C77E00;   /* แต้ม / รอดำเนินการ */
+    --gold-dim:  #FFF2DA;
+    --rose:      #D13B45;   /* เสีย / ลบ / ต้องรีบ */
+    --rose-dim:  #FDE6E8;
+    --violet:    #5B4BD6;   /* หมวดพิเศษ */
+    --violet-dim:#EBE8FD;
+    --grad:      linear-gradient(160deg,#0E6FD1 0%,#1587DE 52%,#35B7F2 100%);
 
-    /* ── ชื่อเดิม: แม็พมาที่ชุดใหม่ เพื่อให้ CSS/JS เก่าที่อ้าง var() เดิมยังทำงานได้ ──
-       (ห้ามลบ — มีหลายร้อยจุดในไฟล์นี้ที่ยังเรียกชื่อเหล่านี้อยู่) */
-    --navy:   var(--bg-2);
-    --navy2:  var(--surface);
-    --navy3:  var(--surface-2);
-    --teal:   var(--violet);
-    --teal2:  var(--violet-2);
-    --amber:  var(--gold);
-    --amber2: var(--gold);
-    --coral:  var(--rose);
-    --cloud:  var(--bg);
-    --mist:   var(--line);
-    --slate:  var(--ink-2);
-    --white:  #FFFFFF;
-    --grape:  var(--bg-2);   --grape2: var(--surface); --grape3: var(--surface-2);
-    --grass:  var(--violet); --grass2: var(--violet-2);
-    --tang:   var(--gold);   --tang2:  var(--gold);
-    --berry:  var(--rose);   --sky2:   var(--sky);
-    --sun:    var(--gold);   --cream:  var(--surface-2);
-    --bevel-grass: transparent; --bevel-tang: transparent; --bevel-sky: transparent;
-    --bevel-berry: transparent; --bevel-grape: transparent;
-    --border-ink: var(--line);
+    /* ── ชื่อเดิม (ห้ามลบ) ── */
+    --navy:var(--blue); --navy2:var(--blue); --navy3:var(--blue-2);
+    --teal:var(--blue); --teal2:var(--blue); --amber:var(--gold); --amber2:var(--gold);
+    --coral:var(--rose); --cloud:var(--bg); --mist:var(--line); --slate:var(--ink-2);
+    --white:#FFFFFF;
+    --grape:var(--blue); --grape2:var(--blue); --grape3:var(--blue-2);
+    --grass:var(--blue); --grass2:var(--blue); --tang:var(--gold); --tang2:var(--gold);
+    --berry:var(--rose); --sky:var(--blue-2); --sky2:var(--blue); --sun:var(--gold);
+    --cream:var(--surface-2);
+    --bevel-grass:transparent; --bevel-tang:transparent; --bevel-sky:transparent;
+    --bevel-berry:transparent; --bevel-grape:transparent; --border-ink:var(--line);
 
-    /* ── รูปทรง ─────────────────────────────────────────────────── */
-    --r-sm: 12px;
-    --r-md: 18px;
-    --r-lg: 22px;
-    --r-xl: 26px;
-    --shadow-sm: 0 1px 2px rgba(0,0,0,0.30);
-    --shadow-md: 0 8px 24px rgba(0,0,0,0.36);
-    --shadow-lg: 0 20px 50px rgba(0,0,0,0.50);
-    --shadow-teal: 0 6px 22px rgba(123,97,255,0.32);
-    --shadow-amber: 0 6px 22px rgba(255,176,32,0.28);
-    --glow: 0 0 0 1px var(--line), 0 8px 24px rgba(0,0,0,0.35);
+    /* ── รูปทรง: มุมโค้งมนแบบแอปธนาคาร เงานุ่มบางๆ ไม่ใช่เงานูน ── */
+    --r-sm:12px; --r-md:16px; --r-lg:18px; --r-xl:22px;
+    --shadow-sm:0 1px 3px rgba(14,42,76,.07);
+    --shadow-md:0 5px 18px rgba(14,42,76,.10), 0 1px 3px rgba(14,42,76,.06);
+    --shadow-lg:0 18px 44px rgba(14,42,76,.18);
+    --shadow-teal:0 8px 20px rgba(14,111,209,.34);
+    --shadow-amber:0 8px 20px rgba(199,126,0,.24);
   }
 
-  /* โหมดสว่าง — ใช้โครงเดียวกันทุกอย่าง เปลี่ยนแค่พื้นผิวกับตัวหนังสือ
-     สีเน้นทั้ง 5 สีคงเดิมทั้งสองโหมด ผู้ใช้จึงจำความหมายของสีได้ชุดเดียว */
-  body.light-mode {
-    --bg:        #F4F6FB;
-    --bg-2:      #FFFFFF;
-    --surface:   #FFFFFF;
-    --surface-2: #F1F4FA;
-    --line:      #E1E7F2;
-    --line-soft: #EDF1F8;
-    --ink:       #131A2A;
-    --ink-2:     #64748B;
-    --ink-3:     #94A3B8;
-    --violet-dim:rgba(123,97,255,0.10);
-    --mint-dim:  rgba(0,183,138,0.12);
-    --gold-dim:  rgba(214,142,0,0.12);
-    --rose-dim:  rgba(255,77,109,0.10);
-    --sky-dim:   rgba(14,165,233,0.10);
-    --mint:      #00A87E;
-    --gold:      #C98700;
-    --shadow-sm: 0 1px 2px rgba(19,26,42,0.06);
-    --shadow-md: 0 8px 24px rgba(19,26,42,0.10);
-    --shadow-lg: 0 20px 50px rgba(19,26,42,0.16);
-    --glow: 0 0 0 1px var(--line), 0 6px 18px rgba(19,26,42,0.06);
+  body.dark-mode {
+    --bg:#0B1220; --surface:#141E2C; --surface-2:#1C2837; --line:#243244; --line-soft:#1A2534;
+    --ink:#E8EFF7; --ink-2:#8FA3B8; --ink-3:#657A90;
+    --blue:#3E9BEA; --blue-2:#5BC8FF; --blue-dim:rgba(62,155,234,.15);
+    --mint:#2ECC94; --mint-dim:rgba(46,204,148,.15);
+    --gold:#F5B841; --gold-dim:rgba(245,184,65,.15);
+    --rose:#FF6B76; --rose-dim:rgba(255,107,118,.15);
+    --violet:#8E80F5; --violet-dim:rgba(142,128,245,.15);
+    --grad:linear-gradient(160deg,#0B4E96 0%,#1069B4 52%,#1E8FD0 100%);
+    --shadow-sm:0 1px 3px rgba(0,0,0,.3);
+    --shadow-md:0 5px 18px rgba(0,0,0,.34);
+    --shadow-lg:0 18px 44px rgba(0,0,0,.5);
   }
 
-  html, body {
-    background: var(--bg); color: var(--ink);
-    font-family: 'Sarabun', sans-serif;
-  }
+  html, body { background:var(--bg); color:var(--ink); font-family:'Noto Sans Thai','Sarabun',sans-serif; }
+  h1,h2,h3,h4,h5,h6,.display,.hero-display { font-family:'Kanit','Prompt',sans-serif; font-weight:500; }
+  ::-webkit-scrollbar-thumb { background:var(--line); }
+  .confetti-bg::after { display:none !important; }
 
-  /* แสงออโรราจางๆ บนสุดของหน้า — แทนลายจุดคอนเฟตติของเดิม
-     ให้พื้นเข้มไม่ตันจนดูทึบ แต่ไม่รบกวนการอ่านเพราะจางและอยู่หลังทุกอย่าง */
-  body::before {
-    content: ''; position: fixed; inset: 0 0 auto 0; height: 420px; pointer-events: none; z-index: 0;
-    background:
-      radial-gradient(60% 100% at 15% 0%, rgba(123,97,255,0.20) 0%, transparent 70%),
-      radial-gradient(50% 100% at 90% 5%, rgba(0,217,163,0.12) 0%, transparent 70%);
-  }
-  body.light-mode::before { opacity: 0.55; }
-  #studentSection, #teacherSection, #loginSection { position: relative; z-index: 1; }
-
-  /* ยกเลิกลายจุดคอนเฟตติทั้งไฟล์ (ของเดิมพ่นลายจุดขาวทับทุกพื้นเข้ม) */
-  .confetti-bg::after { display: none !important; }
-
-  ::-webkit-scrollbar-thumb { background: var(--line); }
-
-  /* ═══════ ปุ่ม ═══════════════════════════════════════════════════
-     เดิมเป็นปุ่มนูนสไตล์เกม (ไล่สี + ขอบล่างหนา 5px + กดแล้วยุบ)
-     ใหม่เป็นปุ่มแบน สีทึบ มุม 12px กดแล้วแค่หรี่ลง — อ่านง่ายและดูโตขึ้น */
+  /* ═══════ ปุ่ม ═══════════════════════════════════════════════ */
   .btn {
-    padding: 12px 20px; border-radius: var(--r-sm); font-weight: 700; font-size: 0.9rem;
-    letter-spacing: 0; top: 0 !important; box-shadow: none;
-    transition: background .15s, opacity .15s, transform .1s, border-color .15s;
+    padding:12px 20px; border-radius:var(--r-sm); font-family:'Noto Sans Thai',sans-serif;
+    font-weight:600; font-size:0.9rem; letter-spacing:0; top:0 !important; box-shadow:none;
+    transition:background .15s, opacity .15s, transform .1s, border-color .15s;
   }
-  .btn:active { transform: scale(0.98); }
-  .btn-teal, .btn-teal:hover, .btn-teal:active {
-    background: var(--violet); color: #fff; text-shadow: none; box-shadow: none;
-  }
-  .btn-teal:hover { background: var(--violet-2); }
-  .btn-amber, .btn-amber:hover, .btn-amber:active {
-    background: var(--gold); color: #16202F; text-shadow: none; box-shadow: none;
-  }
-  .btn-amber:hover { filter: brightness(1.08); }
-  .btn-navy, .btn-navy:hover, .btn-navy:active {
-    background: var(--surface-2); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line);
-  }
-  .btn-navy:hover { background: var(--line); }
-  .btn-glass { background: rgba(255,255,255,0.08); color: var(--ink); border: 1px solid var(--line); }
-  .btn-ghost, .btn-ghost:hover, .btn-ghost:active {
-    background: transparent; color: var(--ink-2); border: 1px solid var(--line); box-shadow: none;
-  }
-  .btn-ghost:hover { color: var(--ink); border-color: var(--ink-2); background: var(--surface-2); }
-  .btn-danger-soft { background: var(--rose-dim); color: var(--rose); border: 1px solid transparent; }
-  .btn-danger-soft:hover { background: var(--rose); color: #fff; border-color: var(--rose); }
-  .btn-sm { padding: 8px 14px; font-size: 0.79rem; }
-
-  /* ปุ่มริบบิ้นของเดิม (มีหางสามเหลี่ยมสองข้าง) — เปลี่ยนเป็นป้ายหัวข้อเรียบๆ */
+  .btn:active { transform:scale(.98); }
+  .btn-teal, .btn-teal:hover, .btn-teal:active { background:var(--blue); color:#fff; text-shadow:none; box-shadow:none; }
+  .btn-teal:hover { filter:brightness(1.08); }
+  .btn-amber, .btn-amber:hover, .btn-amber:active { background:var(--gold-dim); color:var(--gold); text-shadow:none; box-shadow:none; }
+  .btn-amber:hover { filter:brightness(.97); }
+  .btn-navy, .btn-navy:hover, .btn-navy:active { background:var(--surface-2); color:var(--ink); box-shadow:none; }
+  .btn-glass { background:rgba(255,255,255,.18); color:#fff; border:1px solid rgba(255,255,255,.28); }
+  .btn-ghost, .btn-ghost:hover, .btn-ghost:active { background:var(--surface); color:var(--ink-2); border:1px solid var(--line); box-shadow:none; }
+  .btn-ghost:hover { color:var(--ink); border-color:var(--ink-3); }
+  .btn-danger-soft { background:var(--rose-dim); color:var(--rose); border:1px solid transparent; }
+  .btn-danger-soft:hover { background:var(--rose); color:#fff; }
+  .btn-sm { padding:8px 14px; font-size:.79rem; }
   .ribbon-title, .ribbon-title.tang, .ribbon-title.sky, .wheel-title {
-    background: var(--surface-2) !important; color: var(--ink) !important;
-    border: 1px solid var(--line) !important; border-radius: var(--r-sm) !important;
-    box-shadow: none !important; text-shadow: none !important;
-    padding: 8px 18px !important; font-size: 0.9rem;
+    background:var(--surface-2)!important; color:var(--ink)!important; border:none!important;
+    border-radius:var(--r-sm)!important; box-shadow:none!important; text-shadow:none!important;
+    padding:8px 18px!important; font-size:.9rem; font-family:'Kanit',sans-serif;
   }
-  .ribbon-title::before, .ribbon-title::after,
-  .wheel-title::before, .wheel-title::after { display: none !important; }
+  .ribbon-title::before,.ribbon-title::after,.wheel-title::before,.wheel-title::after { display:none!important; }
 
-  /* ═══════ ช่องกรอก ═════════════════════════════════════════════ */
+  /* ═══════ ช่องกรอก ═══════════════════════════════════════════ */
   .field, .cell-input, .pscore input, select.field {
-    background: var(--surface-2); border: 1px solid var(--line); color: var(--ink);
-    border-radius: var(--r-sm);
+    background:var(--surface); border:1px solid var(--line); color:var(--ink); border-radius:var(--r-sm);
   }
-  .field { padding: 11px 14px; font-size: 0.9rem; }
+  .field { padding:11px 14px; font-size:.9rem; }
   .field:focus, .cell-input:focus, .pscore input:focus {
-    outline: none; border-color: var(--violet); box-shadow: 0 0 0 3px var(--violet-dim);
+    outline:none; border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-dim);
   }
-  .field-label { color: var(--ink-2); letter-spacing: 0.08em; font-size: 0.7rem; }
-  select.field option { background: var(--surface); color: var(--ink); }
-
+  .field-label { color:var(--ink-2); letter-spacing:.06em; font-size:.7rem; }
+  select.field option { background:var(--surface); color:var(--ink); }
   .chapter-btn {
-    border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2);
-    border-radius: var(--r-sm); font-weight: 700;
+    border:1px solid var(--line); background:var(--surface); color:var(--ink-2);
+    border-radius:var(--r-sm); font-weight:600;
   }
-  .chapter-btn.active { background: var(--violet); border-color: var(--violet); color: #fff; }
-  .chapter-btn:not(.active):hover { border-color: var(--violet); color: var(--ink); }
+  .chapter-btn.active { background:var(--blue); border-color:var(--blue); color:#fff; }
 
-  /* ═══════ หน้าเข้าสู่ระบบ ═══════════════════════════════════════
-     เดิมเป็นกล่องแก้วลอยกลางจอบนพื้นไล่สีน้ำเงิน มีลูกกลมเบลอสามลูก
-     ใหม่: จัดชิดล่างแบบแอปมือถือ ชื่อแอปตัวใหญ่อยู่บน ฟอร์มอยู่ในระยะนิ้วโป้ง */
+  /* ═══════ หน้าเข้าสู่ระบบ ════════════════════════════════════
+     พื้นไล่สีฟ้าเต็มจอ กล่องฟอร์มขาวยึดครึ่งล่าง แบบหน้าล็อกอินแอปธนาคาร */
   .login-wrap {
-    background: transparent;   /* ปล่อยให้เห็นแสงออโรราที่พื้นหลังของ body */
-    align-items: stretch; justify-content: flex-start;
-    flex-direction: column; padding: 0;
+    background:var(--grad); flex-direction:column; align-items:stretch;
+    justify-content:flex-start; padding:0; position:relative;
   }
-  .login-orb { display: none; }
-  .login-box {
-    background: transparent; backdrop-filter: none; border: none; box-shadow: none;
-    border-radius: 0; padding: 0 24px calc(28px + env(safe-area-inset-bottom));
-    max-width: 460px; margin: auto auto 0; width: 100%;
-  }
-  /* ชิดลงมาหาฟอร์ม ไม่ใช่ลอยกลางช่องว่าง — บนจอยาวๆ การจัดกึ่งกลางทำให้เกิดแถบว่างคั่นกลางจนดูขาดเป็นสองส่วน */
+  .login-orb { display:none; }
   .login-brand-top {
-    max-width: 460px; width: 100%; margin: 0 auto; padding: 0 24px 30px;
-    flex: 1; display: flex; flex-direction: column; justify-content: flex-end; min-height: 34vh;
+    max-width:460px; width:100%; margin:0 auto; padding:0 26px 34px; position:relative; z-index:1;
+    flex:1; display:flex; flex-direction:column; justify-content:flex-end; min-height:32vh; color:#fff;
+  }
+  .login-wrap::before {
+    content:''; position:absolute; right:-70px; top:-90px; width:260px; height:260px;
+    border-radius:50%; background:rgba(255,255,255,.08);
   }
   .login-mark {
-    width: 56px; height: 56px; border-radius: 16px; margin: 0 0 20px;
-    background: var(--violet); box-shadow: var(--shadow-teal); transform: none;
-    font-size: 1.4rem;
+    width:54px; height:54px; border-radius:17px; margin:0 0 18px; transform:none; font-size:1.35rem;
+    background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.28); box-shadow:none; color:#fff;
   }
-  .login-title {
-    text-align: left; font-size: 2.5rem; line-height: 1.08; color: var(--ink);
-    letter-spacing: -0.02em;
+  .login-title { text-align:left; font-size:2.3rem; line-height:1.1; color:#fff; font-family:'Kanit',sans-serif; font-weight:500; }
+  .login-title .accent { color:#BFE6FF; }
+  .login-sub { text-align:left; color:rgba(255,255,255,.78); margin:9px 0 0; font-size:.88rem; }
+  .login-box {
+    background:var(--surface); backdrop-filter:none; border:none; position:relative; z-index:1;
+    border-radius:26px 26px 0 0; padding:26px 24px calc(30px + env(safe-area-inset-bottom));
+    max-width:520px; margin:0 auto; width:100%; box-shadow:0 -8px 30px rgba(6,32,64,.18);
   }
-  .login-title .accent { color: var(--violet); }
-  .login-sub { text-align: left; color: var(--ink-2); margin: 10px 0 0; font-size: 0.9rem; }
-  .role-pill {
-    background: var(--surface-2); border: 1px solid var(--line); padding: 4px;
-    border-radius: var(--r-sm); margin-bottom: 14px;
-  }
-  .role-pill button { color: var(--ink-2); border-radius: 9px; }
-  .role-pill button.active { background: var(--violet); color: #fff; box-shadow: none; }
+  .role-pill { background:var(--surface-2); border:none; padding:4px; border-radius:var(--r-sm); margin-bottom:16px; }
+  .role-pill button { color:var(--ink-2); border-radius:9px; }
+  .role-pill button.active { background:var(--surface); color:var(--blue); box-shadow:var(--shadow-sm); }
   .login-field {
-    background: var(--surface-2); border: 1px solid var(--line); color: var(--ink);
-    border-radius: var(--r-sm); padding: 14px 16px; margin-bottom: 10px;
+    background:var(--surface-2); border:1px solid transparent; color:var(--ink);
+    border-radius:var(--r-sm); padding:14px 16px; margin-bottom:10px;
   }
-  .login-field::placeholder { color: var(--ink-3); }
-  .login-field:focus { border-color: var(--violet); background: var(--surface-2); box-shadow: 0 0 0 3px var(--violet-dim); }
+  .login-field::placeholder { color:var(--ink-3); }
+  .login-field:focus { border-color:var(--blue); background:var(--surface); box-shadow:0 0 0 3px var(--blue-dim); }
 
-  /* ═══════ โครงหน้าแอป ══════════════════════════════════════════ */
-  .app-shell { max-width: 560px; padding-bottom: 96px; }
-  @media (min-width: 540px) { .app-shell { background: transparent; } }
-  .content-pad { padding: 18px 16px; }
+  /* ═══════ โครงหน้าแอป ═══════════════════════════════════════ */
+  .app-shell { max-width:560px; padding-bottom:96px; }
+  @media (min-width:540px) { .app-shell { background:transparent; } }
+  .content-pad { padding:0; }
+  .hero-header, .teacher-hero { background:transparent; padding:0; }
+  .hero-header::before, .teacher-hero::before { display:none; }
 
-  /* ── แถบบน — แทนหัวไล่สีสูง 130px ของเดิมด้วยแถบบางที่ติดขอบจอ
-        ได้พื้นที่เนื้อหาคืนมาเกือบ 100px และยังเห็นชื่อ/ปุ่มตลอดเวลาที่เลื่อน ── */
-  .topbar {
-    position: sticky; top: 0; z-index: 800;
-    display: flex; align-items: center; gap: 12px;
-    padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
-    background: color-mix(in srgb, var(--bg) 86%, transparent);
-    backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--line-soft);
+  /* ── 1. หัวจอไล่สี + ตัวเลขพระเอก ───────────────────────────── */
+  .sc-head {
+    background:var(--grad); color:#fff; position:relative; overflow:hidden;
+    padding:calc(12px + env(safe-area-inset-top)) 18px 62px;
   }
-  .topbar-avatar {
-    width: 42px; height: 42px; border-radius: 13px; flex-shrink: 0;
-    background: var(--violet); color: #fff;
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Mitr','Prompt',sans-serif; font-weight: 700; font-size: 1.1rem;
+  .sc-head::after {
+    content:''; position:absolute; right:-56px; top:-72px; width:212px; height:212px;
+    border-radius:50%; background:rgba(255,255,255,.075);
   }
-  .topbar-id { flex: 1; min-width: 0; }
-  .topbar-name {
-    font-family: 'Mitr','Prompt',sans-serif; font-weight: 600; font-size: 1.02rem;
-    color: var(--ink); line-height: 1.25;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  .sc-head::before {
+    content:''; position:absolute; right:16px; top:56px; width:120px; height:120px;
+    border-radius:50%; border:1px solid rgba(255,255,255,.14);
   }
-  .topbar-meta {
-    font-size: 0.75rem; color: var(--ink-2); margin-top: 1px;
-    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  .sc-hrow { display:flex; align-items:center; gap:11px; position:relative; }
+  .sc-avatar {
+    width:38px; height:38px; border-radius:13px; flex:none; display:grid; place-items:center;
+    background:rgba(255,255,255,.19); border:1px solid rgba(255,255,255,.26);
+    font-family:'Kanit',sans-serif; font-weight:500; font-size:1rem; color:#fff;
   }
-  .topbar-acts { display: flex; gap: 6px; flex-shrink: 0; }
-  .hero-icon-row { position: static; display: flex; gap: 6px; }
+  .sc-id { flex:1; min-width:0; }
+  .sc-hi { font-size:.72rem; color:rgba(255,255,255,.78); line-height:1.3; }
+  .sc-nm {
+    font-family:'Kanit',sans-serif; font-weight:500; font-size:.95rem; line-height:1.3; color:#fff;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .hero-icon-row { position:static; display:flex; gap:7px; flex:none; }
   .hero-logout {
-    width: 36px; height: 36px; border-radius: 11px;
-    background: var(--surface-2); border: 1px solid var(--line);
-    color: var(--ink-2); font-size: 0.85rem;
+    width:32px; height:32px; border-radius:11px; background:rgba(255,255,255,.15);
+    border:none; color:#fff; font-size:.82rem;
   }
-  .hero-logout:hover { background: var(--line); color: var(--ink); }
-  .hero-logout .notif-dot { top: 5px; right: 6px; background: var(--rose); border-color: var(--bg); }
+  .hero-logout:hover { background:rgba(255,255,255,.26); color:#fff; }
+  .hero-logout .notif-dot { top:6px; right:7px; width:6px; height:6px; background:#FFC53D; border:1.5px solid #1587DE; }
 
-  /* หัวเดิม — ยุบให้ไม่กินที่ เผื่อจุดไหนยังอ้างคลาสนี้อยู่ */
-  .hero-header, .teacher-hero { background: transparent; padding: 0; }
-  .hero-header::before, .teacher-hero::before { display: none; }
-  .hero-tag { color: var(--violet-2); }
-  .hero-name { color: var(--ink); }
-  .hero-sub { color: var(--ink-2); }
+  .sc-amount { position:relative; margin-top:18px; }
+  .sc-amount .cap { display:flex; align-items:center; gap:7px; font-size:.75rem; color:rgba(255,255,255,.82); }
+  .sc-amount .big {
+    font-family:'Kanit',sans-serif; font-weight:500; font-size:2.75rem; line-height:1.06;
+    letter-spacing:-.02em; margin-top:2px; font-variant-numeric:tabular-nums; color:#fff;
+  }
+  .sc-amount .big span { font-size:.95rem; font-weight:400; opacity:.8; margin-left:6px; letter-spacing:0; }
+  .sc-chips { display:flex; gap:7px; margin-top:13px; position:relative; flex-wrap:wrap; }
+  .sc-chip {
+    font-size:.7rem; padding:4px 10px; border-radius:8px; color:#fff;
+    background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.16);
+  }
+  .sc-chip b { font-weight:600; }
+  button.sc-chip { cursor:pointer; font-family:inherit; }
+  button.sc-chip:active { background:rgba(255,255,255,.3); }
 
-  /* ── ตัวเลขพระเอก (แต้มสะสม) ─────────────────────────────────
-        เดิมเป็นการ์ดสีเหลืองนูนที่ลอยเกยหัว ใหม่เป็นแผงเรียบตัวเลขใหญ่
-        ปุ่มลัดย้ายลงมาเป็นแถวแยก แตะง่ายขึ้นและไม่เบียดตัวเลข ── */
-  .points-card {
-    margin: 4px 16px 0; background: var(--surface); border: 1px solid var(--line);
-    border-radius: var(--r-md); padding: 18px 18px 14px; box-shadow: none;
-    position: relative; overflow: hidden;
+  /* ── 2. ปุ่มลัด 4 ปุ่ม เกยขึ้นไปบนหัวจอ ────────────────────── */
+  .sc-quick {
+    margin:-46px 14px 0; position:relative; z-index:2; background:var(--surface);
+    border-radius:var(--r-lg); padding:15px 8px 13px; display:grid;
+    grid-template-columns:repeat(4,1fr); box-shadow:var(--shadow-md);
   }
-  .points-card::before {
-    content: ''; position: absolute; right: -40px; top: -60px;
-    width: 180px; height: 180px; border-radius: 50%;
-    background: radial-gradient(circle, var(--gold-dim) 0%, transparent 70%);
-    pointer-events: none;
+  .sc-q {
+    display:flex; flex-direction:column; align-items:center; gap:7px; text-align:center;
+    background:none; border:none; padding:0; cursor:pointer; font-family:inherit; color:inherit;
   }
-  .points-card .lbl {
-    color: var(--ink-2); opacity: 1; font-size: 0.7rem; letter-spacing: 0.1em;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .points-card .val {
-    color: var(--gold); font-size: 2.9rem; letter-spacing: -0.03em; margin-top: 2px;
-  }
-  .points-card .val small { color: var(--ink-2); font-size: 0.85rem; opacity: 1; margin-left: 4px; }
-  .points-card .actions {
-    display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px;
-    margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line);
-  }
-  .points-card .actions button {
-    background: transparent; color: var(--ink-2); border-radius: var(--r-sm);
-    padding: 9px 6px; font-size: 0.78rem; font-weight: 600;
-    flex-direction: column; gap: 5px; border: 1px solid var(--line);
-  }
-  .points-card .actions button i { font-size: 1rem; color: var(--violet-2); }
-  .points-card .actions button:hover { background: var(--surface-2); color: var(--ink); }
+  .sc-q:active { transform:scale(.94); }
+  .sc-q .ic { width:42px; height:42px; border-radius:14px; display:grid; place-items:center; font-size:1.05rem; }
+  .sc-q .lb { font-size:.66rem; font-weight:500; line-height:1.25; color:var(--ink-2); }
+  .ic-blue{background:var(--blue-dim);color:var(--blue)}
+  .ic-gold{background:var(--gold-dim);color:var(--gold)}
+  .ic-mint{background:var(--mint-dim);color:var(--mint)}
+  .ic-violet{background:var(--violet-dim);color:var(--violet)}
+  .ic-rose{background:var(--rose-dim);color:var(--rose)}
+  .ic-grey{background:var(--surface-2);color:var(--ink-2)}
 
-  /* ═══════ การ์ดและพื้นผิว ═══════════════════════════════════════
-     กฎเดียวทั้งแอป: พื้น surface + เส้นขอบ 1px ไม่มีเงานูน ไม่มีขอบในสีขาว */
-  .card,
-  .checkin-stat-card, .stat-chip, .nickname-card, .prow,
-  .history-item, .grade-summary-card, .t-stat-chip, .action-card {
-    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md);
-    box-shadow: none;
-  }
-  .card-pad { padding: 16px; }
-  .divider { background: var(--line); height: 1px; }
-  .section-label { color: var(--ink-3); letter-spacing: 0.1em; font-size: 0.7rem; }
-  .section-title { color: var(--ink); font-size: 0.95rem; }
-  .section-title i { color: var(--violet-2); }
+  /* ── บล็อกเนื้อหา ────────────────────────────────────────── */
+  .sc-pad { padding:20px 16px 0; }
+  .sc-pad:last-child { padding-bottom:22px; }
+  .sc-sec { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
+  .sc-sec .t { font-family:'Kanit',sans-serif; font-weight:500; font-size:.95rem; color:var(--ink); }
+  .sc-sec .more { font-size:.75rem; color:var(--blue); font-weight:600; background:none; border:none; cursor:pointer; font-family:inherit; }
 
-  /* ── ไทล์ตัวเลข ── */
-  .checkin-stats-grid { gap: 10px; }
-  .checkin-stat-card, .stat-chip { padding: 14px; text-align: left; }
-  .checkin-stat-card .cs-icon { font-size: 1.05rem; margin-bottom: 6px; opacity: 0.9; }
-  .checkin-stat-card .cs-num, .stat-chip .n {
-    font-size: 1.9rem; letter-spacing: -0.02em; color: var(--ink);
+  /* ── 3. แถวแจ้งเตือน ────────────────────────────────────── */
+  .sc-alert {
+    display:flex; align-items:center; gap:11px; background:var(--surface); border-radius:14px;
+    padding:12px 13px; margin-bottom:8px; box-shadow:var(--shadow-sm);
+    width:100%; text-align:left; border:none; cursor:pointer; font-family:inherit; color:inherit;
   }
-  .checkin-stat-card .cs-label, .stat-chip .l {
-    color: var(--ink-2); font-size: 0.7rem; letter-spacing: 0.04em; text-transform: none;
+  .sc-alert:active { transform:scale(.99); }
+  .sc-alert .ic { width:36px; height:36px; border-radius:12px; display:grid; place-items:center; flex:none; font-size:.9rem; }
+  .sc-alert .tx { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .sc-alert .t1 { font-size:.82rem; font-weight:600; line-height:1.35; color:var(--ink); }
+  .sc-alert .t2 { font-size:.72rem; color:var(--ink-2); line-height:1.4; margin-top:1px; }
+  .sc-alert .ch { color:var(--ink-3); flex:none; font-size:.75rem; }
+  .sc-empty {
+    background:var(--surface); border-radius:14px; padding:18px; text-align:center;
+    font-size:.8rem; color:var(--ink-2); box-shadow:var(--shadow-sm);
   }
-  .checkin-stat-card.teal .cs-num, .stat-chip.teal .n { color: var(--violet-2); }
-  .checkin-stat-card.amber .cs-num, .stat-chip.amber .n { color: var(--gold); }
-  .stat-chip.coral .n { color: var(--rose); }
-  .stat-chip.navy .n { color: var(--ink); }
 
-  .t-stat-chip { background: var(--surface); padding: 11px 14px; }
-  .t-stat-chip .info .n { color: var(--ink); }
-  .t-stat-chip .info .l { color: var(--ink-2); text-transform: none; letter-spacing: 0.02em; }
-  .teacher-stat-grid { background: transparent; border-bottom: none; padding: 0; }
-
-  /* ── แถวปุ่มโหมดสแกน — เดิมแยกสีที่ "กรอบ" ทั้งใบ ทำให้ทุกใบตะโกนพร้อมกัน
-        ใหม่ใช้แถบสีบางที่ขอบซ้าย + ไอคอนสีเดียวกัน สายตาจึงไล่ลำดับได้ ── */
-  .action-card {
-    padding: 14px 16px; gap: 14px; margin-bottom: 8px;
-    border-left: 3px solid var(--line); border-radius: var(--r-sm);
+  /* ── 4. ตารางเมนู 4 ช่อง ─────────────────────────────────── */
+  .sc-grid {
+    background:var(--surface); border-radius:var(--r-lg); padding:16px 6px 8px;
+    display:grid; grid-template-columns:repeat(4,1fr); gap:16px 0; box-shadow:var(--shadow-sm);
   }
-  .action-card:hover { transform: none; background: var(--surface-2); box-shadow: none; }
-  .action-card:active { transform: scale(0.99); }
-  .action-card .icon { width: 42px; height: 42px; border-radius: 12px; font-size: 1.1rem; }
-  .action-card .info h4 { font-size: 0.92rem; color: var(--ink); }
-  .action-card .info p { color: var(--ink-2); font-size: 0.75rem; }
-  .action-card .arrow { color: var(--ink-3); }
-  .action-card.mode-att        { border-left-color: var(--violet); }
-  .action-card.mode-att .icon  { background: var(--violet-dim); color: var(--violet-2); }
-  .action-card.mode-work       { border-left-color: var(--gold); }
-  .action-card.mode-work .icon { background: var(--gold-dim); color: var(--gold); }
-  .action-card.mode-exam       { border-left-color: var(--sky); }
-  .action-card.mode-exam .icon { background: var(--sky-dim); color: var(--sky); }
-  .action-card.mode-deduct       { border-left-color: var(--rose); }
-  .action-card.mode-deduct .icon { background: var(--rose-dim); color: var(--rose); }
-  .action-card.mode-award        { border-left-color: var(--mint); }
-  .action-card.mode-award .icon  { background: var(--mint-dim); color: var(--mint); }
-  .action-card.mode-review       { border-left-color: var(--sky); }
-  .action-card.mode-review .icon { background: var(--sky-dim); color: var(--sky); }
-  .action-card.mode-exam-ctrl       { border-left-color: var(--gold); }
-  .action-card.mode-exam-ctrl .icon { background: var(--gold-dim); color: var(--gold); }
-  .action-card:hover[class*="mode-"] { border-color: var(--line); }
+  .sc-g {
+    display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; padding:0 2px;
+    background:none; border:none; cursor:pointer; font-family:inherit; color:inherit;
+  }
+  .sc-g:active { transform:scale(.93); }
+  .sc-g .ic { width:38px; height:38px; border-radius:13px; display:grid; place-items:center; font-size:.92rem; }
+  .sc-g .lb { font-size:.62rem; font-weight:500; color:var(--ink-2); line-height:1.3; }
 
-  /* ═══════ แถบนำทางล่าง ═════════════════════════════════════════
-     เดิมเป็นแคปซูลลอย ปุ่มที่เลือกเป็นเม็ดสีชมพูเต็มใบ
-     ใหม่เป็นแท่นติดขอบจอ ปุ่มที่เลือกบอกด้วยขีดสั้นด้านบน + สี ไม่ใช่พื้นเต็ม
-     สะอาดกว่า และเหลือที่ให้ตัวหนังสือมากขึ้นเวลาเมนูมี 5 ปุ่ม */
+  /* ── 5. แถบล่าง + ปุ่มลอยกลาง ────────────────────────────── */
   .bottom-nav {
-    left: 0; right: 0; bottom: 0; transform: none; width: 100%; max-width: 100%;
-    border-radius: 0; padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
-    background: color-mix(in srgb, var(--bg-2) 92%, transparent);
-    backdrop-filter: blur(18px);
-    border: none; border-top: 1px solid var(--line);
-    box-shadow: none;
+    left:0; right:0; bottom:0; transform:none; width:100%; max-width:100%; border-radius:0;
+    background:var(--surface); backdrop-filter:none; border:none; border-top:1px solid var(--line);
+    box-shadow:0 -2px 12px rgba(14,42,76,.06); padding:8px 4px calc(11px + env(safe-area-inset-bottom));
+    display:grid; grid-template-columns:repeat(5,1fr); align-items:end;
   }
-  .bottom-nav { justify-content: center; gap: 2px; }
   .nav-btn {
-    position: relative; color: var(--ink-3); border-radius: 12px; padding: 9px 4px 7px;
-    font-size: 0.65rem; font-weight: 600; max-width: 112px; gap: 4px;
+    flex:none; display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px 2px;
+    background:transparent; border-radius:10px; color:var(--ink-3); font-size:.6rem; font-weight:500;
   }
-  .nav-btn i { font-size: 1.05rem; }
-  .nav-btn.active { background: transparent; color: var(--violet-2); box-shadow: none; font-weight: 700; }
-  .nav-btn.active::before {
-    content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-    width: 22px; height: 3px; border-radius: 0 0 3px 3px; background: var(--violet);
+  .nav-btn i { font-size:1.05rem; }
+  .nav-btn.active { background:transparent; color:var(--blue); box-shadow:none; font-weight:600; }
+  .nav-btn.nav-hole { visibility:hidden; pointer-events:none; }
+  .sc-fab {
+    position:absolute; left:50%; top:-24px; transform:translateX(-50%);
+    width:60px; height:60px; border-radius:21px; display:grid; place-items:center;
+    background:var(--grad); color:#fff; font-size:1.5rem; border:4px solid var(--surface);
+    box-shadow:0 8px 20px rgba(14,111,209,.42); cursor:pointer;
   }
-  .nav-btn:hover { color: var(--ink-2); }
+  .sc-fab:active { transform:translateX(-50%) scale(.94); }
+  .sc-fab.fab-on { box-shadow:0 0 0 4px var(--blue-dim), 0 8px 20px rgba(14,111,209,.42); }
+  .sc-fab-lb.fab-on { font-weight:700; }
+  .sc-fab-lb {
+    position:absolute; left:50%; transform:translateX(-50%); bottom:calc(11px + env(safe-area-inset-bottom));
+    font-size:.6rem; font-weight:600; color:var(--blue); pointer-events:none;
+  }
 
-  /* ═══════ ชิป ═════════════════════════════════════════════════ */
-  .pill { padding: 4px 10px; font-size: 0.72rem; font-weight: 600; border-radius: 8px; }
-  .pill-teal  { background: var(--violet-dim); color: var(--violet-2); }
-  .pill-amber { background: var(--gold-dim); color: var(--gold); }
-  #sClassDisplay {
-    font-size: 0.75rem; padding: 4px 10px; font-family: 'Sarabun', sans-serif; font-weight: 600;
-    background: var(--violet-dim); color: var(--violet-2); box-shadow: none; border-radius: 8px;
+  /* ═══════ การ์ดทั่วไป ═══════════════════════════════════════ */
+  .card, .checkin-stat-card, .stat-chip, .nickname-card, .prow,
+  .history-item, .grade-summary-card, .t-stat-chip, .action-card {
+    background:var(--surface); border:none; border-radius:var(--r-md); box-shadow:var(--shadow-sm);
   }
-  .credit-bank-btn {
-    font-size: 0.75rem; padding: 4px 10px; font-family: 'Sarabun', sans-serif; font-weight: 600;
-    background: var(--sky-dim); color: var(--sky); box-shadow: none; border-radius: 8px;
-  }
-  .grade-badge { border-radius: 8px; font-weight: 700; padding: 3px 9px; }
-  .g-hi  { background: var(--mint-dim); color: var(--mint); }
-  .g-mid { background: var(--gold-dim); color: var(--gold); }
-  .g-lo  { background: var(--rose-dim); color: var(--rose); }
+  .card-pad { padding:16px; }
+  .divider { background:var(--line); height:1px; }
+  .section-label { color:var(--ink-3); letter-spacing:.06em; font-size:.7rem; }
+  .section-title { color:var(--ink); font-size:.95rem; font-family:'Kanit',sans-serif; font-weight:500; }
+  .section-title i { color:var(--blue); }
+  .teacher-stat-grid { background:transparent; border-bottom:none; padding:0; }
+  .t-stat-chip { padding:11px 14px; }
+  .t-stat-chip .info .n { color:var(--ink); font-family:'Kanit',sans-serif; }
+  .t-stat-chip .info .l { color:var(--ink-2); text-transform:none; letter-spacing:.02em; }
+  .checkin-stat-card .cs-num, .stat-chip .n { font-family:'Kanit',sans-serif; color:var(--ink); }
+  .checkin-stat-card .cs-label, .stat-chip .l { color:var(--ink-2); text-transform:none; }
+  .checkin-stat-card.teal .cs-num, .stat-chip.teal .n { color:var(--blue); }
+  .checkin-stat-card.amber .cs-num, .stat-chip.amber .n { color:var(--gold); }
+  .stat-chip.coral .n { color:var(--rose); }
 
-  /* ═══════ ผลการเรียน ══════════════════════════════════════════ */
-  .grade-summary-card { margin-bottom: 10px; }
+  /* การ์ดโหมดสแกน (ในแท็บสแกน) */
+  .action-card { padding:13px 15px; gap:13px; margin-bottom:8px; border-radius:14px; }
+  .action-card:hover { transform:none; box-shadow:var(--shadow-md); }
+  .action-card:active { transform:scale(.99); }
+  .action-card .icon { width:40px; height:40px; border-radius:13px; font-size:1rem; }
+  .action-card .info h4 { font-size:.88rem; color:var(--ink); font-weight:600; }
+  .action-card .info p { color:var(--ink-2); font-size:.72rem; }
+  .action-card .arrow { color:var(--ink-3); }
+  .action-card[class*="mode-"] { border-color:transparent; }
+  .action-card.mode-att .icon        { background:var(--mint-dim);   color:var(--mint); }
+  .action-card.mode-work .icon       { background:var(--gold-dim);   color:var(--gold); }
+  .action-card.mode-exam .icon       { background:var(--blue-dim);   color:var(--blue); }
+  .action-card.mode-deduct .icon     { background:var(--rose-dim);   color:var(--rose); }
+  .action-card.mode-award .icon      { background:var(--mint-dim);   color:var(--mint); }
+  .action-card.mode-review .icon     { background:var(--violet-dim); color:var(--violet); }
+  .action-card.mode-exam-ctrl .icon  { background:var(--gold-dim);   color:var(--gold); }
+
+  /* ═══════ ชิป / ป้าย ════════════════════════════════════════ */
+  .pill { padding:4px 10px; font-size:.72rem; font-weight:600; border-radius:8px; }
+  .pill-teal { background:var(--blue-dim); color:var(--blue); }
+  .pill-amber { background:var(--gold-dim); color:var(--gold); }
+  .grade-badge { border-radius:9px; font-weight:600; padding:3px 10px; font-family:'Kanit',sans-serif; }
+  .g-hi { background:var(--mint-dim); color:var(--mint); }
+  .g-mid { background:var(--gold-dim); color:var(--gold); }
+  .g-lo { background:var(--rose-dim); color:var(--rose); }
+
+  /* ═══════ ผลการเรียน ════════════════════════════════════════ */
+  .grade-summary-card { margin-bottom:10px; overflow:hidden; }
   .grade-summary-card .gsc-head {
-    background: transparent; color: var(--ink); padding: 14px 16px 12px;
-    border-bottom: 1px solid var(--line);
+    background:transparent; color:var(--ink); padding:14px 15px 12px; border-bottom:1px solid var(--line-soft);
   }
-  .grade-summary-card .gsc-head .subj-name { font-family: 'Mitr','Prompt',sans-serif; font-weight: 600; }
+  .grade-summary-card .gsc-head .subj-name { font-family:'Kanit',sans-serif; font-weight:500; }
   .grade-summary-card .gsc-head .grade-big {
-    background: var(--violet-dim); color: var(--violet-2); box-shadow: none;
-    border-radius: 10px; padding: 5px 14px; font-size: 1.05rem;
+    background:var(--blue-dim); color:var(--blue); box-shadow:none; border-radius:10px;
+    padding:4px 13px; font-size:1rem; font-family:'Kanit',sans-serif; font-weight:500;
   }
-  .grade-summary-card .gsc-body { padding: 12px 16px 14px; }
-  .grade-summary-card .score-row { border-bottom: 1px solid var(--line-soft); }
-  .grade-summary-card .score-row .label { color: var(--ink-2); }
-  .grade-summary-card .score-row .val { color: var(--ink); }
-  .grade-summary-card .progress-bar { background: var(--surface-2); height: 6px; }
+  .grade-summary-card .gsc-body { padding:12px 15px 14px; }
+  .grade-summary-card .score-row { border-bottom:1px solid var(--line-soft); }
+  .grade-summary-card .score-row .label { color:var(--ink-2); }
+  .grade-summary-card .score-row .val { color:var(--ink); }
+  .grade-summary-card .progress-bar { background:var(--surface-2); height:7px; }
+  .grade-summary-card .progress-bar .fill { background:var(--grad); }
+  .meter-head { color:var(--ink-2); }
 
-  .meter-head { color: var(--ink-2); }
-  .meter-head b, .meter-head strong { color: var(--ink); }
+  /* ═══════ ฉายา / อันดับ ═════════════════════════════════════ */
+  .nickname-card { padding:14px 15px; }
+  .nickname-card .nc-title { color:var(--ink); font-family:'Kanit',sans-serif; font-weight:500; }
+  .nickname-card .nc-desc { color:var(--ink-2); }
+  .nc-rank-row { background:var(--surface-2); border-radius:10px; }
+  .nc-rank-row .rank-val { color:var(--blue); }
+  .rank-1 { background:var(--gold); color:#241900; }
+  .rank-2 { background:var(--ink-3); color:#fff; }
+  .rank-3 { background:#B07B3E; color:#fff; }
 
-  /* ═══════ ฉายา / อันดับ ═══════════════════════════════════════ */
-  .nickname-card { padding: 14px 16px; }
-  .nickname-card .nc-title { color: var(--ink); }
-  .nickname-card .nc-desc { color: var(--ink-2); }
-  .nc-rank-row { background: var(--surface-2); border-radius: 10px; }
-  .nc-rank-row .rank-val { color: var(--violet-2); }
-  .rank-1 { background: var(--gold); color: #2A1C00; }
-  .rank-2 { background: var(--ink-2); color: var(--bg); }
-  .rank-3 { background: #8A5A2B; color: #fff; }
+  /* ═══════ ตาราง / การ์ดรายคน ════════════════════════════════ */
+  .tbl-wrap { border:none; border-radius:var(--r-md); box-shadow:var(--shadow-sm); }
+  table.dt { background:var(--surface); }
+  table.dt th { background:var(--surface-2); color:var(--ink-2); text-transform:none; letter-spacing:.02em; }
+  table.dt td { border-top:1px solid var(--line-soft); color:var(--ink); }
+  table.dt td.name-cell:hover { color:var(--blue); }
+  .prow { padding:11px 13px; border-radius:14px; }
+  .prow-name { color:var(--ink); }
+  .prow-meta { color:var(--ink-2); }
+  .prow-acts button { color:var(--ink-3); }
+  .prow-acts button:hover { background:var(--surface-2); color:var(--ink); }
+  .prow-acts button.danger:hover { color:var(--rose); }
+  .pscore { background:var(--surface-2); border-radius:9px; }
+  .pscore .l { color:var(--ink-3); }
+  .pscore .v { color:var(--ink); }
+  .pscore.calc .v { color:var(--gold); }
+  .pscore.sum .v { color:var(--blue); }
+  .score-legend { color:var(--ink-3); }
+  .roster-row { border-bottom:1px solid var(--line-soft); }
+  .status-btns button { border:1px solid var(--line); background:var(--surface-2); border-radius:11px; }
+  .status-btns button.sel-present { background:var(--mint); border-color:var(--mint); }
+  .status-btns button.sel-late    { background:var(--gold); border-color:var(--gold); }
+  .status-btns button.sel-leave   { background:var(--ink-3); border-color:var(--ink-3); }
+  .status-btns button.sel-absent  { background:var(--rose); border-color:var(--rose); }
 
-  /* ═══════ ตาราง / การ์ดรายคน ═══════════════════════════════════ */
-  .tbl-wrap { border: 1px solid var(--line); border-radius: var(--r-md); }
-  table.dt { background: var(--surface); }
-  table.dt th { background: var(--surface-2); color: var(--ink-2); text-transform: none; letter-spacing: 0.02em; }
-  table.dt td { border-top: 1px solid var(--line-soft); color: var(--ink); }
-  table.dt td.name-cell:hover { color: var(--violet-2); }
-  .prow { padding: 11px 13px; border-radius: var(--r-sm); }
-  .prow-name { color: var(--ink); }
-  .prow-meta { color: var(--ink-2); }
-  .prow-acts button { color: var(--ink-3); }
-  .prow-acts button:hover { background: var(--surface-2); color: var(--ink); }
-  .prow-acts button.danger:hover { color: var(--rose); }
-  .pscore { background: var(--surface-2); border-radius: 9px; }
-  .pscore .l { color: var(--ink-3); }
-  .pscore .v { color: var(--ink); }
-  .pscore.calc .v { color: var(--gold); }
-  .pscore.sum  .v { color: var(--violet-2); }
-  .score-legend { color: var(--ink-3); }
-  .roster-row { border-bottom: 1px solid var(--line-soft); }
-  .status-btns button { border: 1px solid var(--line); background: var(--surface-2); border-radius: 11px; }
-  .status-btns button.sel-present { background: var(--mint); border-color: var(--mint); }
-  .status-btns button.sel-late    { background: var(--gold); border-color: var(--gold); }
-  .status-btns button.sel-leave   { background: var(--ink-2); border-color: var(--ink-2); }
-  .status-btns button.sel-absent  { background: var(--rose); border-color: var(--rose); }
+  /* ═══════ ไทม์ไลน์กิจกรรม ═══════════════════════════════════ */
+  .history-item { padding:12px 14px; border-radius:14px; border-left:3px solid var(--line); }
+  .history-item .hi-name { color:var(--ink); }
+  .history-item .hi-meta { color:var(--ink-2); }
+  .history-item .hi-pts.plus { color:var(--mint); }
+  .history-item .hi-pts.minus { color:var(--rose); }
+  .history-type-checkin { border-left-color:var(--blue); }
+  .history-type-coupon  { border-left-color:var(--gold); }
+  .history-type-buy     { border-left-color:var(--violet); }
+  .history-type-deduct  { border-left-color:var(--rose); background:var(--surface); }
+  .history-type-award   { border-left-color:var(--mint); background:var(--surface); }
 
-  /* ═══════ ไทม์ไลน์กิจกรรม ═════════════════════════════════════ */
-  .history-item { padding: 12px 14px; border-radius: var(--r-sm); border-left: 3px solid var(--line); }
-  .history-item .hi-name { color: var(--ink); }
-  .history-item .hi-meta { color: var(--ink-2); }
-  .history-item .hi-pts.plus { color: var(--mint); }
-  .history-item .hi-pts.minus { color: var(--rose); }
-  .history-type-checkin { border-left-color: var(--violet); }
-  .history-type-coupon  { border-left-color: var(--gold); }
-  .history-type-buy     { border-left-color: var(--sky); }
-  .history-type-deduct  { border-left-color: var(--rose); background: var(--surface); }
-  .history-type-award   { border-left-color: var(--mint); background: var(--surface); }
-
-  /* ═══════ บัตรนักเรียน ════════════════════════════════════════
-     เดิมเป็นบัตรน้ำเงินไล่สีมีแสงฟุ้ง ใหม่เป็นบัตรดำเรียบ ให้ QR เด่นที่สุด
-     เพราะหน้าที่เดียวของหน้านี้คือให้ครูสแกน */
+  /* ═══════ บัตรนักเรียน — ให้ QR เด่นที่สุด ══════════════════ */
   .student-id-card {
-    background: var(--surface); border: 1px solid var(--line);
-    border-radius: var(--r-lg); box-shadow: none; padding: 22px 20px;
+    background:var(--grad); border:none; border-radius:var(--r-xl); box-shadow:var(--shadow-md); padding:22px 20px;
   }
-  .student-id-card::before { display: none; }
-  .id-brand { color: var(--ink-3); letter-spacing: 0.14em; }
-  .id-name { color: var(--ink); font-weight: 600; }
-  .id-class { background: var(--violet-dim); color: var(--violet-2); border: none; border-radius: 8px; font-weight: 600; }
-  .id-qr-frame { background: #fff; border-radius: 16px; padding: 14px; box-shadow: none; }
-  .id-scan-hint { color: var(--ink-2); }
-  .id-footer { color: var(--ink-3); }
-  .id-card-hint { color: var(--ink-3); }
+  .student-id-card::before { display:none; }
+  .id-brand { color:rgba(255,255,255,.7); letter-spacing:.12em; }
+  .id-name { color:#fff; font-family:'Kanit',sans-serif; font-weight:500; }
+  .id-class { background:rgba(255,255,255,.18); color:#fff; border:none; border-radius:9px; font-weight:500; }
+  .id-qr-frame { background:#fff; border-radius:16px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,.18); }
+  .id-scan-hint { color:rgba(255,255,255,.75); }
+  .id-footer { color:rgba(255,255,255,.55); }
+  .id-card-hint { color:var(--ink-3); }
 
-  /* ═══════ หน้าเต็มจอ / ป๊อปอัป ════════════════════════════════ */
-  .fullpage-view { background: var(--bg); }
-  .fullpage-head { background: var(--bg-2); border-bottom: 1px solid var(--line); }
-  /* บนจอกว้าง หน้าเต็มจอเดิมยืดไปจนสุดขอบจอ ทำให้แถวข้อมูลยาวจนสายตาไล่ไม่ทัน
-     บีบเป็นคอลัมน์กว้างเท่าตัวแอป (560px) ด้วยการเติมระยะขอบซ้าย-ขวาให้เท่ากัน */
-  @media (min-width: 620px) {
-    .fullpage-head, .fullpage-body {
-      padding-left: calc((100% - 560px) / 2); padding-right: calc((100% - 560px) / 2);
-    }
+  /* ═══════ หน้าเต็มจอ / ป๊อปอัป ══════════════════════════════ */
+  .fullpage-view { background:var(--bg); }
+  .fullpage-head { background:var(--surface); border-bottom:1px solid var(--line); }
+  @media (min-width:620px) {
+    .fullpage-head, .fullpage-body { padding-left:calc((100% - 560px) / 2); padding-right:calc((100% - 560px) / 2); }
   }
-  .swal2-popup { background: var(--surface) !important; color: var(--ink) !important; border-radius: var(--r-md) !important; }
-  .swal2-title, .swal2-html-container { color: var(--ink) !important; }
+  .swal2-popup { background:var(--surface)!important; color:var(--ink)!important; border-radius:var(--r-lg)!important; }
+  .swal2-title, .swal2-html-container { color:var(--ink)!important; }
+  .swal2-title { font-family:'Kanit',sans-serif!important; font-weight:500!important; }
   .swal2-input, .swal2-textarea, .swal2-select {
-    background: var(--surface-2) !important; color: var(--ink) !important;
-    border: 1px solid var(--line) !important; border-radius: var(--r-sm) !important;
+    background:var(--surface-2)!important; color:var(--ink)!important;
+    border:1px solid var(--line)!important; border-radius:var(--r-sm)!important;
   }
-  .swal2-styled.swal2-confirm { background: var(--violet) !important; border-radius: var(--r-sm) !important; }
-  .swal2-styled.swal2-cancel  { background: var(--surface-2) !important; color: var(--ink) !important; border-radius: var(--r-sm) !important; }
+  .swal2-styled.swal2-confirm { background:var(--blue)!important; border-radius:var(--r-sm)!important; }
+  .swal2-styled.swal2-cancel { background:var(--surface-2)!important; color:var(--ink)!important; border-radius:var(--r-sm)!important; }
 
-  /* ═══════ คู่หู / วงล้อ ═══════════════════════════════════════ */
+  /* ═══════ คู่หู / วงล้อ ═════════════════════════════════════ */
   .cp-card, .wheel-sheet {
-    background: var(--surface) !important; border: 1px solid var(--line) !important;
-    border-radius: var(--r-lg) !important; box-shadow: none !important;
+    background:var(--grad)!important; border:none!important; border-radius:var(--r-xl)!important;
+    box-shadow:var(--shadow-md)!important;
   }
-  .cp-card::before { display: none; }
-  .cp-ticket { background: var(--gold-dim); border-color: transparent; color: var(--gold); border-radius: 8px; }
-  .cp-bubble { background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2); box-shadow: none; }
-  .cp-bubble::after { border-bottom-color: var(--line); }
-  .cp-bubble::before { border-bottom-color: var(--surface-2); }
-  .cp-name { color: var(--ink); }
-  .cp-stage { color: var(--violet-2); }
-  .cp-bar-head { color: var(--ink-2); }
-  .cp-bar-track { background: var(--surface-2); }
-  .cp-btn { border-radius: 12px; border-width: 1px; }
-  .cp-btn-label { color: var(--ink); }
-  .cp-btn-cost { color: var(--ink-3); }
-  .cp-btn-hatch { background: var(--violet-dim); border: 1px solid var(--violet); border-radius: 12px; }
-  .cp-btn-hatch-label { color: var(--violet-2); }
-  .cp-btn-hatch-sub { color: var(--ink-3); }
-  .cp-low-tk { color: var(--ink-3); }
-  .wheel-close { background: var(--surface-2); color: var(--ink-2); border-radius: 10px; }
-  .wheel-center { background: var(--surface-2); border-color: var(--line); }
-  #wheelEl { border-color: var(--line); box-shadow: none; }
-  .wheel-pointer { color: var(--gold); }
-  .wheel-spin-btn {
-    background: var(--violet); box-shadow: none; border-radius: var(--r-sm);
-    text-shadow: none; top: 0 !important;
-  }
-  .wheel-spin-btn:active { box-shadow: none; }
-  .wheel-result-text { color: var(--ink); }
+  .cp-card::before { display:none; }
+  .cp-ticket { background:rgba(255,255,255,.2); border-color:transparent; color:#fff; border-radius:9px; }
+  .cp-bubble { background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.2); color:rgba(255,255,255,.92); box-shadow:none; }
+  .cp-bubble::after { border-bottom-color:rgba(255,255,255,.2); }
+  .cp-bubble::before { border-bottom-color:rgba(255,255,255,.14); }
+  .cp-stage { color:#BFE6FF; }
+  .cp-btn { border-radius:13px; border-width:1px; }
+  .cp-btn-hatch { background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.35); border-radius:13px; }
+  .cp-btn-hatch-label { color:#fff; }
+  .wheel-close { background:rgba(255,255,255,.18); color:#fff; border-radius:10px; }
+  .wheel-center { background:var(--blue); border-color:rgba(255,255,255,.3); }
+  #wheelEl { border-color:rgba(255,255,255,.25); box-shadow:none; }
+  .wheel-pointer { color:#FFC53D; }
+  .wheel-spin-btn { background:#fff; color:var(--blue); box-shadow:none; border-radius:var(--r-sm); text-shadow:none; top:0!important; }
+  .wheel-result-text { color:#fff; }
+  .pulse { animation:none; }
 
-  .pulse { animation: none; }
-
-  /* ═══════ สวิตช์เปิด/ปิดฟีเจอร์ (หน้าตั้งค่าครู) ═══════════════ */
-  .feat-row {
-    display: flex; align-items: flex-start; gap: 12px; padding: 14px 0;
-    border-bottom: 1px solid var(--line-soft);
-  }
-  .feat-row:last-child { border-bottom: none; }
-  .feat-body { flex: 1; min-width: 0; }
-  .feat-name { font-weight: 700; font-size: 0.9rem; color: var(--ink); }
-  .feat-desc { font-size: 0.76rem; color: var(--ink-2); margin-top: 2px; line-height: 1.45; }
+  /* ═══════ สวิตช์ฟีเจอร์ (หน้าตั้งค่า) ════════════════════════ */
+  .feat-row { display:flex; align-items:flex-start; gap:12px; padding:14px 0; border-bottom:1px solid var(--line-soft); }
+  .feat-row:last-child { border-bottom:none; }
+  .feat-body { flex:1; min-width:0; }
+  .feat-name { font-weight:600; font-size:.9rem; color:var(--ink); }
+  .feat-desc { font-size:.76rem; color:var(--ink-2); margin-top:2px; line-height:1.45; }
   .feat-usage {
-    font-size: 0.72rem; margin-top: 6px; display: inline-flex; align-items: center; gap: 6px;
-    padding: 3px 9px; border-radius: 7px; background: var(--surface-2); color: var(--ink-2);
+    font-size:.72rem; margin-top:6px; display:inline-flex; align-items:center; gap:6px;
+    padding:3px 9px; border-radius:7px; background:var(--surface-2); color:var(--ink-2);
   }
-  .feat-usage.zero { background: var(--rose-dim); color: var(--rose); }
-  .switch { position: relative; width: 46px; height: 28px; flex-shrink: 0; }
-  .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 2; }
-  .switch .track {
-    position: absolute; inset: 0; border-radius: 999px; background: var(--line);
-    transition: background .18s;
-  }
+  .feat-usage.zero { background:var(--rose-dim); color:var(--rose); }
+  .switch { position:relative; width:46px; height:28px; flex-shrink:0; }
+  .switch input { position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; z-index:2; }
+  .switch .track { position:absolute; inset:0; border-radius:999px; background:var(--line); transition:background .18s; }
   .switch .track::after {
-    content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px;
-    border-radius: 50%; background: #fff; transition: transform .18s;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    content:''; position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%;
+    background:#fff; transition:transform .18s; box-shadow:0 1px 3px rgba(0,0,0,.25);
   }
-  .switch input:checked + .track { background: var(--violet); }
-  .switch input:checked + .track::after { transform: translateX(18px); }
+  .switch input:checked + .track { background:var(--blue); }
+  .switch input:checked + .track::after { transform:translateX(18px); }
 
-  /* แถบสถานะ "กำลังอัปเดต / ออฟไลน์" ให้เข้ากับชุดใหม่ */
+  /* หัวจอของแท็บที่ไม่ใช่หน้าหลัก — แท็บพวกนี้ไม่มีตัวเลขพระเอกให้โชว์
+     จึงใช้แถบเรียบบอกว่ากำลังอยู่หน้าไหน แทนหัวไล่สีที่จะกินที่เปล่าๆ */
+  .sc-subhead {
+    position:sticky; top:0; z-index:60;
+    padding:calc(14px + env(safe-area-inset-top)) 16px 12px;
+    background:var(--surface); border-bottom:1px solid var(--line);
+    display:flex; flex-direction:column; gap:1px;
+  }
+  .sc-subhead .ttl { font-family:'Kanit',sans-serif; font-weight:500; font-size:1.05rem; color:var(--ink); }
+  .sc-subhead .sub { font-size:0.74rem; color:var(--ink-2); }
+
+  /* แถบแจ้งเตือนแบบย่อบนหัวจอ ใช้ตอนโหลดข้อมูลใหม่ */
   #staleBadge {
-    background: var(--surface-2) !important; color: var(--ink-2) !important;
-    border: 1px solid var(--line); box-shadow: var(--shadow-md) !important;
-    border-radius: 10px !important; font-weight: 600 !important;
-    bottom: calc(84px + env(safe-area-inset-bottom)) !important;
+    background:var(--surface)!important; color:var(--ink-2)!important; border:1px solid var(--line);
+    box-shadow:var(--shadow-md)!important; border-radius:10px!important; font-weight:600!important;
+    bottom:calc(92px + env(safe-area-inset-bottom))!important;
   }
 
   </style>
@@ -1435,74 +1356,94 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
      ═══════════════════════════════════════════════════════════ -->
 <div id="studentSection" class="hidden">
   <div class="app-shell">
-    <!-- เดิมเป็นหัวไล่สีสูง ~130px ที่มีแต่ชื่อกับชั้นเรียน แล้วมีการ์ดแต้มลอยเกยขึ้นไปทับ
-         เปลี่ยนเป็นแถบบางที่ติดขอบจอ (sticky) — ได้พื้นที่เนื้อหาคืนเกือบ 100px
-         และชื่อ/ปุ่มออกจากระบบยังอยู่ให้เห็นตลอดแม้เลื่อนลงไปไกล -->
-    <div class="topbar">
-      <div class="topbar-avatar" id="sAvatar">·</div>
-      <div class="topbar-id">
-        <div class="topbar-name" id="sNameDisplay">สวัสดี</div>
-        <div class="topbar-meta">
-          <span class="pill pill-teal" id="sClassDisplay">ชั้นเรียน</span>
-          <button class="credit-bank-btn" id="creditBankBtn" onclick="openCreditBank_()">
-            <i class="fa-solid fa-building-columns"></i> หน่วยกิต
-          </button>
+
+    <!-- ═════ แท็บ: หน้าหลัก ═════════════════════════════════════════════
+         จัดตามระเบียบแอปธนาคาร — หัวไล่สีถือตัวเลขก้อนเดียว ปุ่มลัด 4 ปุ่มเกยขึ้นมา
+         แล้วตามด้วยเรื่องที่ต้องลงมือ · ผลการเรียน · เมนูที่เหลือ
+         ของเดิมกอง 5 เรื่องน้ำหนักเท่ากันลงมา จนไม่รู้ว่าต้องดูอะไรก่อน -->
+    <div id="sTab-overview" class="tab-panel active">
+
+      <div class="sc-head">
+        <div class="sc-hrow">
+          <div class="sc-avatar" id="sAvatar">·</div>
+          <div class="sc-id">
+            <div class="sc-hi" id="sGreeting">สวัสดี</div>
+            <div class="sc-nm" id="sNameDisplay">—</div>
+          </div>
+          <div class="hero-icon-row">
+            <button class="hero-logout" onclick="openNotificationCenter()" title="การแจ้งเตือน">
+              <i class="fa-solid fa-bell"></i><span class="notif-dot" id="studentNotifDot"></span>
+            </button>
+            <button class="hero-logout" onclick="toggleDarkMode()" title="สลับโหมดสว่าง/มืด"><i class="fa-solid fa-moon" id="darkModeIcon1"></i></button>
+            <button class="hero-logout" onclick="logout()" title="ออกจากระบบ"><i class="fa-solid fa-power-off"></i></button>
+          </div>
+        </div>
+
+        <div class="sc-amount">
+          <div class="cap"><i class="fa-solid fa-star"></i> แต้มสะสมพิเศษ</div>
+          <div class="big" id="stdPointsDisplay">0<span>แต้ม</span></div>
+        </div>
+
+        <div class="sc-chips">
+          <span class="sc-chip" id="sClassDisplay">ชั้นเรียน</span>
+          <span class="sc-chip">ต่อเนื่อง <b id="csStreakCount">—</b> วัน</span>
+          <span class="sc-chip">เช็คอินแล้ว <b id="csCheckinCount">—</b> วัน</span>
         </div>
       </div>
-      <div class="hero-icon-row">
-        <button class="hero-logout" onclick="openNotificationCenter()" title="การแจ้งเตือน">
-          <i class="fa-solid fa-bell"></i><span class="notif-dot" id="studentNotifDot"></span>
+
+      <div class="sc-quick">
+        <button class="sc-q" id="actGpsCheckin" onclick="tryGpsCheckin()">
+          <span class="ic ic-blue"><i class="fa-solid fa-location-dot"></i></span><span class="lb">เช็คอิน</span>
         </button>
-        <button class="hero-logout" onclick="toggleDarkMode()" title="สลับโหมดสว่าง/มืด"><i class="fa-solid fa-sun" id="darkModeIcon1"></i></button>
-        <button class="hero-logout" onclick="logout()" title="ออกจากระบบ"><i class="fa-solid fa-power-off"></i></button>
+        <button class="sc-q" id="actCoupon" onclick="tryRedeemCouponUI()">
+          <span class="ic ic-gold"><i class="fa-solid fa-ticket"></i></span><span class="lb">คูปอง</span>
+        </button>
+        <button class="sc-q" onclick="openScoreExchangeModal()">
+          <span class="ic ic-mint"><i class="fa-solid fa-right-left"></i></span><span class="lb">แลกคะแนน</span>
+        </button>
+        <button class="sc-q" onclick="goStudentTab_('me')">
+          <span class="ic ic-violet"><i class="fa-solid fa-clock-rotate-left"></i></span><span class="lb">ประวัติแต้ม</span>
+        </button>
+      </div>
+
+      <div class="sc-pad">
+        <div class="sc-sec"><span class="t">ต้องทำ</span><span class="more" id="sTodoCount"></span></div>
+        <div id="sTodoList"><div class="sc-empty">กำลังตรวจสอบ...</div></div>
+      </div>
+
+      <div class="sc-pad">
+        <div class="sc-sec">
+          <span class="t">ผลการเรียน</span>
+          <button class="more" onclick="goStudentTab_('grades')">ดูทั้งหมด <i class="fa-solid fa-chevron-right" style="font-size:0.6rem"></i></button>
+        </div>
+        <div id="sHomeGrade"></div>
+      </div>
+
+      <!-- ความคืบหน้าสาขาวิชาเลือก — โหลดต่อทีหลังแบบไม่บล็อกการเข้าระบบ -->
+      <!-- การ์ดนี้มีหัวข้อของตัวเองอยู่แล้ว จึงไม่ใส่หัวข้อซ้ำอีกชั้น -->
+      <div class="sc-pad" id="homeElectiveWrap" style="display:none;">
+        <div id="homeElectiveCard"></div>
+      </div>
+
+      <div class="sc-pad">
+        <div class="sc-sec"><span class="t">เมนูทั้งหมด</span></div>
+        <div class="sc-grid">
+          <button class="sc-g" onclick="goStudentTab_('grades')"><span class="ic ic-blue"><i class="fa-solid fa-book-open"></i></span><span class="lb">คะแนนรายบท</span></button>
+          <button class="sc-g" id="menuElective" onclick="openCreditBank_()"><span class="ic ic-violet"><i class="fa-solid fa-building-columns"></i></span><span class="lb">วิชาเลือก</span></button>
+          <button class="sc-g" onclick="goStudentTab_('me')"><span class="ic ic-gold"><i class="fa-solid fa-ranking-star"></i></span><span class="lb">อันดับห้อง</span></button>
+          <button class="sc-g" onclick="goStudentTab_('me')"><span class="ic ic-mint"><i class="fa-solid fa-chart-simple"></i></span><span class="lb">วิเคราะห์ศักยภาพ</span></button>
+          <button class="sc-g" id="menuRun" onclick="openRunModal()"><span class="ic ic-rose"><i class="fa-solid fa-person-running"></i></span><span class="lb">วิ่งแลกแต้ม</span></button>
+          <button class="sc-g" id="menuCompanion" onclick="goStudentTab_('companion')"><span class="ic ic-violet"><i class="fa-solid fa-paw"></i></span><span class="lb">คู่หู</span></button>
+          <button class="sc-g" onclick="goStudentTab_('card')"><span class="ic ic-blue"><i class="fa-solid fa-id-card"></i></span><span class="lb">บัตรนักเรียน</span></button>
+          <button class="sc-g" id="menuOnline" onclick="openOnlineCourseModal()"><span class="ic ic-grey"><i class="fa-solid fa-play"></i></span><span class="lb">เรียนออนไลน์</span></button>
+        </div>
       </div>
     </div>
 
-    <div class="points-card">
-      <div class="lbl"><i class="fa-solid fa-star"></i> แต้มสะสมพิเศษ</div>
-      <div class="val" id="stdPointsDisplay">0 <small>แต้ม</small></div>
-      <div class="actions">
-        <button id="actGpsCheckin" onclick="tryGpsCheckin()"><i class="fa-solid fa-location-dot"></i> เช็คอิน</button>
-        <button id="actCoupon" onclick="tryRedeemCouponUI()"><i class="fa-solid fa-ticket"></i> คูปอง</button>
-        <button onclick="openScoreExchangeModal()"><i class="fa-solid fa-rotate"></i> แลกคะแนน</button>
-      </div>
-    </div>
-
-    <div class="content-pad">
-
-      <!-- แท็บ: หน้าหลัก -->
-      <div id="sTab-overview" class="tab-panel active">
-        <div class="section-label" style="margin-bottom:10px;">สถิติการเช็คอิน</div>
-        <div class="checkin-stats-grid">
-          <div class="checkin-stat-card teal">
-            <div class="cs-icon">📍</div>
-            <div class="cs-num" id="csCheckinCount">—</div>
-            <div class="cs-label">วันที่เช็คอิน (จ-ศ)</div>
-          </div>
-          <div class="checkin-stat-card amber">
-            <div class="cs-icon">🔥</div>
-            <div class="cs-num" id="csStreakCount">—</div>
-            <div class="cs-label">วันต่อเนื่องสะสม</div>
-          </div>
-        </div>
-
-        <!-- ความคืบหน้าสาขาวิชาเลือก — เดิมซ่อนอยู่ก้นหน้า "เรียนออนไลน์" ต้องกดเข้าไปหลายชั้นถึงจะเห็น
-             ทั้งที่เป็นคะแนนที่นักเรียนต้องเก็บให้ครบ 50 จึงย้ายมาไว้หน้าแรก โหลดแยกไม่ให้ช้าตอนเข้าระบบ -->
-        <div id="homeElectiveCard" style="display:none; margin-bottom:16px;"></div>
-
-        <div class="section-label" style="margin-top:4px;">วิเคราะห์ศักยภาพ</div>
-        <div class="card card-pad" style="margin-bottom:16px;">
-          <div id="skillMetersContainer" style="display:flex; flex-direction:column; gap:16px;"></div>
-        </div>
-
-        <!-- ฉายาประจำห้อง — เดิมกินพื้นที่เมนูล่างไปทั้งแท็บ ทั้งที่เป็นรายการดูอย่างเดียว ไม่ได้กดทำอะไร
-             ย้ายมารวมที่หน้าแรก เมนูล่างจึงเหลือ 4 ปุ่มที่ล้วนเป็นเรื่องที่ต้องเข้าไปทำจริง -->
-        <div class="section-label" style="margin-top:4px;">ฉายาประจำห้อง</div>
-        <div id="nicknameContainer" class="nickname-section" style="margin-bottom:18px;"></div>
-      </div>
-
-      <!-- แท็บ: การเรียน -->
-      <div id="sTab-grades" class="tab-panel">
+    <!-- ═════ แท็บ: การเรียน ═════ -->
+    <div id="sTab-grades" class="tab-panel">
+      <div class="sc-subhead"><span class="ttl">ผลการเรียน</span><span class="sub" id="sGradeTerm"></span></div>
+      <div class="sc-pad">
         <div class="card card-pad" id="onlineCourseCard" style="margin-bottom:16px; cursor:pointer;" onclick="openOnlineCourseModal()">
           <div style="display:flex; align-items:center; gap:14px;">
             <div style="width:52px; height:52px; border-radius:16px; background:rgba(255,92,151,0.12); display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:var(--teal2); flex-shrink:0;">
@@ -1519,9 +1460,12 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         <div class="section-label">ผลการเรียนทุกรายวิชา</div>
         <div id="gradeCardsContainer"></div>
       </div>
+    </div>
 
-      <!-- แท็บ: บัตร -->
-      <div id="sTab-card" class="tab-panel">
+    <!-- ═════ แท็บ: บัตร (เปิดจากปุ่มกลางแถบล่าง) ═════ -->
+    <div id="sTab-card" class="tab-panel">
+      <div class="sc-subhead"><span class="ttl">บัตรนักเรียน</span><span class="sub">ให้ครูสแกนเพื่อบันทึกข้อมูล</span></div>
+      <div class="sc-pad">
         <div class="student-id-card">
           <div class="id-brand"><i class="fa-solid fa-graduation-cap"></i> Smart Class · Ultra Pro Max</div>
           <div class="id-name" id="cardName">ชื่อนักเรียน</div>
@@ -1539,8 +1483,12 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <i class="fa-solid fa-camera"></i> แคปหน้าจอเพื่อแชร์ หรือเปิดโชว์ครูสแกนได้เลย
         </div>
       </div>
+    </div>
 
-<div id="sTab-companion" class="tab-panel">
+    <!-- ═════ แท็บ: กิจกรรม ═════ -->
+    <div id="sTab-companion" class="tab-panel">
+      <div class="sc-subhead"><span class="ttl">กิจกรรมสะสมแต้ม</span><span class="sub">วิ่งแลกแต้ม · คู่หู</span></div>
+      <div class="sc-pad">
   <!-- การวิ่งแลกแต้มย้ายมาอยู่ที่นี่ — เดิมอยู่หน้าแรก ส่วนคู่หูแยกเป็นอีกแท็บ ทั้งที่เป็นกิจกรรมสะสมแต้มเหมือนกัน
        รวมของประเภทเดียวกันไว้ที่เดียว นักเรียนจึงรู้ว่า "เรื่องเล่นๆ สะสมแต้ม" ต้องมาดูตรงไหน -->
   <div class="card card-pad" id="runCard" style="margin-bottom:16px;">
@@ -1567,23 +1515,43 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     </div>
   </div>
 </div>
-
     </div>
+
+    <!-- ═════ แท็บ: ฉัน ═══════════════════════════════════════════════
+         รับของที่ย้ายออกจากหน้าแรก — อันดับห้อง วิเคราะห์ศักยภาพ ประวัติแต้ม
+         ของพวกนี้เป็นข้อมูล "ไว้ดู" ไม่ใช่ "ไว้ทำ" จึงไม่ควรกินที่หน้าแรก -->
+    <div id="sTab-me" class="tab-panel">
+      <div class="sc-subhead"><span class="ttl">ข้อมูลของฉัน</span><span class="sub" id="sMeSub"></span></div>
+      <div class="sc-pad">
+        <div class="sc-sec"><span class="t">ประวัติแต้มพิเศษ</span></div>
+        <div id="sMeNotices"><div class="sc-empty">ยังไม่มีรายการ</div></div>
+      </div>
+      <div class="sc-pad">
+        <div class="sc-sec"><span class="t">วิเคราะห์ศักยภาพ</span></div>
+        <div class="card card-pad">
+          <div id="skillMetersContainer" style="display:flex; flex-direction:column; gap:16px;"></div>
+        </div>
+      </div>
+      <div class="sc-pad">
+        <div class="sc-sec"><span class="t">อันดับห้อง</span></div>
+        <div id="nicknameContainer" class="nickname-section"></div>
+      </div>
+      <div class="sc-pad">
+        <button class="btn btn-ghost btn-block" onclick="toggleDarkMode()"><i class="fa-solid fa-circle-half-stroke"></i> สลับโหมดสว่าง / มืด</button>
+        <button class="btn btn-danger-soft btn-block" style="margin-top:8px;" onclick="logout()"><i class="fa-solid fa-power-off"></i> ออกจากระบบ</button>
+      </div>
+    </div>
+
   </div>
 
   <nav class="bottom-nav">
-    <button class="nav-btn active" onclick="switchStudentTab('overview', this)">
-      <i class="fa-solid fa-house"></i> หน้าหลัก
-    </button>
-    <button class="nav-btn" onclick="switchStudentTab('grades', this)">
-      <i class="fa-solid fa-book-open"></i> การเรียน
-    </button>
-    <button class="nav-btn" id="navBtn-companion" onclick="switchStudentTab('companion', this)">
-      <i class="fa-solid fa-paw"></i> เกม
-    </button>
-    <button class="nav-btn" onclick="switchStudentTab('card', this)">
-      <i class="fa-solid fa-id-card"></i> บัตร
-    </button>
+    <button class="nav-btn active" onclick="switchStudentTab('overview', this)"><i class="fa-solid fa-house"></i> หน้าหลัก</button>
+    <button class="nav-btn" onclick="switchStudentTab('grades', this)"><i class="fa-solid fa-book-open"></i> การเรียน</button>
+    <button class="nav-btn nav-hole" tabindex="-1" aria-hidden="true">.</button>
+    <button class="nav-btn" id="navBtn-companion" onclick="switchStudentTab('companion', this)"><i class="fa-solid fa-gamepad"></i> กิจกรรม</button>
+    <button class="nav-btn" onclick="switchStudentTab('me', this)"><i class="fa-solid fa-user"></i> ฉัน</button>
+    <button class="sc-fab" onclick="goStudentTab_('card')" title="บัตร QR"><i class="fa-solid fa-qrcode"></i></button>
+    <span class="sc-fab-lb">บัตร QR</span>
   </nav>
 </div>
 
@@ -1593,37 +1561,79 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 <div id="teacherSection" class="hidden">
   <div class="app-shell">
 
-    <!-- แถบบนของครู — เพิ่มชิปบอกปีการศึกษา/เทอมที่กำลังทำงานอยู่ ซึ่งเดิมต้องเข้าไปดูในหน้าตั้งค่า
-         ทั้งที่เป็นบริบทสำคัญของทุกอย่างที่กดในหน้านี้ (คะแนนที่บันทึกจะเข้าเทอมไหน) -->
-    <div class="topbar">
-      <div class="topbar-avatar"><i class="fa-solid fa-chalkboard-user" style="font-size:1rem;"></i></div>
-      <div class="topbar-id">
-        <div class="topbar-name">ศูนย์ควบคุม</div>
-        <div class="topbar-meta">
-          <span class="pill pill-teal" id="teacherTermChip">กำลังโหลด...</span>
+    <!-- ═════ แท็บ: ภาพรวม ═══════════════════════════════════════════════
+         ตัวเลขพระเอกคือ "ความคืบหน้าของบทที่กำลังสอน" ซึ่งเดิมไม่มีให้ดูเลย
+         ครูต้องเปิดตารางคะแนนไล่นับเองว่าใครยังไม่ได้สแกน
+         ปุ่มลัด 4 ปุ่มใต้การ์ดคือ 4 โหมดที่ใช้บ่อยที่สุด กดแล้วเปิดกล้องได้ทันที
+         เพราะบริบท (วิชา/ชั้น/บท) ถูกจำไว้จากครั้งก่อนแล้ว -->
+    <div id="tTab-overview" class="tab-panel active">
+
+      <div class="sc-head">
+        <div class="sc-hrow">
+          <div class="sc-avatar"><i class="fa-solid fa-chalkboard-user" style="font-size:0.95rem"></i></div>
+          <div class="sc-id">
+            <div class="sc-hi">ศูนย์ควบคุม</div>
+            <div class="sc-nm" id="teacherTermChip">กำลังโหลด...</div>
+          </div>
+          <div class="hero-icon-row">
+            <button class="hero-logout" onclick="openAdminModal()" title="ตั้งค่าระบบ"><i class="fa-solid fa-gear"></i></button>
+            <button class="hero-logout" onclick="toggleDarkMode()" title="สลับโหมดสว่าง/มืด"><i class="fa-solid fa-moon" id="darkModeIcon2"></i></button>
+            <button class="hero-logout" onclick="logout()" title="ออกจากระบบ"><i class="fa-solid fa-power-off"></i></button>
+          </div>
+        </div>
+
+        <div class="sc-amount">
+          <div class="cap" id="tProgCap">สแกนแล้ววันนี้</div>
+          <div class="big" id="tProgNum">—<span id="tProgOf"></span></div>
+        </div>
+
+        <div class="sc-chips" id="tContextChips">
+          <button class="sc-chip" onclick="goTeacherTab_('scan')" id="tChipSubj">วิชา <i class="fa-solid fa-chevron-down" style="font-size:0.55rem"></i></button>
+          <button class="sc-chip" onclick="goTeacherTab_('scan')" id="tChipCls">ชั้น <i class="fa-solid fa-chevron-down" style="font-size:0.55rem"></i></button>
+          <button class="sc-chip" onclick="goTeacherTab_('scan')" id="tChipCh">บท <i class="fa-solid fa-chevron-down" style="font-size:0.55rem"></i></button>
+          <span class="sc-chip" id="tChipMissing" style="display:none;"></span>
         </div>
       </div>
-      <div class="hero-icon-row">
-        <button class="hero-logout" onclick="openAdminModal()" title="ตั้งค่าระบบ"><i class="fa-solid fa-gear"></i></button>
-        <button class="hero-logout" onclick="toggleDarkMode()" title="สลับโหมดสว่าง/มืด"><i class="fa-solid fa-sun" id="darkModeIcon2"></i></button>
-        <button class="hero-logout" onclick="logout()" title="ออกจากระบบ"><i class="fa-solid fa-power-off"></i></button>
+
+      <div class="sc-quick">
+        <button class="sc-q" onclick="quickMode_('work')">
+          <span class="ic ic-gold"><i class="fa-solid fa-signature"></i></span><span class="lb">ตรวจงาน</span>
+        </button>
+        <button class="sc-q" onclick="quickMode_('exam')">
+          <span class="ic ic-blue"><i class="fa-solid fa-file-pen"></i></span><span class="lb">คะแนนสอบ</span>
+        </button>
+        <button class="sc-q" onclick="quickMode_('award')">
+          <span class="ic ic-mint"><i class="fa-solid fa-circle-plus"></i></span><span class="lb">ให้แต้ม</span>
+        </button>
+        <button class="sc-q" onclick="quickMode_('deduct')">
+          <span class="ic ic-rose"><i class="fa-solid fa-circle-minus"></i></span><span class="lb">หักแต้ม</span>
+        </button>
+      </div>
+
+      <div class="sc-pad">
+        <div class="sc-sec"><span class="t">ต้องรู้วันนี้</span><span class="more" id="tAlertCount"></span></div>
+        <div id="overviewContainer"><div class="sc-empty">กำลังโหลด...</div></div>
+      </div>
+
+      <div class="sc-pad">
+        <div class="sc-sec"><span class="t">เมนูทั้งหมด</span></div>
+        <div class="sc-grid">
+          <button class="sc-g" onclick="goTeacherTab_('score')"><span class="ic ic-blue"><i class="fa-solid fa-table"></i></span><span class="lb">ตารางคะแนน</span></button>
+          <button class="sc-g" onclick="goTeacherTab_('stu')"><span class="ic ic-violet"><i class="fa-solid fa-users"></i></span><span class="lb">รายชื่อ นร.</span></button>
+          <button class="sc-g" id="tMenuAtt" onclick="openAttendanceModal()"><span class="ic ic-mint"><i class="fa-solid fa-user-check"></i></span><span class="lb">แก้ไขเช็คชื่อ</span></button>
+          <button class="sc-g" onclick="goTeacherTab_('history')"><span class="ic ic-grey"><i class="fa-solid fa-clock-rotate-left"></i></span><span class="lb">บันทึกกิจกรรม</span></button>
+          <button class="sc-g" id="tMenuElective" onclick="openElectiveOverviewModal()"><span class="ic ic-gold"><i class="fa-solid fa-shuffle"></i></span><span class="lb">วิชาเลือก</span></button>
+          <button class="sc-g" onclick="openAdminTabDirect_('term')"><span class="ic ic-rose"><i class="fa-solid fa-lock"></i></span><span class="lb">ปิดเทอม</span></button>
+          <button class="sc-g" onclick="openAdminTabDirect_('term')"><span class="ic ic-mint"><i class="fa-solid fa-arrow-up-right-dots"></i></span><span class="lb">เลื่อนชั้น</span></button>
+          <button class="sc-g" onclick="openAdminModal()"><span class="ic ic-grey"><i class="fa-solid fa-gear"></i></span><span class="lb">ตั้งค่าระบบ</span></button>
+        </div>
       </div>
     </div>
 
-    <div class="content-pad">
-
-      <!-- แท็บ: ภาพรวม -->
-      <div id="tTab-overview" class="tab-panel active">
-        <div class="section-title" style="margin-bottom:14px;">
-          <i class="fa-solid fa-gauge-high"></i> สิ่งที่ควรรู้วันนี้
-        </div>
-        <div id="overviewContainer">
-          <div style="text-align:center; color:var(--slate); padding:24px;">กำลังโหลด...</div>
-        </div>
-      </div>
-
-      <!-- แท็บ: สแกน -->
-      <div id="tTab-scan" class="tab-panel">
+    <!-- ═════ แท็บ: สแกน (เปิดจากปุ่มกลางแถบล่าง) ═════ -->
+    <div id="tTab-scan" class="tab-panel">
+      <div class="sc-subhead"><span class="ttl">สแกน / บันทึกข้อมูล</span><span class="sub">เลือกวิชา ชั้น และบท แล้วเลือกโหมด</span></div>
+      <div class="sc-pad">
         <div class="section-title" style="margin-bottom:16px; font-size:1.1rem;">
           <i class="fa-solid fa-qrcode"></i> สแกนคิวอาร์โค้ด / เช็คชื่อ
         </div>
@@ -1674,9 +1684,12 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
         </div>
       </div>
+    </div>
 
-      <!-- แท็บ: คะแนน -->
-      <div id="tTab-score" class="tab-panel">
+    <!-- ═════ แท็บ: คะแนน ═════ -->
+    <div id="tTab-score" class="tab-panel">
+      <div class="sc-subhead"><span class="ttl">ตารางคะแนน</span><span class="sub">คะแนนเก็บ · ปลายภาค · เกรด</span></div>
+      <div class="sc-pad">
         <div class="section-title"><i class="fa-solid fa-table"></i> คะแนน</div>
         <div class="filter-bar" style="margin-bottom:12px;">
           <select id="vSubject"  class="field"></select>
@@ -1707,9 +1720,12 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           </table>
         </div>
       </div>
+    </div>
 
-      <!-- แท็บ: บันทึก — ไทม์ไลน์กิจกรรมเดียวรวมทุกอย่าง (เดิมเช็คชื่อแยกแท็บ ยกเลิกแล้วเพราะการสแกนเช็คชื่อทุกครั้งมีรายการ "✅ สแกนเช็คชื่อ" ในนี้อยู่แล้วเสมอ) -->
-      <div id="tTab-history" class="tab-panel">
+    <!-- ═════ แท็บ: บันทึก ═════ -->
+    <div id="tTab-history" class="tab-panel">
+      <div class="sc-subhead"><span class="ttl">บันทึกกิจกรรม</span><span class="sub">ทุกความเคลื่อนไหวของนักเรียน</span></div>
+      <div class="sc-pad">
         <div class="section-title"><i class="fa-solid fa-clock-rotate-left"></i> บันทึกกิจกรรม</div>
         <div class="filter-bar" style="margin-bottom:12px;">
           <select id="histType" class="field" style="min-width:130px;">
@@ -1741,9 +1757,12 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <div style="text-align:center; color:var(--slate); padding:24px;">เลือกตัวกรองแล้วกด "เช็ค"</div>
         </div>
       </div>
+    </div>
 
-      <!-- แท็บ: รายชื่อนักเรียน -->
-      <div id="tTab-stu" class="tab-panel">
+    <!-- ═════ แท็บ: รายชื่อนักเรียน ═════ -->
+    <div id="tTab-stu" class="tab-panel">
+      <div class="sc-subhead"><span class="ttl">รายชื่อนักเรียน</span><span class="sub" id="tStuSub"></span></div>
+      <div class="sc-pad">
         <div class="section-title"><i class="fa-solid fa-address-book"></i> รายชื่อนักเรียน</div>
         <!-- จำนวนนักเรียนแยกตามชั้น — เดิมเป็นแถบค้างอยู่บนสุดของทุกแท็บ กินพื้นที่จอตลอดเวลา
              ทั้งที่เป็นข้อมูลทะเบียนที่แทบไม่เปลี่ยน และเกี่ยวข้องกับแท็บนี้แท็บเดียว จึงย้ายมาไว้ที่นี่ -->
@@ -1758,26 +1777,18 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         </div>
         <div id="allStuBody"><div style="text-align:center; color:var(--slate); padding:20px;">เลือกชั้นแล้วกด "เช็ค"</div></div>
       </div>
-
     </div>
+
   </div>
 
   <nav class="bottom-nav">
-    <button class="nav-btn active" onclick="switchTeacherTab('overview', this)">
-      <i class="fa-solid fa-gauge-high"></i> ภาพรวม
-    </button>
-    <button class="nav-btn" onclick="switchTeacherTab('scan', this)">
-      <i class="fa-solid fa-bolt"></i> สแกน
-    </button>
-    <button class="nav-btn" onclick="switchTeacherTab('score', this)">
-      <i class="fa-solid fa-table"></i> คะแนน
-    </button>
-    <button class="nav-btn" onclick="switchTeacherTab('history', this)">
-      <i class="fa-solid fa-clock-rotate-left"></i> บันทึก
-    </button>
-    <button class="nav-btn" onclick="switchTeacherTab('stu', this)">
-      <i class="fa-solid fa-users"></i> นร.
-    </button>
+    <button class="nav-btn active" onclick="switchTeacherTab('overview', this)"><i class="fa-solid fa-gauge-high"></i> ภาพรวม</button>
+    <button class="nav-btn" onclick="switchTeacherTab('score', this)"><i class="fa-solid fa-table"></i> คะแนน</button>
+    <button class="nav-btn nav-hole" tabindex="-1" aria-hidden="true">.</button>
+    <button class="nav-btn" onclick="switchTeacherTab('history', this)"><i class="fa-solid fa-clock-rotate-left"></i> บันทึก</button>
+    <button class="nav-btn" onclick="switchTeacherTab('stu', this)"><i class="fa-solid fa-users"></i> นร.</button>
+    <button class="sc-fab" onclick="goTeacherTab_('scan')" title="สแกน"><i class="fa-solid fa-qrcode"></i></button>
+    <span class="sc-fab-lb">สแกน</span>
   </nav>
 </div>
 
@@ -1896,14 +1907,13 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // ชุดหน้าตาใหม่ยึด "พื้นเข้ม" เป็นค่าเริ่มต้น (เดิมเริ่มที่พื้นสว่าง) โหมดสว่างจึงกลายเป็นตัวเลือก
   // ยังเคารพค่าที่ผู้ใช้เคยเลือกไว้: ใครเคยกดปิดโหมดมืด (ค่า '0') ก็ยังได้พื้นสว่างเหมือนเดิม
   function applyDarkModePreference() {
-    const saved = localStorage.getItem('smartClassDarkMode'); // '1' มืด · '0' สว่าง · null ยังไม่เคยเลือก
-    const dark = saved === null ? true : saved === '1';
-    document.body.classList.toggle('light-mode', !dark);
+    const dark = localStorage.getItem('smartClassDarkMode') === '1';
+    document.body.classList.toggle('dark-mode', dark);
     updateDarkModeIcons(dark);
   }
   function toggleDarkMode() {
-    const dark = document.body.classList.contains('light-mode'); // กำลังสว่างอยู่ → กดแล้วเป็นมืด
-    document.body.classList.toggle('light-mode', !dark);
+    const dark = !document.body.classList.contains('dark-mode');
+    document.body.classList.toggle('dark-mode', dark);
     localStorage.setItem('smartClassDarkMode', dark ? '1' : '0');
     updateDarkModeIcons(dark);
   }
@@ -1958,20 +1968,51 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // สลับแท็บของฝั่งนักเรียน (หน้าหลัก/ฉายา/การเรียน/บัตร)
   function switchStudentTab(name, btn) {
     document.querySelectorAll('#studentSection .tab-panel').forEach(p => p.classList.remove('active'));
-    document.getElementById('sTab-' + name).classList.add('active');
+    const panel = document.getElementById('sTab-' + name);
+    if (!panel) return;
+    panel.classList.add('active');
     document.querySelectorAll('#studentSection .bottom-nav .nav-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+    if (btn) btn.classList.add('active');
+    markFabActive_('#studentSection', name === 'card');
+    window.scrollTo(0, 0);   // เปลี่ยนแท็บแล้วต้องเริ่มอ่านจากบนสุดเสมอ ไม่ใช่ค้างตำแหน่งของแท็บก่อนหน้า
     if (name === 'companion') loadCompanionTab();
+  }
+
+  // ปุ่มลอยกลางไม่ใช่ปุ่มบนแถบ จึงไม่ได้รับสถานะ active อัตโนมัติ
+  // ต้องบอกเองว่ากำลังอยู่หน้าของมัน ไม่งั้นผู้ใช้จะเห็นแถบล่างไม่มีอะไรถูกเลือกเลย
+  function markFabActive_(scope, on) {
+    const fab = document.querySelector(scope + ' .sc-fab');
+    const lb  = document.querySelector(scope + ' .sc-fab-lb');
+    if (fab) fab.classList.toggle('fab-on', on);
+    if (lb)  lb.classList.toggle('fab-on', on);
+  }
+
+  // สลับแท็บโดยอ้างชื่อแท็บอย่างเดียว — ใช้กับปุ่มที่ไม่ได้อยู่บนแถบล่าง
+  // (ปุ่ม QR ลอยกลาง, ปุ่มในตารางเมนู, ลิงก์ "ดูทั้งหมด")
+  function goStudentTab_(name) {
+    const btn = [...document.querySelectorAll('#studentSection .bottom-nav .nav-btn')]
+      .find(b => (b.getAttribute('onclick') || '').includes("'" + name + "'"));
+    switchStudentTab(name, btn || null);
+  }
+  function goTeacherTab_(name) {
+    const btn = [...document.querySelectorAll('#teacherSection .bottom-nav .nav-btn')]
+      .find(b => (b.getAttribute('onclick') || '').includes("'" + name + "'"));
+    switchTeacherTab(name, btn || null);
   }
 
   // สลับแท็บของฝั่งครู (ภาพรวม/สแกน/คะแนน/บันทึก/รายชื่อ)
   function switchTeacherTab(name, btn) {
     document.querySelectorAll('#teacherSection .tab-panel').forEach(p => p.classList.remove('active'));
-    document.getElementById('tTab-' + name).classList.add('active');
+    const panel = document.getElementById('tTab-' + name);
+    if (!panel) return;
+    panel.classList.add('active');
     document.querySelectorAll('#teacherSection .bottom-nav .nav-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('scanSelectorStrip').style.display = 'block';
-    if (name === 'overview') loadTeacherOverview();
+    if (btn) btn.classList.add('active');
+    const strip = document.getElementById('scanSelectorStrip');
+    if (strip) strip.style.display = 'block';
+    markFabActive_('#teacherSection', name === 'scan');
+    window.scrollTo(0, 0);
+    if (name === 'overview') { loadTeacherOverview(); loadScanProgress_(); }
   }
 
   // ─── META CONFIG ────────────────────────────────────────────
@@ -2007,6 +2048,16 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     set('histClass',         cAllHtml);
     set('stuFilterClass',    cAllHtml);
     set('newStuClass',       cHtml);
+
+    // คืนบริบทที่ครูใช้ล่าสุดจากเครื่อง เพื่อให้เปิดแอปมากดสแกนต่อได้เลย
+    // เดิมต้องเลือกวิชา/ชั้น/บทใหม่ทุกครั้งที่เข้ามา ทั้งที่ส่วนใหญ่ก็ทำห้องเดิมบทเดิม
+    try {
+      const saved = JSON.parse(localStorage.getItem('smartClassScanCtx') || '{}');
+      if (!sharedTeacherSubject && saved.subject) sharedTeacherSubject = saved.subject;
+      if (!sharedTeacherClass   && saved.cls)     sharedTeacherClass   = saved.cls;
+      const chIn = document.getElementById('activeChapterInput');
+      if (chIn && saved.chapter) chIn.value = saved.chapter;
+    } catch (e) { /* ไม่มีของเก่าก็ใช้ค่าเริ่มต้นตามปกติ */ }
 
     syncTeacherSelectorState_();
     bindTeacherSelectorSync_();
@@ -2044,7 +2095,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       const el = document.getElementById(id);
       if (el && !el.dataset.chapterBound) {
         el.dataset.chapterBound = '1';
-        el.addEventListener('change', refreshChapterButtons_);
+        el.addEventListener('change', () => { refreshChapterButtons_(); saveTeacherCtx_(); loadScanProgress_(); });
       }
     });
     refreshChapterButtons_();
@@ -2067,6 +2118,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     document.querySelectorAll('#chapterButtonGrid .chapter-btn').forEach((btn, i) => {
       btn.classList.toggle('active', i + 1 === n);
     });
+    saveTeacherCtx_();      // จำบทไว้ให้หน้าแรกใช้เป็นบริบทของปุ่มลัด
+    loadScanProgress_();
   }
 
   // โหลดจำนวนบทเรียนจริงของวิชา+ชั้นที่เลือกอยู่ในแท็บสแกน แล้ววาดปุ่มใหม่ (บทเรียนอาจไม่เท่ากันในแต่ละวิชา/ชั้น)
@@ -2164,6 +2217,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     if (b.overview) renderTeacherOverview_(b.overview);
     if (b.stats) renderTeacherStats_(b.stats);
     if (b.term) renderTermChip_(b.term);
+    loadScanProgress_();
   }
 
   // ชิปบอกว่าตอนนี้กำลังทำงานอยู่ในเทอมไหน และห้องไหนถูกปิดเทอมไปแล้ว
@@ -2172,8 +2226,164 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     const el = document.getElementById('teacherTermChip');
     if (!el || !t) return;
     const locked = (t.classes || []).filter(c => c.locked);
-    el.innerText = `ปี ${t.year} เทอม ${t.term}` + (locked.length ? ` · ปิดแล้ว ${locked.map(c => c.label).join(' ')}` : '');
-    el.className = locked.length ? 'pill pill-amber' : 'pill pill-teal';
+    el.innerText = `ปี ${t.year} · เทอม ${t.term}` + (locked.length ? ` · ปิดแล้ว ${locked.map(c => c.label).join(' ')}` : '');
+  }
+
+  // ─── หน้าแรกแบบแอปธนาคาร: ตัวช่วยฝั่งนักเรียน ────────────────
+  function greetingByHour_() {
+    const h = new Date().getHours();
+    if (h < 12) return 'สวัสดีตอนเช้า';
+    if (h < 17) return 'สวัสดีตอนบ่าย';
+    return 'สวัสดีตอนเย็น';
+  }
+
+  function alertRow_(tone, icon, title, sub, onclick) {
+    return `<button class="sc-alert" onclick="${onclick}">
+      <span class="ic ic-${tone}"><i class="fa-solid ${icon}"></i></span>
+      <span class="tx"><span class="t1">${title}</span><span class="t2">${sub}</span></span>
+      <i class="fa-solid fa-chevron-right ch"></i>
+    </button>`;
+  }
+
+  // "ต้องทำ" = เฉพาะเรื่องที่นักเรียนลงมือได้ตอนนี้จริงๆ
+  // ถ้าไม่มีอะไรค้าง ก็บอกไปตรงๆ ว่าไม่มี ดีกว่าโชว์การ์ดเปล่าให้รก
+  function renderStudentTodo_(d, bundle) {
+    const box = document.getElementById('sTodoList');
+    const cnt = document.getElementById('sTodoCount');
+    if (!box) return;
+    const rows = [];
+
+    if (featOn_('FEAT_GPS') && d.checkinStats && !d.checkinStats.checkedInToday) {
+      const streak = d.checkinStats.consecutiveDays || 0;
+      rows.push(alertRow_('rose', 'fa-location-dot', 'ยังไม่เช็คอินวันนี้',
+        streak > 0 ? ('เช็คอินวันนี้ ได้ต่อเนื่องเป็นวันที่ ' + (streak + 1)) : 'เช็คอินเพื่อเริ่มนับวันต่อเนื่อง',
+        'tryGpsCheckin()'));
+    }
+    if (window._electiveProgress && window._electiveProgress.hasElective && featOn_('FEAT_ELECTIVE')) {
+      const t = Number(window._electiveProgress.score?.total50 || 0);
+      if (t < 50) rows.push(alertRow_('gold', 'fa-graduation-cap', 'วิชาเลือกเหลืออีก ' + Math.round(50 - t) + ' คะแนน',
+        'ได้แล้ว ' + t + ' จาก 50', 'openCreditBank_()'));
+    }
+    // บทที่ยังไม่มีคะแนนสอบเลย — เป็นสิ่งที่ตามครูได้
+    const subj = d.subjects || {};
+    Object.keys(subj).forEach(code => {
+      const list = (subj[code].chapters || []).filter(c => (c.test || 0) === 0 && (c.sig || 0) > 0);
+      if (list.length) rows.push(alertRow_('blue', 'fa-file-pen',
+        'ยังไม่มีคะแนนสอบ ' + list.length + ' บท',
+        (subj[code].label || code) + ' · บทที่ ' + list.map(c => c.ch).join(', '), "goStudentTab_('grades')"));
+    });
+
+    box.innerHTML = rows.length ? rows.join('')
+      : '<div class="sc-empty"><i class="fa-solid fa-circle-check" style="color:var(--mint)"></i> ไม่มีอะไรค้าง เยี่ยมมาก</div>';
+    if (cnt) cnt.innerText = rows.length ? rows.length + ' รายการ' : '';
+  }
+
+  // ผลการเรียนแบบย่อบนหน้าแรก — โชว์วิชาเดียวพร้อมบทที่อ่อนสุด
+  // ที่เหลือไปดูในแท็บ "การเรียน" เพื่อไม่ให้หน้าแรกยาวเป็นหางว่าว
+  function renderHomeGrade_(d) {
+    const box = document.getElementById('sHomeGrade');
+    if (!box) return;
+    const codes = Object.keys(d.subjects || {});
+    if (!codes.length) { box.innerHTML = '<div class="sc-empty">ยังไม่มีคะแนน</div>'; return; }
+    const sj = d.subjects[codes[0]];
+    const collect = Number(sj.total70 || 0), finalEx = Number(sj.finalExam || 0);
+    const total = Number(sj.total100 || 0);
+    const chs = (sj.chapters || []).filter(c => (c.sig || 0) > 0 || (c.test || 0) > 0);
+    let weak = null;
+    chs.forEach(c => { if (!weak || Number(c.total) < Number(weak.total)) weak = c; });
+    const gradeCls = total >= 70 ? 'g-hi' : total >= 50 ? 'g-mid' : 'g-lo';
+
+    box.innerHTML = `
+      <div class="card card-pad">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <span style="font-family:'Kanit',sans-serif; font-weight:500; font-size:0.95rem;">${sj.label || codes[0]}</span>
+          <span class="grade-badge ${gradeCls}">เกรด ${sj.grade ?? '—'}</span>
+        </div>
+        <div class="grade-summary-card" style="box-shadow:none; margin:11px 0 8px;">
+          <div class="progress-bar"><div class="fill" style="width:${Math.min(100, total)}%"></div></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--ink-2);">
+          <span>เก็บ <b style="color:var(--ink)">${collect}</b> / 70</span>
+          <span>ปลายภาค <b style="color:var(--ink)">${finalEx || 'ยังไม่สอบ'}</b>${finalEx ? ' / 30' : ''}</span>
+        </div>
+        ${weak ? `<div style="margin-top:11px; padding:8px 10px; border-radius:10px; background:var(--gold-dim); font-size:0.74rem; color:var(--gold); display:flex; align-items:center; gap:7px;">
+          <i class="fa-solid fa-triangle-exclamation"></i> บทที่ ${weak.ch} ได้ ${weak.total}/20 ต่ำสุดใน ${chs.length} บทที่เรียนไปแล้ว
+        </div>` : ''}
+      </div>`;
+  }
+
+  // ประวัติการให้/หักแต้มจากครู — เดิมเห็นได้แค่ตอนเด้ง popup ตอนเข้าระบบ
+  function renderMeNotices_(list) {
+    const box = document.getElementById('sMeNotices');
+    if (!box) return;
+    if (!list || !list.length) { box.innerHTML = '<div class="sc-empty">ยังไม่มีรายการ</div>'; return; }
+    box.innerHTML = list.slice(0, 30).map(n => {
+      const plus = Number(n.points) > 0;
+      return `<div class="sc-alert" style="cursor:default;">
+        <span class="ic ${plus ? 'ic-mint' : 'ic-rose'}"><i class="fa-solid ${plus ? 'fa-circle-plus' : 'fa-circle-minus'}"></i></span>
+        <span class="tx"><span class="t1">${plus ? '+' : ''}${n.points} แต้ม — ${n.reason || 'ไม่ระบุเหตุผล'}</span>
+        <span class="t2">โดย ${n.teacher || 'ครู'}${n.ts ? ' · ' + new Date(n.ts).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : ''}</span></span>
+      </div>`;
+    }).join('');
+  }
+
+  // ─── หน้าแรกแบบแอปธนาคาร: ตัวช่วยฝั่งครู ─────────────────────
+  // บริบทที่ครูใช้ล่าสุด (วิชา/ชั้น/บท) จำไว้ในเครื่อง เพื่อให้เปิดแอปมากดสแกนต่อได้เลย
+  // เดิมต้องเลือกใหม่ทุกครั้งที่เข้ามา ทั้งที่ 90% ก็ทำห้องเดิมบทเดิม
+  function teacherCtx_() {
+    const subj = document.getElementById('activeSubjSelect');
+    const cls  = document.getElementById('activeClassSelect');
+    const ch   = document.getElementById('activeChapterInput');
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem('smartClassScanCtx') || '{}'); } catch (e) {}
+    return {
+      subject: (subj && subj.value) || saved.subject || '',
+      cls:     (cls && cls.value)  || saved.cls     || '',
+      chapter: parseInt((ch && ch.value) || saved.chapter || 1) || 1
+    };
+  }
+  function saveTeacherCtx_() {
+    try { localStorage.setItem('smartClassScanCtx', JSON.stringify(teacherCtx_())); } catch (e) {}
+  }
+
+  function loadScanProgress_() {
+    const c = teacherCtx_();
+    if (!c.subject || !c.cls) return;
+    const subjName = (metaData?.subjects || []).find(x => x.code === c.subject)?.label || c.subject;
+    const clsName  = (metaData?.classes  || []).find(x => x.code === c.cls)?.label  || c.cls;
+    const set = (id, v) => { const e = document.getElementById(id); if (e) e.innerHTML = v; };
+    set('tChipSubj', subjName + ' <i class="fa-solid fa-chevron-down" style="font-size:0.55rem"></i>');
+    set('tChipCls',  clsName  + ' <i class="fa-solid fa-chevron-down" style="font-size:0.55rem"></i>');
+    set('tChipCh',   'บทที่ ' + c.chapter + ' <i class="fa-solid fa-chevron-down" style="font-size:0.55rem"></i>');
+    set('tProgCap',  'สแกนลายเซ็นแล้ว · ' + subjName + ' ' + clsName + ' บทที่ ' + c.chapter);
+
+    google.script.run.withSuccessHandler(r => {
+      if (!r || !r.ok) { set('tProgNum', '—<span>ยังไม่มีชีตคะแนน</span>'); return; }
+      set('tProgNum', r.signed + '<span>จาก ' + r.total + ' คน</span>');
+      const chip = document.getElementById('tChipMissing');
+      if (chip) {
+        const left = r.total - r.signed;
+        chip.style.display = '';
+        chip.innerHTML = left > 0 ? ('ยังไม่ได้สแกน <b>' + left + '</b>') : 'สแกนครบแล้ว';
+      }
+      window._scanProgress = r;
+    }).withFailureHandler(err => {
+      console.error('getScanProgress failed:', err);
+      set('tProgNum', '—');
+    }).getScanProgress(c.subject, c.cls, c.chapter);
+  }
+
+  // ปุ่มลัด 4 ปุ่มบนหน้าแรกครู — ใช้บริบทที่จำไว้ เปิดกล้องได้เลยไม่ต้องเลือกอะไรก่อน
+  function quickMode_(mode) {
+    const c = teacherCtx_();
+    if (!c.subject || !c.cls) { goTeacherTab_('scan'); return; }
+    saveTeacherCtx_();
+    triggerModeSetup(mode);
+  }
+
+  function openAdminTabDirect_(tab) {
+    adminActiveTab = tab;
+    openAdminModal();
   }
 
   // ─── สวิตช์เปิด/ปิดฟีเจอร์ ───────────────────────────────────
@@ -2194,10 +2404,15 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     // ฝั่งนักเรียน
     showIf_('actGpsCheckin', featOn_('FEAT_GPS'));
     showIf_('actCoupon',     featOn_('FEAT_COUPON'));
-    showIf_('creditBankBtn', featOn_('FEAT_ELECTIVE'));
+    showIf_('menuElective', featOn_('FEAT_ELECTIVE'));
     showIf_('onlineCourseCard', online);
+    showIf_('menuOnline', online);
     showIf_('runCard', run);
+    showIf_('menuRun', run);
     showIf_('companionContainer', comp);
+    showIf_('menuCompanion', comp);
+    showIf_('tMenuElective', featOn_('FEAT_ELECTIVE'));
+    showIf_('tMenuAtt', featOn_('FEAT_ATT_SCAN'));
     // แท็บ "เกม" มีแค่การวิ่งกับคู่หู ถ้าปิดทั้งคู่ก็ไม่เหลืออะไรให้ดู ซ่อนทั้งแท็บ
     showIf_('navBtn-companion', run || comp);
     if (!run && !comp) {
@@ -2335,6 +2550,17 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       if (av) av.innerText = (String(d.name || '').trim().replace(/^(เด็กชาย|เด็กหญิง|นาย|นางสาว|น\.ส\.|ด\.ช\.|ด\.ญ\.)\s*/, '')[0] || '·');
       document.getElementById('csCheckinCount').innerText = d.checkinStats?.checkinCount  ?? 0;
       document.getElementById('csStreakCount').innerText  = d.checkinStats?.consecutiveDays ?? 0;
+
+      const gr = document.getElementById('sGreeting');
+      if (gr) gr.innerText = greetingByHour_();
+      const meSub = document.getElementById('sMeSub');
+      if (meSub) meSub.innerText = d.clsLabel + ' · รหัส ' + stdId;
+      const gTerm = document.getElementById('sGradeTerm');
+      if (gTerm && bundle.term) gTerm.innerText = 'ปีการศึกษา ' + bundle.term.year + ' เทอม ' + bundle.term.term;
+
+      renderStudentTodo_(d, bundle);
+      renderHomeGrade_(d);
+      renderMeNotices_(bundle.manualNotices);
 
       // ฉายาประจำห้อง
       const nickCont = document.getElementById('nicknameContainer');
@@ -2690,87 +2916,44 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   function renderTeacherOverview_(ov) {
     const cont = document.getElementById('overviewContainer');
     if (!cont || !ov) return;
-    {
-      const cards = [];
+    window._teacherOverviewData = ov;
 
-      cards.push(`
-        <div class="card card-pad" style="margin-bottom:12px; cursor:pointer;" onclick="showInactiveStudents_()">
-          <div style="display:flex; align-items:center; gap:14px;">
-            <div style="width:48px; height:48px; border-radius:14px; background:${ov.inactiveStudents.length ? 'rgba(255,92,151,0.15)' : 'rgba(82,196,26,0.12)'}; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
-              ${ov.inactiveStudents.length ? '😴' : '✅'}
-            </div>
-            <div style="flex:1;">
-              <div style="font-weight:700;">นักเรียนเงียบหายไป ${ov.inactiveStudents.length} คน</div>
-              <div style="font-size:0.78rem; color:var(--slate);">ไม่มีความเคลื่อนไหวในช่วง ${ov.inactiveWindowDays} วันล่าสุด</div>
-            </div>
-            <i class="fa-solid fa-chevron-right" style="color:var(--mist);"></i>
-          </div>
-        </div>`);
+    const online = featOn_('FEAT_ONLINE'), run = featOn_('FEAT_RUN');
+    const rows = [];
+    if (ov.inactiveStudents.length)
+      rows.push(alertRow_('rose', 'fa-user-clock', 'นักเรียนเงียบหายไป ' + ov.inactiveStudents.length + ' คน',
+        'ไม่มีความเคลื่อนไหวในช่วง ' + ov.inactiveWindowDays + ' วันล่าสุด', 'showInactiveStudents_()'));
+    if (online && ov.pendingSubmissions)
+      rows.push(alertRow_('gold', 'fa-inbox', 'งานส่งออนไลน์รอตรวจ ' + ov.pendingSubmissions + ' ชิ้น',
+        'แตะเพื่อเปิดหน้าตรวจงาน', 'openSubmissionReviewModal()'));
+    if (run && ov.stuckRunSessions.length)
+      rows.push(alertRow_('gold', 'fa-stopwatch', 'เซสชันวิ่งค้าง ' + ov.stuckRunSessions.length + ' รายการ',
+        'ค้างจากวันก่อนหน้า ยังไม่ถูกปิด', 'showStuckRunSessions_()'));
+    if (featOn_('FEAT_ELECTIVE') && ov.unassignedElectiveCount)
+      rows.push(alertRow_('blue', 'fa-shuffle', 'ยังไม่เลือกสาขาวิชาเลือก ' + ov.unassignedElectiveCount + ' คน',
+        'แตะเพื่อดูภาพรวมสาขาวิชาเลือก', 'openElectiveOverviewModal()'));
 
-      cards.push(`
-        <div class="card card-pad" style="margin-bottom:12px; cursor:pointer;" onclick="openSubmissionReviewModal()">
-          <div style="display:flex; align-items:center; gap:14px;">
-            <div style="width:48px; height:48px; border-radius:14px; background:${ov.pendingSubmissions ? 'rgba(255,201,60,0.18)' : 'rgba(82,196,26,0.12)'}; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
-              ${ov.pendingSubmissions ? '📥' : '✅'}
-            </div>
-            <div style="flex:1;">
-              <div style="font-weight:700;">งานส่งออนไลน์รอตรวจ ${ov.pendingSubmissions} ชิ้น</div>
-              <div style="font-size:0.78rem; color:var(--slate);">แตะเพื่อเปิดหน้าตรวจงาน</div>
-            </div>
-            <i class="fa-solid fa-chevron-right" style="color:var(--mist);"></i>
-          </div>
-        </div>`);
+    const cnt = document.getElementById('tAlertCount');
+    if (cnt) cnt.innerText = rows.length ? rows.length + ' รายการ' : '';
 
-      cards.push(`
-        <div class="card card-pad" style="margin-bottom:12px; cursor:pointer;" onclick="showStuckRunSessions_()">
-          <div style="display:flex; align-items:center; gap:14px;">
-            <div style="width:48px; height:48px; border-radius:14px; background:${ov.stuckRunSessions.length ? 'rgba(255,92,151,0.15)' : 'rgba(82,196,26,0.12)'}; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
-              ${ov.stuckRunSessions.length ? '⏱️' : '✅'}
-            </div>
-            <div style="flex:1;">
-              <div style="font-weight:700;">เซสชันวิ่งค้าง ${ov.stuckRunSessions.length} รายการ</div>
-              <div style="font-size:0.78rem; color:var(--slate);">ค้างจากวันก่อนหน้า ยังไม่ถูกปิด</div>
-            </div>
-            <i class="fa-solid fa-chevron-right" style="color:var(--mist);"></i>
-          </div>
-        </div>`);
+    let html = rows.length ? rows.join('')
+      : '<div class="sc-empty"><i class="fa-solid fa-circle-check" style="color:var(--mint)"></i> ไม่มีเรื่องค้าง ทุกอย่างเรียบร้อย</div>';
 
-      cards.push(`
-        <div class="card card-pad" style="margin-bottom:12px; cursor:pointer;" onclick="openElectiveOverviewModal()">
-          <div style="display:flex; align-items:center; gap:14px;">
-            <div style="width:48px; height:48px; border-radius:14px; background:${ov.unassignedElectiveCount ? 'rgba(255,92,151,0.15)' : 'rgba(82,196,26,0.12)'}; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">
-              ${ov.unassignedElectiveCount ? '🎯' : '✅'}
-            </div>
-            <div style="flex:1;">
-              <div style="font-weight:700;">ยังไม่เลือกสาขาวิชาเลือก ${ov.unassignedElectiveCount} คน</div>
-              <div style="font-size:0.78rem; color:var(--slate);">แตะเพื่อดูภาพรวมสาขาวิชาเลือก</div>
-            </div>
-            <i class="fa-solid fa-chevron-right" style="color:var(--mist);"></i>
-          </div>
-        </div>`);
-
-      // สรุปกิจกรรมวันนี้ แยกตามประเภท — ครอบคลุมทุกอย่างที่เกิดขึ้นจริง (สแกน/เช็คอิน/คูปอง/เรียนออนไลน์/คู่หู/วิ่ง ฯลฯ) ไม่ใช่แค่ 3 การ์ดข้อยกเว้นด้านบน
-      let activityHtml;
-      if (!ov.todayActivity.length) {
-        activityHtml = `<div style="text-align:center; color:var(--slate); padding:20px;">ยังไม่มีกิจกรรมวันนี้</div>`;
-      } else {
-        activityHtml = `
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+    // สรุปกิจกรรมวันนี้ — ครอบคลุมทุกอย่างที่เกิดขึ้นจริง ไม่ใช่แค่ 4 เรื่องข้างบน
+    if (ov.todayActivity.length) {
+      html += `<div class="sc-sec" style="margin:18px 0 10px;">
+          <span class="t">กิจกรรมวันนี้</span><span class="more" style="pointer-events:none;">${ov.todayTotalEvents} รายการ</span></div>
+        <div class="card card-pad">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:9px;">
             ${ov.todayActivity.map(t => `
-              <div style="background:var(--cloud); border-radius:12px; padding:10px 12px;">
-                <div style="font-size:0.8rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${t.label}</div>
-                <div style="font-size:0.72rem; color:var(--slate); margin-top:2px;">${t.count} ครั้ง${t.points ? ` · ${t.points > 0 ? '+' : ''}${t.points} ${t.unit}` : ''}</div>
+              <div style="background:var(--surface-2); border-radius:11px; padding:10px 12px;">
+                <div style="font-size:0.78rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${t.label}</div>
+                <div style="font-size:0.7rem; color:var(--ink-2); margin-top:2px;">${t.count} ครั้ง${t.points ? ' · ' + (t.points > 0 ? '+' : '') + t.points + ' ' + t.unit : ''}</div>
               </div>`).join('')}
-          </div>`;
-      }
-
-      cards.push(`
-        <div class="section-label" style="margin:18px 0 10px;">สรุปกิจกรรมวันนี้ (${ov.todayTotalEvents} รายการ)</div>
-        <div class="card card-pad" style="margin-bottom:12px;">${activityHtml}</div>`);
-
-      cont.innerHTML = cards.join('');
-      window._teacherOverviewData = ov; // เก็บไว้ให้ popup รายชื่อด้านล่างใช้ ไม่ต้องยิงซ้ำ
+          </div>
+        </div>`;
     }
+    cont.innerHTML = html;
   }
 
   function showInactiveStudents_() {
@@ -5176,9 +5359,12 @@ function loadHomeElectiveCard_(stdId) {
 // วาดการ์ดจากข้อมูลที่มีอยู่แล้ว — ตอนเข้าระบบข้อมูลนี้มากับก้อนรวม จึงไม่ต้องยิงคำขอซ้ำ
 function renderHomeElectiveCard_(p) {
   {
+    window._electiveProgress = p;
+    const wrap = document.getElementById('homeElectiveWrap');
     const el = document.getElementById('homeElectiveCard');
-    if (!el || !p || !p.hasElective) return;
-    if (!featOn_('FEAT_ELECTIVE')) { el.style.display = 'none'; return; }
+    if (!el || !p || !p.hasElective || !featOn_('FEAT_ELECTIVE')) { if (wrap) wrap.style.display = 'none'; return; }
+    if (wrap) wrap.style.display = '';
+    if (studentDashboardData) renderStudentTodo_(studentDashboardData, { manualNotices: [] });
     const s = p.score || { creditBankScore:0, videoScore:0, submissionScore:0, testScore:0, total50:0 };
     const pct = Math.min(100, Math.round((Number(s.total50) / 50) * 100));
 
