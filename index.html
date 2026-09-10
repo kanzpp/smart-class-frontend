@@ -1723,9 +1723,11 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       // ผลการเรียน
       renderGradeCards(d);
 
-      // [Perf] ค่า meta กับความคืบหน้าสาขาวิชาเลือกมากับก้อนรวมแล้ว ไม่ต้องยิงเพิ่มอีก 2 คำขอ
+      // [Perf] ค่า meta มากับก้อนรวมแล้ว ไม่ต้องยิงเพิ่ม
       if (bundle.meta) { metaData = bundle.meta; populateSelects(); }
-      renderHomeElectiveCard_(bundle.electiveProgress);
+      // ส่วนความคืบหน้าสาขาวิชาเลือกอ่าน 4 ชีต ใช้เวลาราว 2 วินาที จึงโหลดต่อทีหลังแบบไม่บล็อก
+      // นักเรียนได้เห็นแดชบอร์ดก่อน แล้วการ์ดนี้ค่อยเติมเข้ามาเอง
+      loadHomeElectiveCard_(stdId);
 
     }).withFailureHandler(err => {
       console.error('getStudentBootBundle_ (boot) failed:', err);
