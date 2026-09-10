@@ -1410,6 +1410,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // ออกจากระบบ: ล้าง session แล้วโหลดหน้าใหม่
   function logout() {
     localStorage.removeItem('smartClassSession');
+    // ต้องลบข้อมูลที่จำไว้ด้วย ไม่งั้นคนที่ใช้เครื่องต่อจะเห็นข้อมูลของคนก่อนหน้าตอนเปิดแอป
+    try {
+      Object.keys(localStorage).forEach(function (k) { if (k.indexOf('bootCache_') === 0) localStorage.removeItem(k); });
+    } catch (e) { /* ข้าม */ }
     window.location.reload();
   }
 
@@ -1547,6 +1551,51 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       }).getChapterCount(subj, cls);
   }
 
+
+  // ─── จำข้อมูลล่าสุดไว้ในเครื่อง เพื่อให้เปิดแอปครั้งถัดไปเห็นทันที ───────────
+  // เก็บเฉพาะข้อมูลที่ใช้วาดหน้าจอตอนเปิดแอป ไม่ใช่ข้อมูลลับ และอยู่ในเครื่องผู้ใช้เองเท่านั้น
+  // มีเลขรุ่นกำกับ เผื่อโครงสร้างข้อมูลเปลี่ยนในอนาคตจะได้ไม่เอาของเก่าคนละแบบมาวาด
+  var BOOT_CACHE_VERSION = 1;
+  var BOOT_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // เกิน 1 วันถือว่าเก่าเกินจะเอามาโชว์
+
+  function saveBootCache_(key, data) {
+    try {
+      localStorage.setItem('bootCache_' + key,
+        JSON.stringify({ v: BOOT_CACHE_VERSION, at: Date.now(), data: data }));
+    } catch (e) { /* เต็มหรือถูกปิดไว้ ก็แค่ไม่จำ ไม่กระทบการทำงาน */ }
+  }
+
+  function loadBootCache_(key) {
+    try {
+      var raw = localStorage.getItem('bootCache_' + key);
+      if (!raw) return null;
+      var o = JSON.parse(raw);
+      if (o.v !== BOOT_CACHE_VERSION) return null;
+      if (Date.now() - (o.at || 0) > BOOT_CACHE_MAX_AGE_MS) return null;
+      return o.data;
+    } catch (e) { return null; }
+  }
+
+  // ป้ายเล็กๆ บอกว่ากำลังดึงข้อมูลใหม่อยู่ หรือข้อมูลที่เห็นอาจไม่ใช่ล่าสุด
+  // สำคัญเพราะผู้ใช้ต้องแยกออกว่ากำลังดูของเก่าหรือของจริง โดยเฉพาะเรื่องคะแนน
+  function showStaleBadge_(show, offline) {
+    var el = document.getElementById('staleBadge');
+    if (!el) {
+      if (!show) return;
+      el = document.createElement('div');
+      el.id = 'staleBadge';
+      el.style.cssText = 'position:fixed; left:50%; transform:translateX(-50%); bottom:76px; z-index:9999;' +
+        'padding:5px 14px; border-radius:999px; font-size:0.72rem; font-weight:700;' +
+        'background:var(--navy); color:#fff; box-shadow:0 4px 14px rgba(0,0,0,0.25);';
+      document.body.appendChild(el);
+    }
+    if (!show) { el.remove(); return; }
+    el.innerHTML = offline
+      ? '<i class="fa-solid fa-triangle-exclamation"></i> ออฟไลน์ — ข้อมูลอาจไม่ใช่ล่าสุด'
+      : '<i class="fa-solid fa-rotate fa-spin"></i> กำลังอัปเดตข้อมูล...';
+    el.style.background = offline ? 'var(--coral)' : 'var(--navy)';
+  }
+
   // ─── BOOT TEACHER ───────────────────────────────────────────
   // เตรียมข้อมูลเริ่มต้นทั้งหมดของฝั่งครูหลังล็อกอินสำเร็จ
   // [Perf] ทุกคำขอมีค่าใช้จ่ายคงที่ ~2 วินาที (วัดแล้ว: ฟังก์ชันที่ไม่แตะชีตเลยก็ใช้เวลาเท่านี้)
@@ -1555,18 +1604,28 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   function bootTeacher() {
     document.getElementById('teacherSection').classList.remove('hidden');
     document.getElementById('scanSelectorStrip').style.display = 'block';
-    document.getElementById('overviewContainer').innerHTML =
+
+    var cached = loadBootCache_('teacher');
+    if (cached) { try { renderTeacherBoot_(cached); showStaleBadge_(true); } catch (e) { console.error('วาดจากข้อมูลที่จำไว้ไม่สำเร็จ:', e); } }
+    else document.getElementById('overviewContainer').innerHTML =
       '<div style="text-align:center; color:var(--slate); padding:24px;">กำลังโหลด...</div>';
 
     google.script.run.withSuccessHandler(b => {
-      if (b.meta) { metaData = b.meta; populateSelects(); }
-      if (b.overview) renderTeacherOverview_(b.overview);
-      if (b.stats) renderTeacherStats_(b.stats);
+      saveBootCache_('teacher', b);
+      renderTeacherBoot_(b);
+      showStaleBadge_(false);
     }).withFailureHandler(err => {
       console.error('getTeacherBootBundle_ failed:', err);
+      if (cached) { showStaleBadge_(true, true); return; }
       Swal.fire({ title: 'โหลดข้อมูลไม่สำเร็จ', text: 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง',
         icon: 'error', confirmButtonText: 'ลองใหม่' }).then(() => bootTeacher());
     }).getTeacherBootBundle_();
+  }
+
+  function renderTeacherBoot_(b) {
+    if (b.meta) { metaData = b.meta; populateSelects(); }
+    if (b.overview) renderTeacherOverview_(b.overview);
+    if (b.stats) renderTeacherStats_(b.stats);
   }
 
   function renderTeacherStats_(s) {
@@ -1632,11 +1691,32 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
   // [Perf] เดิมยิง google.script.run แยกกัน 5 ครั้งตอน login (dashboard, แต้มพิเศษ, แจ้งเตือนแต้มจากครู, แต้มวิ่ง, คู่หู)
   // แต่ละครั้งมี cold-start ของ Apps Script เอง — รวมเป็น getStudentBootBundle_ เดียว แล้วกระจายผลลัพธ์ให้ทุก UI ส่วนที่ต้องใช้
+  // [Perf] เปิดแอปแล้วเห็นข้อมูลทันที — วาดจากข้อมูลครั้งก่อนที่จำไว้ในเครื่องก่อนเลย
+  // แล้วค่อยแทนที่ด้วยข้อมูลสดเมื่อมาถึง ผู้ใช้จึงไม่ต้องนั่งมองหน้าจอเปล่าราว 3 วินาทีทุกครั้ง
   function bootStudent(stdId) {
     currentLoggedStudentId = stdId;
     document.getElementById('studentSection').classList.remove('hidden');
 
+    var cached = loadBootCache_('student_' + stdId);
+    if (cached) { try { renderStudentBoot_(cached, stdId); showStaleBadge_(true); } catch (e) { console.error('วาดจากข้อมูลที่จำไว้ไม่สำเร็จ:', e); } }
+
     google.script.run.withSuccessHandler(bundle => {
+      saveBootCache_('student_' + stdId, bundle);
+      renderStudentBoot_(bundle, stdId);
+      showStaleBadge_(false);
+    }).withFailureHandler(err => {
+      console.error('getStudentBootBundle_ (boot) failed:', err);
+      // ถ้ามีข้อมูลเดิมค้างอยู่ ยังใช้งานต่อได้ แค่บอกว่าข้อมูลอาจไม่ใช่ล่าสุด
+      if (cached) { showStaleBadge_(true, true); return; }
+      Swal.fire({
+        title: 'โหลดข้อมูลไม่สำเร็จ', text: 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง',
+        icon: 'error', confirmButtonText: 'ลองใหม่'
+      }).then(() => bootStudent(stdId));
+    }).getStudentBootBundle_(stdId);
+  }
+
+  // วาดหน้าจอนักเรียนจากข้อมูลก้อนเดียว ใช้ได้ทั้งข้อมูลที่จำไว้และข้อมูลสด
+  function renderStudentBoot_(bundle, stdId) {
       // แต้มพิเศษ
       document.getElementById('stdPointsDisplay').innerHTML = `${bundle.pointsBalance} <small>แต้ม</small>`;
 
@@ -1735,13 +1815,6 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       // นักเรียนได้เห็นแดชบอร์ดก่อน แล้วการ์ดนี้ค่อยเติมเข้ามาเอง
       loadHomeElectiveCard_(stdId);
 
-    }).withFailureHandler(err => {
-      console.error('getStudentBootBundle_ (boot) failed:', err);
-      Swal.fire({
-        title: 'โหลดข้อมูลไม่สำเร็จ', text: 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง',
-        icon: 'error', confirmButtonText: 'ลองใหม่'
-      }).then(() => bootStudent(stdId));
-    }).getStudentBootBundle_(stdId);
   }
 
   // วาดการ์ดผลการเรียนของนักเรียน (ใช้ทั้งตอน boot และตอน refresh หลังแลกแต้มเป็นคะแนนเก็บ)
