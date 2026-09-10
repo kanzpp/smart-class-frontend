@@ -2253,11 +2253,80 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           ${gradeOrder.filter(g => dist[g]).map(g => `<span style="background:var(--cloud); padding:4px 10px; border-radius:999px;">เกรด ${g}: ${dist[g]} คน</span>`).join('')}
         </div>`;
 
-      head.innerHTML = `<tr><th>รหัส</th><th>ชื่อ-สกุล</th><th>เกรด</th></tr>`;
-      body.innerHTML = data.map(std => `<tr><td><b>${std.id}</b></td>${nameCell(std.name)}
-        <td><span class="grade-badge ${std.grade >= 3 ? 'g-hi' : std.grade <= 1.5 ? 'g-lo' : 'g-mid'}">เกรด ${std.grade}</span></td>
-      </tr>`).join('');
+      // แตะแถวเพื่อแก้ผลการเรียนรายคน — ใช้ตอนเด็กติด 0 แล้วไปทำงานชดเชยมา
+      // ทำได้แม้ปิดเทอมไปแล้ว เพราะเป็นเหตุผลหลักที่ต้องมีฟีเจอร์นี้
+      setScoreTableMode_(false);
+      document.getElementById('scoreCardList').innerHTML =
+        `<div style="font-size:0.74rem; color:var(--slate); margin-bottom:8px;">แตะชื่อเพื่อแก้ผลการเรียน (สำหรับเด็กที่ทำงานชดเชยแล้ว)</div>` +
+        data.map(std => `
+        <div class="prow" style="cursor:pointer;" onclick="openGradeOverride_(${JSON.stringify(std.id)}, ${JSON.stringify(std.name)}, ${std.grade})">
+          <div class="prow-top">
+            <div style="flex:1; min-width:0;">
+              <div class="prow-name">${std.name}</div>
+              <div class="prow-meta"><span>${std.id}</span><span>·</span><span>คะแนนรวม ${std.total100}</span></div>
+            </div>
+            <span class="grade-badge ${std.grade >= 3 ? 'g-hi' : std.grade <= 1.5 ? 'g-lo' : 'g-mid'}" style="flex-shrink:0;">เกรด ${std.grade}</span>
+          </div>
+        </div>`).join('');
+      loadGradeOverrideNotice_();
     }
+  }
+
+  // ─── แก้ผลการเรียนรายคน ──────────────────────────────────────
+  // เด็กติด 0 แล้วไปทำงานชดเชยมา ครูแก้เกรดให้ได้โดยไม่ต้องเปิดเทอมทั้งชั้น
+  // ค่าที่แก้เก็บแยกจากชีตคะแนน จึงไม่ถูกลบทิ้งตอนระบบคำนวณคะแนนใหม่
+  function openGradeOverride_(stdId, stdName, currentGrade) {
+    const s = scoreViewState.subj, c = scoreViewState.cls;
+    const opts = [0, 1, 1.5, 2, 2.5, 3, 3.5, 4]
+      .map(g => `<option value="${g}" ${String(g) === String(currentGrade) ? 'selected' : ''}>เกรด ${g}</option>`).join('');
+    Swal.fire({
+      title: '📝 แก้ผลการเรียน',
+      html: `<div style="text-align:left; font-size:0.86rem;">
+        <div style="font-weight:700; margin-bottom:2px;">${stdName}</div>
+        <div style="color:var(--slate); font-size:0.78rem; margin-bottom:10px;">รหัส ${stdId} · เกรดปัจจุบัน ${currentGrade}</div>
+        <label style="font-weight:700;">เกรดใหม่</label>
+        <select id="ovGrade" class="swal2-input" style="margin:4px 0 10px;">${opts}</select>
+        <label style="font-weight:700;">เหตุผล (บันทึกไว้เป็นหลักฐาน)</label>
+        <input id="ovReason" class="swal2-input" style="margin:4px 0 0;" placeholder="เช่น ทำงานชดเชยครบแล้ว">
+      </div>`,
+      showCancelButton: true, confirmButtonText: 'บันทึก', cancelButtonText: 'ยกเลิก',
+      denyButtonText: 'ยกเลิกการแก้', showDenyButton: true,
+      focusConfirm: false,
+      preConfirm: () => {
+        const g = document.getElementById('ovGrade').value;
+        const r = document.getElementById('ovReason').value.trim();
+        if (!r) { Swal.showValidationMessage('กรุณาระบุเหตุผล'); return false; }
+        return { grade: g, reason: r };
+      }
+    }).then(res => {
+      if (res.isDenied) { saveGradeOverride_(s, c, stdId, null, ''); return; }
+      if (res.isConfirmed && res.value) saveGradeOverride_(s, c, stdId, res.value.grade, res.value.reason);
+    });
+  }
+
+  function saveGradeOverride_(sub, cls, stdId, grade, reason) {
+    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    google.script.run.withSuccessHandler(res => {
+      if (res && res.success) { Swal.close(); Toast(res.message); viewClassScores(); }
+      else Swal.fire('ไม่สำเร็จ', (res && res.message) || 'เกิดข้อผิดพลาด', 'error');
+    }).withFailureHandler(err => {
+      console.error('setGradeOverride failed:', err);
+      Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่', 'error');
+    }).setGradeOverride(sub, cls, stdId, grade, reason);
+  }
+
+  // แสดงไว้เหนือตารางว่าเทอมนี้มีใครถูกแก้ผลการเรียนไว้บ้าง เพื่อไม่ให้ลืมว่าเคยแก้
+  function loadGradeOverrideNotice_() {
+    google.script.run.withSuccessHandler(list => {
+      const sum = document.getElementById('scoreSummaryCard');
+      if (!sum || !list || !list.length) return;
+      sum.innerHTML += `
+        <div style="margin-top:10px; padding-top:10px; border-top:1.5px solid var(--mist); font-size:0.78rem; text-align:left;">
+          <b style="color:var(--amber2);">📝 แก้ผลการเรียนไว้ ${list.length} คน</b>
+          ${list.map(o => `<div style="color:var(--slate); margin-top:3px;">${o.name} → เกรด ${o.grade} · ${o.reason}</div>`).join('')}
+        </div>`;
+    }).withFailureHandler(err => console.error('getGradeOverrides failed:', err))
+      .getGradeOverrides(scoreViewState.subj, scoreViewState.cls);
   }
 
   // แก้ไขคะแนนช่องใดช่องหนึ่ง แล้วส่งค่าใหม่ไปบันทึกที่ backend
@@ -2666,10 +2735,162 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       b.classList.toggle('btn-teal', on);
       b.classList.toggle('btn-ghost', !on);
     });
+    if (tab === 'term')     renderAdminTerm_();
     if (tab === 'classes')  renderAdminCodeList_('classes',  'ชั้นเรียน', 'เช่น M1 / ม.1');
     if (tab === 'subjects') renderAdminCodeList_('subjects', 'รายวิชา',  'เช่น MATH / คณิตศาสตร์');
     if (tab === 'settings') renderAdminSettings_();
     if (tab === 'integrity') runSheetIntegrityCheck_();
+  }
+
+  // ─── ปีการศึกษา / เทอม ────────────────────────────────────────
+  // จบเทอมแล้วกด "ปิดเทอม" ของแต่ละชั้น → ทุกอย่างของชั้นนั้นในเทอมนั้นแก้ไม่ได้อีก
+  // (ให้คะแนน สแกน แลกแต้ม ส่งงาน) นักเรียนยังเปิดดูย้อนหลังได้ตามปกติ
+  function renderAdminTerm_() {
+    const body = document.getElementById('adminBody');
+    body.innerHTML = '<div style="text-align:center; color:var(--slate); padding:24px;">กำลังโหลด...</div>';
+    google.script.run.withSuccessHandler(st => {
+      const auto = st.autoDetected || {};
+      const clsRows = st.classes.map(c => `
+        <div class="prow">
+          <div class="prow-top">
+            <div style="flex:1; min-width:0;">
+              <div class="prow-name">${c.label}</div>
+              <div class="prow-meta">${c.locked
+                ? '<span style="color:var(--coral); font-weight:700;">🔒 ปิดแล้ว — แก้คะแนน/ให้แต้มไม่ได้</span>'
+                : '<span style="color:var(--teal2); font-weight:700;">🔓 เปิดอยู่ — บันทึกคะแนนได้ตามปกติ</span>'}</div>
+            </div>
+            <button class="btn btn-sm ${c.locked ? 'btn-ghost' : 'btn-amber'}" style="flex-shrink:0;"
+                    onclick="toggleTermLock_('${c.code}', ${c.locked ? 'false' : 'true'}, ${JSON.stringify(c.label)})">
+              ${c.locked ? '<i class="fa-solid fa-lock-open"></i> เปิด' : '<i class="fa-solid fa-lock"></i> ปิดเทอม'}
+            </button>
+          </div>
+        </div>`).join('');
+
+      body.innerHTML = `
+        <div class="card card-pad" style="margin-bottom:12px; text-align:left;">
+          <div style="font-weight:700; margin-bottom:6px;"><i class="fa-solid fa-calendar-check"></i> ตอนนี้อยู่ในช่วง</div>
+          <div style="font-size:1.15rem; font-weight:800; color:var(--teal2);">ปีการศึกษา ${st.year} · เทอม ${st.term}</div>
+          <div style="font-size:0.74rem; color:var(--slate); margin-top:6px;">
+            ${st.manual
+              ? `⚙️ ตั้งค่าเองไว้ (ระบบคำนวณจากวันที่ได้ ปีการศึกษา ${auto.year} เทอม ${auto.term})
+                 <button class="btn btn-ghost btn-sm" style="margin-top:6px;" onclick="setTermManual_(null,null)">กลับไปใช้อัตโนมัติ</button>`
+              : 'คำนวณจากวันที่อัตโนมัติ — เทอม 1 คือ 16 พ.ค.–16 ต.ค. · เทอม 2 คือ 1 พ.ย.–31 มี.ค.'}
+          </div>
+          <div style="display:flex; gap:6px; margin-top:10px; align-items:center; flex-wrap:wrap;">
+            <input class="field" id="termYearInput" type="number" style="width:100px;" value="${st.year}" placeholder="ปี พ.ศ.">
+            <select class="field" id="termNoInput" style="width:100px;">
+              <option value="1" ${st.term === 1 ? 'selected' : ''}>เทอม 1</option>
+              <option value="2" ${st.term === 2 ? 'selected' : ''}>เทอม 2</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="setTermManual_(document.getElementById('termYearInput').value, document.getElementById('termNoInput').value)">ตั้งเอง</button>
+          </div>
+        </div>
+
+        <div class="card card-pad" style="margin-bottom:12px; background:rgba(255,193,7,0.08); font-size:0.78rem; text-align:left; color:var(--slate);">
+          <b>ปิดเทอมคืออะไร:</b> เมื่อตัดเกรดเสร็จและนักเรียนแลกแต้มครบแล้ว ให้กดปิดเทอมของชั้นนั้น
+          ทุกอย่างจะถูกล็อก — ให้คะแนน สแกน แลกแต้ม ส่งงาน ทำไม่ได้อีก นักเรียนเปิดดูย้อนหลังได้อย่างเดียว<br>
+          <b>แต่ละชั้นปิดแยกกันได้</b> ปิด ม.1 ไม่กระทบ ม.2 · เปิดกลับได้ตลอดถ้าต้องแก้เพิ่ม
+        </div>
+
+        <div class="section-label" style="margin-bottom:8px;">ปิด/เปิดเทอมรายชั้น</div>
+        ${clsRows}
+
+        <div class="section-label" style="margin-top:16px; margin-bottom:8px;">ขึ้นปีการศึกษาใหม่</div>
+        <div class="card card-pad" style="text-align:left;">
+          <div style="font-size:0.8rem; color:var(--slate); margin-bottom:10px;">
+            เลื่อนนักเรียนขึ้นชั้นถัดไปทั้งหมดในครั้งเดียว ชั้นสูงสุดจะถือว่าจบการศึกษา
+          </div>
+          <button class="btn btn-ghost btn-block btn-sm" onclick="openPromotionDialog_()">
+            <i class="fa-solid fa-arrow-up-right-dots"></i> ดูตัวอย่างการเลื่อนชั้น
+          </button>
+        </div>`;
+    }).withFailureHandler(err => {
+      console.error('getTermStatus failed:', err);
+      body.innerHTML = courseErrorHtml_('renderAdminTerm_()');
+    }).getTermStatus();
+  }
+
+  function setTermManual_(year, term) {
+    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    google.script.run.withSuccessHandler(res => {
+      if (res && res.success) { Swal.close(); Toast(res.message); renderAdminTerm_(); }
+      else Swal.fire('ไม่สำเร็จ', (res && res.message) || 'เกิดข้อผิดพลาด', 'error');
+    }).withFailureHandler(err => {
+      console.error('setCurrentTerm failed:', err);
+      Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่', 'error');
+    }).setCurrentTerm(year, term);
+  }
+
+  function toggleTermLock_(clsCode, lock, label) {
+    const doIt = () => {
+      Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      google.script.run.withSuccessHandler(res => {
+        if (res && res.success) { Swal.close(); Toast(res.message); renderAdminTerm_(); }
+        else Swal.fire('ไม่สำเร็จ', (res && res.message) || 'เกิดข้อผิดพลาด', 'error');
+      }).withFailureHandler(err => {
+        console.error('setTermLock failed:', err);
+        Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่', 'error');
+      }).setTermLock(clsCode, lock, null, null, '');
+    };
+    if (!lock) { doIt(); return; } // เปิดกลับ ไม่ต้องยืนยัน
+    Swal.fire({
+      title: '🔒 ปิดเทอมของ ' + label + '?',
+      html: `<div style="text-align:left; font-size:0.86rem;">
+        หลังกดปิด ชั้นนี้ในเทอมนี้จะ<b>ทำสิ่งเหล่านี้ไม่ได้อีก</b>:<br>
+        • ให้คะแนน / สแกนลายเซ็น / บันทึกคะแนนสอบ<br>
+        • ให้-หักแต้มพิเศษ · แลกแต้มเป็นคะแนนเก็บ · กรอกคูปอง · เช็คอิน<br>
+        • ส่งงานออนไลน์ / บันทึกการดูวิดีโอ<br><br>
+        <span style="color:var(--slate);">นักเรียนยังเปิดดูคะแนนย้อนหลังได้ตามปกติ และครูยัง<b>แก้ผลการเรียนรายคนได้</b>
+        (สำหรับเด็กที่ไปทำงานชดเชยมา) · เปิดกลับได้ตลอดถ้าต้องแก้เพิ่ม</span>
+      </div>`,
+      icon: 'warning', showCancelButton: true, confirmButtonText: 'ปิดเทอม', cancelButtonText: 'ยกเลิก'
+    }).then(r => { if (r.isConfirmed) doIt(); });
+  }
+
+  // เลื่อนชั้น — แสดงตัวอย่างให้เห็นก่อนว่าใครจะไปไหน ใครจบ แล้วค่อยยืนยันด้วยการพิมพ์
+  function openPromotionDialog_() {
+    Swal.fire({ title: 'กำลังตรวจสอบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    google.script.run.withSuccessHandler(p => {
+      const moves = (p.moves || []).map(m =>
+        `<div style="padding:4px 0;">${m.fromLabel} → <b>${m.toLabel}</b> <span style="color:var(--slate);">${m.count} คน</span></div>`).join('');
+      const grads = (p.graduating || []).map(g => g.name).join(', ') || '(ไม่มี)';
+      Swal.fire({
+        title: '🎓 เลื่อนชั้นขึ้นปีการศึกษาใหม่',
+        html: `<div style="text-align:left; font-size:0.85rem;">
+          ${moves}
+          <div style="margin-top:10px; padding:10px; background:rgba(255,77,109,0.08); border-radius:10px;">
+            <b style="color:var(--coral);">จบการศึกษา ${p.graduatingCount} คน</b>
+            <div style="font-size:0.78rem; color:var(--slate); margin-top:4px;">${grads}</div>
+            <div style="font-size:0.76rem; color:var(--slate); margin-top:6px;">
+              จะถูกย้ายออกจากรายชื่อใช้งาน และเก็บไว้ในชีต Alumni_Archive เผื่อต้องใช้อ้างอิงภายหลัง
+            </div>
+          </div>
+          <div style="margin-top:10px; color:var(--coral); font-size:0.8rem;">
+            ⚠️ ควรตัดเกรดและปิดเทอมให้ครบทุกชั้นก่อนเลื่อนชั้น · ย้อนกลับยาก
+          </div>
+          <div style="margin-top:10px;">พิมพ์คำว่า <b>เลื่อนชั้น</b> เพื่อยืนยัน</div>
+        </div>`,
+        input: 'text', inputPlaceholder: 'เลื่อนชั้น',
+        showCancelButton: true, confirmButtonText: 'ยืนยันเลื่อนชั้น', cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#FF4D6D', width: 'min(92vw, 460px)'
+      }).then(r => {
+        if (!r.isConfirmed) return;
+        Swal.fire({ title: 'กำลังเลื่อนชั้น...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        google.script.run.withSuccessHandler(res => {
+          if (res && res.success) {
+            Swal.fire('สำเร็จ', res.message, 'success').then(() => {
+              loadTeacherOverview(); loadMetaConfig(); renderAdminTerm_();
+            });
+          } else Swal.fire('ไม่สำเร็จ', (res && res.message) || 'เกิดข้อผิดพลาด', 'error');
+        }).withFailureHandler(err => {
+          console.error('promoteAllStudents failed:', err);
+          Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่', 'error');
+        }).promoteAllStudents(r.value);
+      });
+    }).withFailureHandler(err => {
+      console.error('previewPromotion failed:', err);
+      Swal.fire('โหลดไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่', 'error');
+    }).previewPromotion();
   }
 
   // ตรวจว่าโครงสร้างคอลัมน์ในชีตยังตรงกับที่ระบบคาดหวังไหม
@@ -5106,7 +5327,8 @@ function refreshRunSummary_() {
   </div>
   <div class="fullpage-body">
     <div class="filter-bar" style="margin-bottom:14px;">
-      <button class="btn btn-teal btn-sm admin-tab-btn" data-atab="classes"  onclick="switchAdminTab_('classes', this)"><i class="fa-solid fa-layer-group"></i> ชั้นเรียน</button>
+      <button class="btn btn-teal btn-sm admin-tab-btn" data-atab="term" onclick="switchAdminTab_('term', this)"><i class="fa-solid fa-calendar-check"></i> ปีการศึกษา</button>
+      <button class="btn btn-ghost btn-sm admin-tab-btn" data-atab="classes"  onclick="switchAdminTab_('classes', this)"><i class="fa-solid fa-layer-group"></i> ชั้นเรียน</button>
       <button class="btn btn-ghost btn-sm admin-tab-btn" data-atab="subjects" onclick="switchAdminTab_('subjects', this)"><i class="fa-solid fa-book"></i> รายวิชา</button>
       <button class="btn btn-ghost btn-sm admin-tab-btn" data-atab="settings" onclick="switchAdminTab_('settings', this)"><i class="fa-solid fa-sliders"></i> ค่าระบบ</button>
       <button class="btn btn-ghost btn-sm admin-tab-btn" data-atab="integrity" onclick="switchAdminTab_('integrity', this)"><i class="fa-solid fa-shield-halved"></i> ตรวจสอบชีต</button>
