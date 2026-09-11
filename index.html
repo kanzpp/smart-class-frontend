@@ -2992,7 +2992,68 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         )) +
       '</div>';
 
-    document.getElementById('adminBody').innerHTML = backupCard + sizeCard + perfCard;
+    // ขยายจำนวนบทสำหรับเทอมใหม่ — มีด่านกันเกรดร่วงคุมอยู่ (ดู previewSheetChapters ฝั่งหลังบ้าน)
+    const chapterCard =
+      '<div class="sc-sec" style="margin-top:20px;"><span class="t">เตรียมชีตสำหรับเทอมใหม่</span></div>' +
+      '<div class="card card-pad">' +
+        '<div style="font-size:0.78rem; color:var(--ink-2); line-height:1.65;">' +
+          'พอขึ้นเทอมใหม่ ต้องขยายชีตคะแนนให้พอกับบทที่จะสอน<br>' +
+          '<b style="color:var(--rose)">ห้ามขยายระหว่างเทอม</b> — คะแนนเก็บคิดจาก (คะแนนดิบ ÷ จำนวนบท × 20) ' +
+          'การเพิ่มบทจึงทำให้คะแนนเก็บของทุกคนร่วงพร้อมกันทันที<br>' +
+          'ลำดับที่ถูกต้องคือ <b style="color:var(--ink)">เก็บคลัง → ล้างเริ่มเทอมใหม่ → ค่อยขยายบท</b>' +
+        '</div>' +
+        '<button class="btn btn-ghost btn-block btn-sm" style="margin-top:12px;" onclick="openChapterExpand_()">' +
+          '<i class="fa-solid fa-table-columns"></i> ตรวจและขยายจำนวนบท</button>' +
+      '</div>';
+
+    document.getElementById('adminBody').innerHTML = backupCard + sizeCard + perfCard + chapterCard;
+  }
+
+  function openChapterExpand_() {
+    const subjOpts = metaData.subjects.map(x => '<option value="' + x.code + '">' + x.label + '</option>').join('');
+    const clsOpts  = metaData.classes.map(x => '<option value="' + x.code + '">' + x.label + '</option>').join('');
+    Swal.fire({
+      title: 'ขยายจำนวนบท',
+      html: '<div style="text-align:left;">' +
+        '<label style="font-size:0.8rem; color:#888;">วิชา</label><select id="chSubj" class="swal2-input" style="margin:4px 0;">' + subjOpts + '</select>' +
+        '<label style="font-size:0.8rem; color:#888;">ชั้น</label><select id="chCls" class="swal2-input" style="margin:4px 0;">' + clsOpts + '</select>' +
+        '<label style="font-size:0.8rem; color:#888;">จำนวนบทใหม่</label><input id="chN" class="swal2-input" type="number" min="1" max="20" style="margin:4px 0;" value="9">' +
+        '</div>',
+      showCancelButton: true, confirmButtonText: 'ตรวจผลกระทบก่อน', cancelButtonText: 'ยกเลิก',
+      preConfirm: () => ({ s: document.getElementById('chSubj').value, c: document.getElementById('chCls').value, n: parseInt(document.getElementById('chN').value) })
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      Swal.fire({ title: 'กำลังตรวจ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      google.script.run.withSuccessHandler(pv => {
+        if (!pv.ok) return Swal.fire('ไม่สำเร็จ', pv.message, 'error');
+        if (pv.safe) {
+          Swal.fire({ title: 'ปลอดภัย ขยายได้', icon: 'success',
+            html: 'จาก <b>' + pv.oldChapters + '</b> เป็น <b>' + pv.newChapters + '</b> บท<br>ไม่มีคะแนนที่จะถูกกระทบ',
+            showCancelButton: true, confirmButtonText: 'ขยายเลย', cancelButtonText: 'ยกเลิก'
+          }).then(c => { if (c.isConfirmed) doChapterExpand_(r.value.s, r.value.c, r.value.n, ''); });
+        } else {
+          Swal.fire({ title: '🛑 อันตราย', icon: 'error',
+            html: '<div style="text-align:left; font-size:0.88rem; line-height:1.7;">' +
+              'ยังมีคะแนนค้างอยู่ <b>' + pv.studentsWithScores + ' คน</b><br>' +
+              'ถ้าขยายตอนนี้ คะแนนเก็บจะเหลือ <b style="color:#D13B45">' + Math.round(pv.impactFactor * 100) + '%</b> ของเดิมทันที<br><br>' +
+              'ควรเก็บคลังและล้างเริ่มเทอมใหม่ก่อน<br>' +
+              'ถ้ายืนยันว่าต้องการจริง พิมพ์คำยืนยันด้านล่าง</div>',
+            input: 'text', inputPlaceholder: 'พิมพ์: ยืนยันแม้คะแนนจะเปลี่ยน',
+            showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก (แนะนำ)'
+          }).then(c => { if (c.isConfirmed && c.value) doChapterExpand_(r.value.s, r.value.c, r.value.n, c.value); });
+        }
+      }).withFailureHandler(() => Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้', 'error'))
+        .previewSheetChapters(r.value.s, r.value.c, r.value.n);
+    });
+  }
+
+  function doChapterExpand_(subj, cls, n, confirmText) {
+    Swal.fire({ title: 'กำลังขยาย...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    google.script.run.withSuccessHandler(res => {
+      if (res && res.success) { Swal.fire('สำเร็จ', res.message || 'ขยายจำนวนบทแล้ว', 'success'); renderAdminCare_(); }
+      else Swal.fire('ไม่สำเร็จ', (res && res.message) || '', 'error');
+    }).withFailureHandler(() => Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้', 'error'))
+      .setSheetChapters(subj, cls, n, confirmText);
   }
 
   function toggleBackup_(on) {
