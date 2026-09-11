@@ -905,26 +905,64 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     justify-content:flex-start; padding:0; position:relative;
   }
   .login-orb { display:none; }
+  /* [แก้] เดิมหัวจอกินพื้นที่ว่างทั้งหมดด้านบน (flex:1 + min-height:32vh)
+     ช่องกรอกรหัสจึงถูกดันลงไปอยู่ครึ่งล่างของจอ ต้องเอื้อมไกลและมองดูโล่งเปล่า
+     ใหม่: หัวจอสูงเท่าที่เนื้อหาต้องการเท่านั้น แล้วให้แผ่นฟอร์มขาวกินที่ที่เหลือ
+     ช่องกรอกจึงขึ้นมาอยู่ช่วงบนของจอ เหมือนหน้าล็อกอินแอปธนาคารทั่วไป */
   .login-brand-top {
-    max-width:460px; width:100%; margin:0 auto; padding:0 26px 34px; position:relative; z-index:1;
-    flex:1; display:flex; flex-direction:column; justify-content:flex-end; min-height:32vh; color:#fff;
+    max-width:460px; width:100%; margin:0 auto; position:relative; z-index:1; color:#fff;
+    flex:0 0 auto; display:flex; flex-direction:column; justify-content:flex-start;
+    padding:calc(30px + env(safe-area-inset-top)) 26px 24px;
   }
   .login-wrap::before {
     content:''; position:absolute; right:-70px; top:-90px; width:260px; height:260px;
     border-radius:50%; background:rgba(255,255,255,.08);
   }
+  /* ชื่อแอปวางแนวนอนคู่กับตรา ประหยัดความสูงได้อีกราว 70px เทียบกับวางซ้อนกัน */
+  .login-brandline { display:flex; align-items:center; gap:14px; }
   .login-mark {
-    width:54px; height:54px; border-radius:17px; margin:0 0 18px; transform:none; font-size:1.35rem;
+    width:48px; height:48px; border-radius:15px; margin:0; transform:none; font-size:1.2rem; flex:none;
     background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.28); box-shadow:none; color:#fff;
   }
-  .login-title { text-align:left; font-size:2.3rem; line-height:1.1; color:#fff; font-family:'Kanit',sans-serif; font-weight:500; }
+  .login-title { text-align:left; font-size:1.65rem; line-height:1.15; color:#fff; font-family:'Kanit',sans-serif; font-weight:500; }
   .login-title .accent { color:#BFE6FF; }
-  .login-sub { text-align:left; color:rgba(255,255,255,.78); margin:9px 0 0; font-size:.88rem; }
+  .login-sub { text-align:left; color:rgba(255,255,255,.78); margin:14px 0 0; font-size:.84rem; }
   .login-box {
     background:var(--surface); backdrop-filter:none; border:none; position:relative; z-index:1;
-    border-radius:26px 26px 0 0; padding:26px 24px calc(30px + env(safe-area-inset-bottom));
+    border-radius:26px 26px 0 0; padding:24px 24px calc(30px + env(safe-area-inset-bottom));
     max-width:520px; margin:0 auto; width:100%; box-shadow:0 -8px 30px rgba(6,32,64,.18);
+    flex:1 0 auto;   /* แผ่นขาวกินที่ที่เหลือ ช่องกรอกจึงอยู่ช่วงบนของจอ ไม่ตกไปอยู่ก้นจอ */
   }
+  /* ขั้นตอนปลายเทอม — แสดงเป็นลำดับที่มีหมายเลข เพราะลำดับคือสาระสำคัญของมัน */
+  .eot-step { display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--line-soft); }
+  .eot-step:last-child { border-bottom:none; }
+  .eot-no {
+    width:26px; height:26px; flex:none; border-radius:50%; display:grid; place-items:center;
+    background:var(--surface-2); color:var(--ink-2); font-family:'Kanit',sans-serif; font-weight:600; font-size:12px;
+  }
+  .eot-step.will .eot-no { background:var(--blue); color:#fff; }
+  .eot-step.done .eot-no { background:var(--mint-dim); color:var(--mint); }
+  .eot-step.fail .eot-no { background:var(--rose-dim); color:var(--rose); }
+  .eot-b { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .eot-n { font-weight:600; font-size:.88rem; }
+  .eot-d { font-size:.78rem; color:var(--ink-2); margin-top:2px; line-height:1.55; }
+  .eot-gate {
+    border-radius:12px; padding:14px 16px; margin-bottom:14px; font-size:.82rem; line-height:1.7;
+    background:var(--rose-dim); border-left:3px solid var(--rose); color:var(--ink-2);
+  }
+  .eot-gate.ready { background:var(--mint-dim); border-left-color:var(--mint); }
+  .eot-gate b { color:var(--ink); font-weight:600; }
+  .eot-ch { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:12px 0; }
+  .eot-ch label { font-size:.72rem; color:var(--ink-2); display:block; margin-bottom:4px; }
+  .eot-ch input { width:100%; text-align:center; padding:9px 4px; border:1px solid var(--line); border-radius:10px;
+                  background:var(--surface-2); color:var(--ink); font-family:'Kanit',sans-serif; font-weight:600; }
+
+  .login-hint {
+    margin-top:20px; padding-top:16px; border-top:1px solid var(--line-soft);
+    font-size:.76rem; color:var(--ink-2); line-height:1.7; text-align:center;
+  }
+  .login-hint b { color:var(--ink); font-weight:600; }
+  .login-hint i { color:var(--blue); margin-right:4px; }
   .role-pill { background:var(--surface-2); border:none; padding:4px; border-radius:var(--r-sm); margin-bottom:16px; }
   .role-pill button { color:var(--ink-2); border-radius:9px; }
   .role-pill button.active { background:var(--surface); color:var(--blue); box-shadow:var(--shadow-sm); }
@@ -1454,8 +1492,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
      ใหม่: ชื่อแอปอยู่ครึ่งบน ฟอร์มยึดครึ่งล่าง กดได้ด้วยมือเดียว -->
 <div id="loginSection" class="login-wrap">
   <div class="login-brand-top">
-    <div class="login-mark"><i class="fa-solid fa-chalkboard-user"></i></div>
-    <div class="login-title">Smart<br><span class="accent">Class</span></div>
+    <div class="login-brandline">
+      <div class="login-mark"><i class="fa-solid fa-chalkboard-user"></i></div>
+      <div class="login-title">Smart <span class="accent">Class</span></div>
+    </div>
     <div class="login-sub">เช็คชื่อ · คะแนน · แต้มสะสม — ที่เดียวจบ</div>
   </div>
   <div class="login-box">
@@ -1472,6 +1512,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     <button class="btn btn-teal btn-block" style="margin-top:6px;" onclick="login()">
       เข้าสู่ระบบ <i class="fa-solid fa-arrow-right"></i>
     </button>
+    <div class="login-hint">
+      <i class="fa-solid fa-circle-info"></i>
+      นักเรียนใช้<b>รหัสประจำตัว</b>กับ<b>รหัส PIN</b> · ลืมรหัสให้แจ้งคุณครูตั้งใหม่ให้ได้
+    </div>
   </div>
 </div>
 
@@ -3003,7 +3047,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           'ลำดับที่ถูกต้องคือ <b style="color:var(--ink)">เก็บคลัง → ล้างเริ่มเทอมใหม่ → ค่อยขยายบท</b>' +
         '</div>' +
         '<button class="btn btn-ghost btn-block btn-sm" style="margin-top:12px;" onclick="openChapterExpand_()">' +
-          '<i class="fa-solid fa-table-columns"></i> ตรวจและขยายจำนวนบท</button>' +
+          '<i class="fa-solid fa-table-columns"></i> ตรวจและขยายจำนวนบท (ทีละชั้น)</button>' +
+        '<button class="btn btn-teal btn-block btn-sm" style="margin-top:8px;" onclick="openEndOfTerm_()">' +
+          '<i class="fa-solid fa-flag-checkered"></i> ขั้นตอนปลายเทอม — ทำครบ 5 ข้อรวดเดียว</button>' +
       '</div>';
 
     document.getElementById('adminBody').innerHTML = backupCard + sizeCard + perfCard + chapterCard;
@@ -3121,6 +3167,122 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       });
     }).withFailureHandler(() => Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้', 'error'))
       .previewTermLogArchive(year, term);
+  }
+
+
+  // ─── ขั้นตอนปลายเทอม ────────────────────────────────────────
+  // ทำ 5 ข้อรวดเดียว: ปิดเทอม → เก็บคลัง → ล้าง → ขยายบท → ย้ายประวัติ
+  // ลำดับคือสาระสำคัญ ถ้าสลับจะเสียหาย (เช่นขยายบทก่อนล้าง = เกรดร่วงทั้งห้อง)
+  // ตัวหลังบ้านหยุดทันทีถ้าขั้นไหนไม่ผ่าน และบอกว่าไปถึงขั้นไหนแล้ว
+  var eotChapters = { };
+
+  function openEndOfTerm_() {
+    openFullpageView_('eotModal');
+    loadEndOfTerm_();
+  }
+
+  function loadEndOfTerm_() {
+    const body = document.getElementById('eotBody');
+    body.innerHTML = '<div class="sc-empty">กำลังตรวจสถานะ... (ไม่ได้เขียนอะไร)</div>';
+    // ค่าเริ่มต้นของจำนวนบท = จำนวนบทเต็มปีของแต่ละชั้น ครูแก้ได้
+    (metaData.classes || []).forEach(c => { if (!eotChapters[c.code]) eotChapters[c.code] = c.code === 'M1' ? 9 : 11; });
+    google.script.run.withSuccessHandler(r => {
+      if (!r || !r.ok) { body.innerHTML = courseErrorHtml_('loadEndOfTerm_()'); return; }
+      renderEndOfTerm_(r);
+    }).withFailureHandler(err => {
+      console.error('previewEndOfTerm failed:', err);
+      body.innerHTML = courseErrorHtml_('loadEndOfTerm_()');
+    }).previewEndOfTerm(eotChapters);
+  }
+
+  function renderEndOfTerm_(r) {
+    const running = r.termStillRunning;
+    const gate = running
+      ? '<div class="eot-gate">' +
+          '<b>🔴 เทอมนี้ยังเดินอยู่</b><br>' +
+          'วันนี้ ' + r.today + ' ยังอยู่ในช่วงปี ' + r.year + ' เทอม ' + r.term + '<br><br>' +
+          'ถ้ากดตอนนี้ = <b>ปิดไม่ให้บันทึกคะแนนได้อีก</b> และ<b>ล้างคะแนนที่เก็บมาทั้งเทอมทิ้ง</b><br>' +
+          'กู้คืนได้จากคลัง แต่การสอนจะสะดุดทันที<br><br>' +
+          'ควรรอจนจบเทอมก่อน (เทอม 1 จบ 16 ต.ค. · เทอม 2 จบ 31 มี.ค.)' +
+        '</div>'
+      : '<div class="eot-gate ready">' +
+          '<b>🟢 เทอมนี้จบแล้ว ทำได้</b><br>' +
+          'วันนี้ ' + r.today + ' · ระบบกำลังอยู่ปี ' + r.autoTerm.year + ' เทอม ' + r.autoTerm.term +
+          ' แต่ข้อมูลที่ค้างอยู่เป็นของปี ' + r.year + ' เทอม ' + r.term +
+        '</div>';
+
+    const chInputs = (metaData.classes || []).map(c =>
+      '<div><label>' + c.label + '</label>' +
+        '<input type="number" min="1" max="20" value="' + (eotChapters[c.code] || '') + '" ' +
+        'onchange="eotChapters[\'' + c.code + '\']=parseInt(this.value)||0; loadEndOfTerm_();"></div>').join('');
+
+    document.getElementById('eotBody').innerHTML =
+      gate +
+      '<div class="card card-pad" style="margin-bottom:14px;">' +
+        '<div class="sc-sec" style="margin-bottom:6px;"><span class="t">จำนวนบทของเทอมใหม่</span></div>' +
+        '<div style="font-size:0.76rem; color:var(--ink-2); line-height:1.6;">ขยายหลังล้างคะแนนแล้วเท่านั้น จึงปลอดภัยเสมอ เว้นว่างไว้ถ้ายังไม่อยากขยาย</div>' +
+        '<div class="eot-ch">' + chInputs + '</div>' +
+      '</div>' +
+      '<div class="card card-pad" style="margin-bottom:14px;">' +
+        '<div class="sc-sec" style="margin-bottom:4px;"><span class="t">จะทำอะไรบ้าง ตามลำดับนี้</span></div>' +
+        r.steps.map(st =>
+          '<div class="eot-step' + (st.willDo ? ' will' : ' done') + '">' +
+            '<span class="eot-no">' + (st.willDo ? st.no : '✓') + '</span>' +
+            '<span class="eot-b"><span class="eot-n">' + st.name + '</span>' +
+            '<span class="eot-d">' + st.detail + '</span></span>' +
+          '</div>').join('') +
+      '</div>' +
+      '<div style="font-size:0.76rem; color:var(--ink-2); line-height:1.7; margin-bottom:14px;">' +
+        'ทุกขั้นมีด่านของตัวเองอยู่แล้ว — <b style="color:var(--ink)">การล้างคะแนนจะเกิดขึ้นก็ต่อเมื่อเทียบสำเนากับต้นฉบับครบทุกช่องแล้วเท่านั้น</b><br>' +
+        'ถ้าขั้นไหนไม่ผ่าน ระบบจะหยุดทันทีและบอกว่าไปถึงขั้นไหน ขั้นก่อนหน้าที่ทำไปแล้วจะยังอยู่' +
+      '</div>' +
+      '<button class="btn ' + (running ? 'btn-danger-soft' : 'btn-teal') + ' btn-block" onclick="confirmEndOfTerm_(' + running + ')">' +
+        '<i class="fa-solid fa-flag-checkered"></i> ' + (running ? 'ยืนยันทำทั้งที่เทอมยังเดินอยู่' : 'เริ่มขั้นตอนปลายเทอม') +
+      '</button>';
+  }
+
+  function confirmEndOfTerm_(running) {
+    Swal.fire({
+      title: running ? '⚠️ เทอมยังเดินอยู่' : 'เริ่มขั้นตอนปลายเทอม?',
+      icon: running ? 'warning' : 'question',
+      html: '<div style="text-align:left; font-size:0.86rem; line-height:1.75;">' +
+        (running ? '<b style="color:#C4342A">คะแนนที่เก็บมาทั้งเทอมจะถูกล้าง</b> และปิดไม่ให้บันทึกเพิ่ม<br>กู้คืนได้จากคลัง แต่การสอนจะสะดุด<br><br>' : '') +
+        'พิมพ์คำยืนยันเพื่อเริ่ม</div>',
+      input: 'text', inputPlaceholder: 'พิมพ์: จบเทอม',
+      showCancelButton: true,
+      confirmButtonText: 'เริ่มเลย', cancelButtonText: running ? 'ยกเลิก (แนะนำ)' : 'ยกเลิก'
+    }).then(c => {
+      if (!c.isConfirmed || !c.value) return;
+      Swal.fire({ title: 'กำลังทำทีละขั้น...', html: 'ปิดเทอม → เก็บคลัง → ล้าง → ขยายบท → ย้ายประวัติ<br>อาจใช้เวลาสักครู่ อย่าเพิ่งปิดหน้า',
+        allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      google.script.run.withSuccessHandler(res => {
+        Swal.close();
+        showEotResult_(res);
+      }).withFailureHandler(err => {
+        console.error('runEndOfTerm failed:', err);
+        Swal.fire({ title: 'ไม่ได้รับคำตอบ', icon: 'warning',
+          html: 'งานอาจทำไปแล้วบางส่วนแต่คำตอบหายระหว่างทาง<br><b>อย่ากดซ้ำ</b> — กดปิดแล้วดูสถานะอีกครั้ง' })
+          .then(() => loadEndOfTerm_());
+      }).runEndOfTerm(eotChapters, c.value);
+    });
+  }
+
+  function showEotResult_(res) {
+    const steps = (res && res.steps) || [];
+    document.getElementById('eotBody').innerHTML =
+      '<div class="eot-gate' + (res && res.success ? ' ready' : '') + '">' +
+        '<b>' + (res && res.success ? '🟢 ทำครบทุกขั้นแล้ว' : '🔴 หยุดกลางทาง') + '</b><br>' + ((res && res.message) || '') +
+      '</div>' +
+      '<div class="card card-pad">' +
+        steps.map(st =>
+          '<div class="eot-step ' + (st.ok ? 'done' : 'fail') + '">' +
+            '<span class="eot-no">' + (st.ok ? '✓' : '✕') + '</span>' +
+            '<span class="eot-b"><span class="eot-n">' + st.name + '</span>' +
+            '<span class="eot-d">' + st.message + '</span></span>' +
+          '</div>').join('') +
+      '</div>' +
+      '<button class="btn btn-ghost btn-block" style="margin-top:14px;" onclick="loadEndOfTerm_()">' +
+        '<i class="fa-solid fa-rotate"></i> ดูสถานะอีกครั้ง</button>';
   }
 
   // ─── สวิตช์เปิด/ปิดฟีเจอร์ ───────────────────────────────────
@@ -7268,6 +7430,16 @@ function refreshRunSummary_() {
     <button class="btn btn-ghost btn-icon" onclick="closeFullpageView_('parentLinkModal')"><i class="fa-solid fa-xmark"></i></button>
   </div>
   <div class="fullpage-body" id="parentLinkBody"></div>
+</div>
+
+<!-- ═══ ขั้นตอนปลายเทอม ═══════════════════════════════════════
+     ทำ 5 ข้อตามลำดับที่ถูกต้อง ลำดับนี้ห้ามสลับ (ดูคอมเมนต์ใน runEndOfTerm ฝั่งหลังบ้าน) -->
+<div id="eotModal" class="fullpage-view hidden">
+  <div class="fullpage-head">
+    <div class="section-title" style="margin-bottom:0;"><i class="fa-solid fa-flag-checkered"></i> ขั้นตอนปลายเทอม</div>
+    <button class="btn btn-ghost btn-icon" onclick="closeFullpageView_('eotModal')"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="fullpage-body" id="eotBody"></div>
 </div>
 
 <!-- ═══ หน้าที่ผู้ปกครองเปิด (ไม่ต้องล็อกอิน อ่านอย่างเดียว) ═══ -->
