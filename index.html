@@ -1271,6 +1271,98 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   .sc-subhead .sub { font-size:0.74rem; color:var(--ink-2); }
 
   /* แถบแจ้งเตือนแบบย่อบนหัวจอ ใช้ตอนโหลดข้อมูลใหม่ */
+  /* ═══ ตารางกรอกคะแนนทั้งห้อง ═══════════════════════════════
+     แถวละคน ช่องกรอกใหญ่พอให้แตะถูกบนมือถือ กด Enter แล้วไปช่องถัดไป
+     ทำงานเหมือนกรอกลงกระดาษ ไม่ใช่เหมือนกรอกฟอร์มทีละหน้า */
+  .bulk-row {
+    display:grid; grid-template-columns:30px 1fr 78px 64px; gap:9px; align-items:center;
+    padding:9px 12px; background:var(--surface); border-radius:12px; margin-bottom:6px;
+    box-shadow:var(--shadow-sm);
+  }
+  .bulk-row.changed { box-shadow:0 0 0 2px var(--blue) inset, var(--shadow-sm); }
+  .bulk-no { font-size:.72rem; color:var(--ink-3); text-align:center; font-variant-numeric:tabular-nums; }
+  .bulk-name { font-size:.84rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bulk-row input {
+    width:100%; text-align:center; font-size:1rem; font-weight:600; padding:9px 4px;
+    border:1px solid var(--line); border-radius:10px; background:var(--surface-2); color:var(--ink);
+    font-family:'Kanit',sans-serif; font-variant-numeric:tabular-nums;
+  }
+  .bulk-row input:focus { outline:none; border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-dim); background:var(--surface); }
+  .bulk-old { font-size:.7rem; color:var(--ink-3); text-align:center; line-height:1.3; }
+  .bulk-head {
+    display:grid; grid-template-columns:30px 1fr 78px 64px; gap:9px;
+    padding:0 12px 7px; font-size:.68rem; color:var(--ink-3); font-weight:600;
+  }
+  .bulk-head span:nth-child(3), .bulk-head span:nth-child(4) { text-align:center; }
+  .bulk-bar {
+    position:sticky; bottom:0; z-index:5; background:var(--surface);
+    border-top:1px solid var(--line); padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    margin:14px -16px calc(-16px - env(safe-area-inset-bottom));
+    display:flex; gap:10px; align-items:center;
+  }
+  .bulk-bar .cnt { flex:1; font-size:.78rem; color:var(--ink-2); }
+  .bulk-bar .cnt b { color:var(--blue); }
+
+  /* ═══ ใบรายงานผล (พร้อมพิมพ์) ═══════════════════════════════ */
+  .rep-head { text-align:center; margin-bottom:18px; }
+  .rep-head h2 { font-family:'Kanit',sans-serif; font-weight:600; font-size:1.25rem; margin:0; color:var(--ink); }
+  .rep-head .meta { font-size:.8rem; color:var(--ink-2); margin-top:3px; }
+  .rep-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:16px; }
+  .rep-stat { background:var(--surface-2); border-radius:12px; padding:11px 8px; text-align:center; }
+  .rep-stat .n { font-family:'Kanit',sans-serif; font-weight:600; font-size:1.35rem; line-height:1.1; }
+  .rep-stat .l { font-size:.66rem; color:var(--ink-2); margin-top:2px; }
+  .rep-dist { display:flex; gap:4px; align-items:flex-end; height:72px; margin-bottom:6px; }
+  .rep-dist .b { flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:3px; height:100%; }
+  .rep-dist .bar { width:100%; background:var(--blue); border-radius:5px 5px 0 0; min-height:3px; }
+  .rep-dist .bn { font-size:.62rem; color:var(--ink-3); }
+  .rep-dist .bv { font-size:.66rem; font-weight:600; }
+  table.rep { width:100%; border-collapse:collapse; font-size:.78rem; }
+  table.rep th { background:var(--surface-2); color:var(--ink-2); padding:8px 6px; font-weight:600; font-size:.68rem; white-space:nowrap; }
+  table.rep td { padding:7px 6px; border-top:1px solid var(--line-soft); text-align:center; font-variant-numeric:tabular-nums; }
+  table.rep td.nm { text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px; }
+  table.rep td.g { font-weight:700; }
+
+  @media print {
+    body { background:#fff !important; }
+    .fullpage-head, .bottom-nav, .sc-fab, .sc-fab-lb, .no-print { display:none !important; }
+    .fullpage-view { position:static !important; transform:none !important; height:auto !important; }
+    .fullpage-body { overflow:visible !important; padding:0 !important; }
+    table.rep th { background:#EEE !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .rep-stat { background:#F4F4F4 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .rep-dist .bar { background:#555 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  }
+
+  /* ═══ ร่องรอยการแก้ · สำรองข้อมูล · ลิงก์ผู้ปกครอง ═══════════ */
+  .log-item {
+    background:var(--surface); border-radius:12px; padding:11px 13px; margin-bottom:7px;
+    box-shadow:var(--shadow-sm); border-left:3px solid var(--line);
+  }
+  .log-item .lh { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+  .log-item .act { font-weight:600; font-size:.82rem; }
+  .log-item .when { font-size:.68rem; color:var(--ink-3); margin-left:auto; }
+  .log-item .tgt { font-size:.74rem; color:var(--ink-2); margin-top:2px; }
+  .log-item .diff { font-size:.74rem; margin-top:5px; display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+  .log-item .diff .from { color:var(--ink-3); text-decoration:line-through; }
+  .log-item .diff .to { color:var(--blue); font-weight:600; }
+  .log-item.grade { border-left-color:var(--gold); }
+  .log-item.att   { border-left-color:var(--blue); }
+  .log-item.term  { border-left-color:var(--rose); }
+  .log-item.sys   { border-left-color:var(--mint); }
+
+  .plink {
+    display:flex; align-items:center; gap:10px; background:var(--surface); border-radius:12px;
+    padding:10px 12px; margin-bottom:6px; box-shadow:var(--shadow-sm);
+  }
+  .plink .nm { flex:1; min-width:0; font-size:.84rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .plink button { flex:none; }
+
+  /* ═══ หน้าผู้ปกครอง ═══════════════════════════════════════ */
+  .pa-wrap { max-width:560px; margin:0 auto; }
+  .pa-sub { background:var(--surface); border-radius:var(--r-md); padding:15px 16px; margin-bottom:10px; box-shadow:var(--shadow-sm); }
+  .pa-sub .r1 { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .pa-sub .nm { font-family:'Kanit',sans-serif; font-weight:500; font-size:.98rem; }
+  .pa-note { font-size:.74rem; color:var(--ink-2); margin-top:9px; padding-top:9px; border-top:1px solid var(--line-soft); }
+
   #staleBadge {
     background:var(--surface)!important; color:var(--ink-2)!important; border:1px solid var(--line);
     box-shadow:var(--shadow-md)!important; border-radius:10px!important; font-weight:600!important;
@@ -1312,12 +1404,44 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     }
 
     // ยิง fetch แบบ POST ไปยัง Apps Script Web App (GAS_API_URL) แล้วเรียก callback สำเร็จ/ผิดพลาดตามผลลัพธ์
+    // [ความน่าเชื่อถือ] พบจากการใช้งานจริงว่า Apps Script บางครั้ง "ทำงานเสร็จแล้วแต่คำตอบหาย"
+    // อาการคือผู้ใช้เห็นว่าเชื่อมต่อไม่สำเร็จ ทั้งที่ข้อมูลถูกบันทึกไปแล้ว
+    // ถ้าเป็นการแลกคะแนน แล้วเด็กกดซ้ำเพราะคิดว่าไม่ติด จะเสียแต้มสองเท่า
+    //
+    // ทางแก้: ติดรหัสประจำคำขอไปด้วย แล้วลองใหม่เองด้วยรหัสเดิมเมื่อคำตอบหาย
+    // ฝั่งหลังบ้านจำผลของรหัสนั้นไว้ 2 นาที ถ้าเจอรหัสซ้ำจะคืนผลเดิมโดยไม่ทำงานซ้ำ
+    // จึงปลอดภัยแม้เป็นรายการที่หักแต้ม
+    function newRequestId_() {
+      return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+    }
+
     function executeGasCall(funcName, args, onSuccess, onFail) {
-      fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ func: funcName, args: args }) })
-        .then(r => r.json()).then(d => {
-          if (d.status === 'success') { if (onSuccess) onSuccess(d.response); }
-          else { if (onFail) onFail(d.message); else console.error("GAS Error:", d.message); }
-        }).catch(err => { if (onFail) onFail(err.toString()); else console.error("GAS Network Error:", funcName, err); });
+      const reqId = newRequestId_();
+      const MAX_TRY = 3;
+
+      const attempt = (tryNo) => {
+        fetch(GAS_API_URL, {
+          method: 'POST',
+          body: JSON.stringify({ func: funcName, args: args, reqId: reqId })
+        })
+          .then(r => r.text())
+          .then(txt => {
+            // คำตอบว่างเปล่า = งานอาจเสร็จแล้วแต่คำตอบหายระหว่างทาง ให้ลองใหม่ด้วยรหัสเดิม
+            if (!txt || !txt.trim()) throw new Error('คำตอบว่างเปล่า');
+            const d = JSON.parse(txt);
+            if (d.status === 'success') { if (onSuccess) onSuccess(d.response); }
+            else { if (onFail) onFail(d.message); else console.error('GAS Error:', d.message); }
+          })
+          .catch(err => {
+            if (tryNo < MAX_TRY) {
+              console.warn('ลองใหม่ครั้งที่ ' + (tryNo + 1) + ' สำหรับ ' + funcName + ':', err.message || err);
+              setTimeout(() => attempt(tryNo + 1), 1200 * tryNo);   // ถอยห่างขึ้นเรื่อยๆ
+              return;
+            }
+            if (onFail) onFail(String(err)); else console.error('GAS Network Error:', funcName, err);
+          });
+      };
+      attempt(1);
     }
   </script>
 </head>
@@ -1622,6 +1746,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <button class="sc-g" onclick="goTeacherTab_('stu')"><span class="ic ic-violet"><i class="fa-solid fa-users"></i></span><span class="lb">รายชื่อ นร.</span></button>
           <button class="sc-g" id="tMenuAtt" onclick="openAttendanceModal()"><span class="ic ic-mint"><i class="fa-solid fa-user-check"></i></span><span class="lb">แก้ไขเช็คชื่อ</span></button>
           <button class="sc-g" onclick="goTeacherTab_('history')"><span class="ic ic-grey"><i class="fa-solid fa-clock-rotate-left"></i></span><span class="lb">บันทึกกิจกรรม</span></button>
+          <button class="sc-g" onclick="openBulkScore_()"><span class="ic ic-gold"><i class="fa-solid fa-table-list"></i></span><span class="lb">กรอกคะแนนทั้งห้อง</span></button>
+          <button class="sc-g" onclick="openReport_()"><span class="ic ic-blue"><i class="fa-solid fa-file-lines"></i></span><span class="lb">ใบรายงานผล</span></button>
+          <button class="sc-g" onclick="openParentLinks_()"><span class="ic ic-mint"><i class="fa-solid fa-link"></i></span><span class="lb">ลิงก์ผู้ปกครอง</span></button>
+          <button class="sc-g" onclick="openChangeLog_()"><span class="ic ic-rose"><i class="fa-solid fa-clock-rotate-left"></i></span><span class="lb">ร่องรอยการแก้</span></button>
           <button class="sc-g" id="tMenuElective" onclick="openElectiveOverviewModal()"><span class="ic ic-gold"><i class="fa-solid fa-shuffle"></i></span><span class="lb">วิชาเลือก</span></button>
           <button class="sc-g" onclick="openAdminTabDirect_('term')"><span class="ic ic-rose"><i class="fa-solid fa-lock"></i></span><span class="lb">ปิดเทอม</span></button>
           <button class="sc-g" onclick="openAdminTabDirect_('term')"><span class="ic ic-mint"><i class="fa-solid fa-arrow-up-right-dots"></i></span><span class="lb">เลื่อนชั้น</span></button>
@@ -1695,6 +1823,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <select id="vSubject"  class="field"></select>
           <select id="vSubClass" class="field"></select>
           <button class="btn btn-teal btn-sm" onclick="viewClassScores()"><i class="fa-solid fa-magnifying-glass"></i> เช็ค</button>
+          <button class="btn btn-amber btn-sm" onclick="openBulkScore_()"><i class="fa-solid fa-table-list"></i> กรอกทั้งห้อง</button>
+          <button class="btn btn-ghost btn-sm" onclick="openReport_()"><i class="fa-solid fa-file-lines"></i> ใบรายงาน</button>
         </div>
 
         <div style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">
@@ -1836,6 +1966,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // ─── INIT ───────────────────────────────────────────────────
   window.onload = () => {
     applyDarkModePreference();
+    if (tryParentView_()) return;   // เปิดมาด้วยลิงก์ผู้ปกครอง ไม่ต้องผ่านหน้าล็อกอิน
 
     const todayStr = localDateStr_(new Date());
     ['histDateFrom','histDateTo'].forEach(id => {
@@ -2390,6 +2521,545 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   function openAdminTabDirect_(tab) {
     adminActiveTab = tab;
     openAdminModal();
+  }
+
+
+  // ═══════════════════════════════════════════════════════════════
+  // กรอกคะแนนทั้งห้องในหน้าเดียว
+  // ═══════════════════════════════════════════════════════════════
+  // เดิม: สแกน QR ทีละคน 25 ครั้ง = 25 คำขอ × ~2.5 วินาที และคำนวณคะแนนใหม่ 25 รอบ
+  // ใหม่: กรอกเป็นคอลัมน์ แล้วส่งทีเดียว = 1 คำขอ คำนวณใหม่รอบเดียว
+  var bulkState = { subject: '', cls: '', chapter: 1, field: 'test', rows: [] };
+
+  function openBulkScore_() {
+    const c = teacherCtx_();
+    bulkState.subject = c.subject || (metaData.subjects[0] || {}).code;
+    bulkState.cls = c.cls || (metaData.classes[0] || {}).code;
+    bulkState.chapter = c.chapter || 1;
+    openFullpageView_('bulkScoreModal');
+    loadBulkScore_();
+  }
+
+  function loadBulkScore_() {
+    const body = document.getElementById('bulkScoreBody');
+    body.innerHTML = '<div class="sc-empty">กำลังโหลดรายชื่อ...</div>';
+    google.script.run.withSuccessHandler(r => {
+      if (!r || !r.ok) { body.innerHTML = courseErrorHtml_('loadBulkScore_()'); return; }
+      bulkState.rows = r.rows;
+      bulkState.chapter = r.chapter;
+      renderBulkScore_(r);
+    }).withFailureHandler(err => {
+      console.error('getBulkScoreSheet failed:', err);
+      body.innerHTML = courseErrorHtml_('loadBulkScore_()');
+    }).getBulkScoreSheet(bulkState.subject, bulkState.cls, bulkState.chapter);
+  }
+
+  function renderBulkScore_(r) {
+    const body = document.getElementById('bulkScoreBody');
+    const isSig = bulkState.field === 'sig';
+    const subjOpts = metaData.subjects.map(x => '<option value="' + x.code + '"' + (x.code === bulkState.subject ? ' selected' : '') + '>' + x.label + '</option>').join('');
+    const clsOpts  = metaData.classes.map(x => '<option value="' + x.code + '"' + (x.code === bulkState.cls ? ' selected' : '') + '>' + x.label + '</option>').join('');
+    const chOpts   = Array.from({ length: r.chapters }, (_, i) => i + 1)
+      .map(n => '<option value="' + n + '"' + (n === r.chapter ? ' selected' : '') + '>บทที่ ' + n + '</option>').join('');
+
+    if (r.termLocked) {
+      body.innerHTML = '<div class="sc-empty"><i class="fa-solid fa-lock" style="color:var(--rose)"></i> ' +
+        r.clsLabel + ' ปิดเทอมแล้ว — แก้คะแนนไม่ได้<br><span style="font-size:0.75rem">ถ้าต้องแก้จริง ให้เปิดเทอมชั่วคราวที่หน้าตั้งค่า</span></div>';
+      return;
+    }
+
+    body.innerHTML =
+      '<div class="filter-bar" style="margin-bottom:12px;">' +
+        '<select id="bulkSubj" class="field" onchange="bulkChangeCtx_()">' + subjOpts + '</select>' +
+        '<select id="bulkCls" class="field" onchange="bulkChangeCtx_()">' + clsOpts + '</select>' +
+        '<select id="bulkCh" class="field" onchange="bulkChangeCtx_()">' + chOpts + '</select>' +
+      '</div>' +
+      '<div style="display:flex; gap:6px; margin-bottom:14px;">' +
+        '<button class="btn btn-sm ' + (isSig ? 'btn-teal' : 'btn-ghost') + '" style="flex:1" onclick="bulkSetField_(\'sig\')"><i class="fa-solid fa-signature"></i> ลายเซ็น</button>' +
+        '<button class="btn btn-sm ' + (isSig ? 'btn-ghost' : 'btn-teal') + '" style="flex:1" onclick="bulkSetField_(\'test\')"><i class="fa-solid fa-file-pen"></i> คะแนนสอบ</button>' +
+      '</div>' +
+      '<div class="bulk-head"><span>#</span><span>ชื่อ-สกุล</span><span>' + (isSig ? 'ลายเซ็น' : 'คะแนนสอบ') + '</span><span>เดิม</span></div>' +
+      '<div id="bulkRows">' + r.rows.map((st, i) => {
+        const cur = isSig ? st.sig : st.test;
+        return '<div class="bulk-row" id="brow-' + st.id + '">' +
+          '<span class="bulk-no">' + (i + 1) + '</span>' +
+          '<span class="bulk-name">' + st.name + '</span>' +
+          '<input type="number" inputmode="decimal" step="0.5" min="0" data-id="' + st.id + '" data-old="' + cur + '" ' +
+            'value="' + (cur || '') + '" onkeydown="bulkKey_(event, ' + i + ')" oninput="bulkTouch_(this)">' +
+          '<span class="bulk-old">' + (cur || '—') + '</span>' +
+        '</div>';
+      }).join('') + '</div>' +
+      '<div class="bulk-bar">' +
+        '<span class="cnt" id="bulkCount">ยังไม่ได้แก้อะไร</span>' +
+        '<button class="btn btn-ghost btn-sm" onclick="loadBulkScore_()">ล้าง</button>' +
+        '<button class="btn btn-teal btn-sm" onclick="saveBulk_()"><i class="fa-solid fa-check"></i> บันทึกทั้งห้อง</button>' +
+      '</div>';
+    bulkUpdateCount_();
+  }
+
+  function bulkChangeCtx_() {
+    bulkState.subject = document.getElementById('bulkSubj').value;
+    bulkState.cls     = document.getElementById('bulkCls').value;
+    bulkState.chapter = parseInt(document.getElementById('bulkCh').value) || 1;
+    loadBulkScore_();
+  }
+  function bulkSetField_(f) { bulkState.field = f; loadBulkScore_(); }
+
+  // กด Enter หรือลูกศรลง = ไปช่องถัดไป ทำงานเหมือนกรอกลงกระดาษ
+  function bulkKey_(ev, i) {
+    if (ev.key !== 'Enter' && ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return;
+    ev.preventDefault();
+    const inputs = [...document.querySelectorAll('#bulkRows input')];
+    const next = inputs[ev.key === 'ArrowUp' ? i - 1 : i + 1];
+    if (next) { next.focus(); next.select(); }
+    else document.querySelector('.bulk-bar .btn-teal').focus();
+  }
+
+  function bulkTouch_(el) {
+    const changed = String(el.value || '') !== String(el.dataset.old === '0' ? '' : el.dataset.old);
+    el.closest('.bulk-row').classList.toggle('changed', changed && el.value !== '');
+    bulkUpdateCount_();
+  }
+
+  function bulkCollect_() {
+    return [...document.querySelectorAll('#bulkRows input')]
+      .filter(el => el.value !== '' && String(parseFloat(el.value)) !== String(parseFloat(el.dataset.old) || 0))
+      .map(el => ({ id: el.dataset.id, value: parseFloat(el.value) }));
+  }
+  function bulkUpdateCount_() {
+    const n = bulkCollect_().length;
+    const el = document.getElementById('bulkCount');
+    if (el) el.innerHTML = n ? ('แก้ไปแล้ว <b>' + n + '</b> คน') : 'ยังไม่ได้แก้อะไร';
+  }
+
+  function saveBulk_() {
+    const vals = bulkCollect_();
+    if (!vals.length) return Toast('ยังไม่ได้กรอกอะไรที่ต่างจากเดิม', 'warning');
+    Swal.fire({
+      title: 'บันทึก ' + vals.length + ' คน?',
+      text: 'บทที่ ' + bulkState.chapter + ' · ' + (bulkState.field === 'sig' ? 'ลายเซ็น' : 'คะแนนสอบ'),
+      icon: 'question', showCancelButton: true, confirmButtonText: 'บันทึก', cancelButtonText: 'ยกเลิก'
+    }).then(res => {
+      if (!res.isConfirmed) return;
+      Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      google.script.run.withSuccessHandler(r => {
+        if (r && r.success) {
+          Swal.fire('สำเร็จ', r.message, 'success');
+          loadBulkScore_();
+        } else Swal.fire('ไม่สำเร็จ', (r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+      }).withFailureHandler(err => {
+        console.error('saveBulkScores failed:', err);
+        Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่', 'error');
+      }).saveBulkScores(bulkState.subject, bulkState.cls, bulkState.chapter, bulkState.field, vals);
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ใบรายงานผลการเรียน (พร้อมพิมพ์)
+  // ═══════════════════════════════════════════════════════════════
+  function openReport_() {
+    const c = teacherCtx_();
+    openFullpageView_('reportModal');
+    const body = document.getElementById('reportBody');
+    body.innerHTML = '<div class="sc-empty">กำลังรวบรวมข้อมูล...</div>';
+    google.script.run.withSuccessHandler(r => {
+      if (!r || !r.ok) { body.innerHTML = courseErrorHtml_('openReport_()'); return; }
+      renderReport_(r);
+    }).withFailureHandler(err => {
+      console.error('getTermReport failed:', err);
+      body.innerHTML = courseErrorHtml_('openReport_()');
+    }).getTermReport(c.subject || (metaData.subjects[0] || {}).code, c.cls || (metaData.classes[0] || {}).code);
+  }
+
+  function renderReport_(r) {
+    const order = [4, 3.5, 3, 2.5, 2, 1.5, 1, 0];
+    const maxCount = Math.max(1, ...order.map(g => r.summary.distribution[g] || 0));
+    const dist = order.map(g => {
+      const n = r.summary.distribution[g] || 0;
+      return '<div class="b"><span class="bv">' + (n || '') + '</span>' +
+             '<div class="bar" style="height:' + Math.round((n / maxCount) * 100) + '%"></div>' +
+             '<span class="bn">' + g + '</span></div>';
+    }).join('');
+
+    const rows = r.students.map((st, i) =>
+      '<tr>' +
+        '<td>' + (i + 1) + '</td>' +
+        '<td class="nm">' + st.name + '</td>' +
+        '<td>' + (st.norm70 ?? '—') + '</td>' +
+        '<td>' + (st.finalExam || '—') + '</td>' +
+        '<td><b>' + (st.total100 ?? '—') + '</b></td>' +
+        '<td class="g" style="color:' + (st.grade >= 3 ? 'var(--mint)' : st.grade >= 1 ? 'var(--gold)' : 'var(--rose)') + '">' +
+          st.grade + (st.overridden ? ' *' : '') + '</td>' +
+        '<td>' + st.attendance.present + '/' + (st.attendance.total || 0) + '</td>' +
+      '</tr>').join('');
+
+    document.getElementById('reportBody').innerHTML =
+      '<div class="filter-bar no-print" style="margin-bottom:14px;">' +
+        '<select id="repSubj" class="field" onchange="repReload_()">' + metaData.subjects.map(x => '<option value="' + x.code + '"' + (x.code === r.subject ? ' selected' : '') + '>' + x.label + '</option>').join('') + '</select>' +
+        '<select id="repCls" class="field" onchange="repReload_()">' + metaData.classes.map(x => '<option value="' + x.code + '"' + (x.code === r.cls ? ' selected' : '') + '>' + x.label + '</option>').join('') + '</select>' +
+      '</div>' +
+      '<div class="card card-pad">' +
+        '<div class="rep-head">' +
+          '<h2>' + r.subjectLabel + ' · ' + r.clsLabel + '</h2>' +
+          '<div class="meta">ปีการศึกษา ' + r.year + ' ภาคเรียนที่ ' + r.term + ' · ' + r.totalChapters + ' หน่วยการเรียน' +
+            (r.termLocked ? ' · ปิดเทอมแล้ว' : '') + '</div>' +
+        '</div>' +
+        '<div class="rep-stats">' +
+          '<div class="rep-stat"><div class="n">' + r.summary.count + '</div><div class="l">นักเรียน</div></div>' +
+          '<div class="rep-stat"><div class="n">' + r.summary.average + '</div><div class="l">คะแนนเฉลี่ย</div></div>' +
+          '<div class="rep-stat"><div class="n" style="color:var(--mint)">' + r.summary.passed + '</div><div class="l">ผ่าน</div></div>' +
+          '<div class="rep-stat"><div class="n" style="color:var(--rose)">' + r.summary.failed + '</div><div class="l">ไม่ผ่าน</div></div>' +
+        '</div>' +
+        '<div class="section-label" style="margin-bottom:8px;">การกระจายของเกรด</div>' +
+        '<div class="rep-dist">' + dist + '</div>' +
+        '<div class="tbl-wrap" style="margin-top:16px; box-shadow:none;"><table class="rep">' +
+          '<thead><tr><th>#</th><th style="text-align:left">ชื่อ-สกุล</th><th>เก็บ<br>70</th><th>ปลาย<br>30</th><th>รวม<br>100</th><th>เกรด</th><th>มา<br>เรียน</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table></div>' +
+        '<div style="font-size:0.7rem; color:var(--ink-3); margin-top:12px; line-height:1.6;">' +
+          '* = เกรดที่ครูแก้เอง (ทำงานชดเชยแล้ว) · ' +
+          'เกณฑ์: 4 ≥ ' + r.gradeCuts[4] + ' · 3 ≥ ' + r.gradeCuts[3] + ' · 2 ≥ ' + r.gradeCuts[2] + ' · 1 ≥ ' + r.gradeCuts[1] + '<br>' +
+          'ออกรายงานเมื่อ ' + new Date(r.generatedAt).toLocaleString('th-TH') +
+        '</div>' +
+      '</div>';
+  }
+  function repReload_() {
+    const body = document.getElementById('reportBody');
+    body.innerHTML = '<div class="sc-empty">กำลังโหลด...</div>';
+    google.script.run.withSuccessHandler(r => { if (r && r.ok) renderReport_(r); else body.innerHTML = courseErrorHtml_('repReload_()'); })
+      .withFailureHandler(() => { body.innerHTML = courseErrorHtml_('repReload_()'); })
+      .getTermReport(document.getElementById('repSubj').value, document.getElementById('repCls').value);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ร่องรอยการแก้ย้อนหลัง
+  // ═══════════════════════════════════════════════════════════════
+  function openChangeLog_() {
+    openFullpageView_('changeLogModal');
+    const body = document.getElementById('changeLogBody');
+    body.innerHTML = '<div class="sc-empty">กำลังโหลด...</div>';
+    google.script.run.withSuccessHandler(list => {
+      if (!list || !list.length) {
+        body.innerHTML = '<div class="sc-empty">ยังไม่มีการแก้ย้อนหลัง</div>';
+        return;
+      }
+      const kind = a => /เกรด|ผลการเรียน/.test(a) ? 'grade' : /เช็คชื่อ/.test(a) ? 'att'
+                      : /เทอม|เลื่อนชั้น|ลบนักเรียน/.test(a) ? 'term' : 'sys';
+      body.innerHTML =
+        '<div class="note" style="background:var(--blue-dim); border-radius:12px; padding:13px 15px; margin-bottom:14px; font-size:0.8rem; color:var(--ink-2);">' +
+          'ทุกการแก้ที่ทำย้อนหลังถูกบันทึกไว้ที่นี่ พร้อมค่าเดิม — ใช้ตอบได้เมื่อมีคนถามย้อนหลัง' +
+        '</div>' +
+        list.map(r =>
+          '<div class="log-item ' + kind(r.action) + '">' +
+            '<div class="lh"><span class="act">' + r.action + '</span>' +
+              '<span class="when">' + new Date(r.ts).toLocaleString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + '</span></div>' +
+            '<div class="tgt">' + (r.target || '') + (r.field ? ' · ' + r.field : '') + '</div>' +
+            (r.oldValue || r.newValue
+              ? '<div class="diff"><span class="from">' + (r.oldValue || '—') + '</span><i class="fa-solid fa-arrow-right" style="font-size:0.6rem; color:var(--ink-3)"></i><span class="to">' + (r.newValue || '—') + '</span></div>'
+              : '') +
+            (r.note ? '<div class="tgt" style="margin-top:4px; color:var(--ink-3)">' + r.note + '</div>' : '') +
+          '</div>').join('');
+    }).withFailureHandler(err => {
+      console.error('getChangeLog failed:', err);
+      body.innerHTML = courseErrorHtml_('openChangeLog_()');
+    }).getChangeLog(200);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ลิงก์สำหรับผู้ปกครอง
+  // ═══════════════════════════════════════════════════════════════
+  function parentUrl_(token) { return location.origin + location.pathname + '#p=' + token; }
+
+  function openParentLinks_() {
+    openFullpageView_('parentLinkModal');
+    const body = document.getElementById('parentLinkBody');
+    body.innerHTML = '<div class="sc-empty">กำลังสร้างลิงก์...</div>';
+    const cls = teacherCtx_().cls || 'ALL';
+    google.script.run.withSuccessHandler(list => {
+      body.innerHTML =
+        '<div style="background:var(--blue-dim); border-radius:12px; padding:13px 15px; margin-bottom:14px; font-size:0.8rem; color:var(--ink-2); line-height:1.6;">' +
+          'ลิงก์เฉพาะตัวของแต่ละคน <b style="color:var(--ink)">เปิดดูได้อย่างเดียว แก้อะไรไม่ได้</b> และไม่ต้องใช้รหัสผ่าน<br>' +
+          'ถ้าลิงก์หลุด กดปุ่มล่างสุดเพื่อเปลี่ยนใหม่ทั้งหมดได้' +
+        '</div>' +
+        '<div class="filter-bar" style="margin-bottom:12px;">' +
+          '<select id="plCls" class="field" onchange="openParentLinksFor_(this.value)">' +
+            '<option value="ALL">ทุกชั้น</option>' +
+            metaData.classes.map(c => '<option value="' + c.code + '"' + (c.code === cls ? ' selected' : '') + '>' + c.label + '</option>').join('') +
+          '</select>' +
+        '</div>' +
+        list.map(st =>
+          '<div class="plink">' +
+            '<span class="nm">' + st.name + ' <span style="color:var(--ink-3); font-size:0.72rem">' + st.clsLabel + '</span></span>' +
+            '<button class="btn btn-ghost btn-sm" onclick="copyParentLink_(\'' + st.token + '\', this)"><i class="fa-solid fa-copy"></i> คัดลอก</button>' +
+          '</div>').join('') +
+        '<button class="btn btn-danger-soft btn-block" style="margin-top:18px;" onclick="rotateParentLinks_()">' +
+          '<i class="fa-solid fa-rotate"></i> เปลี่ยนลิงก์ใหม่ทั้งหมด (ลิงก์เก่าใช้ไม่ได้)</button>';
+    }).withFailureHandler(err => {
+      console.error('getParentLinksForClass failed:', err);
+      body.innerHTML = courseErrorHtml_('openParentLinks_()');
+    }).getParentLinksForClass(cls);
+  }
+  function openParentLinksFor_(cls) {
+    const body = document.getElementById('parentLinkBody');
+    const keep = body.innerHTML;
+    google.script.run.withSuccessHandler(() => openParentLinks_()).withFailureHandler(() => { body.innerHTML = keep; })
+      .getCurrentTerm();
+    // เปลี่ยนชั้นแล้วโหลดใหม่ทั้งหน้า โดยจำค่าที่เลือกไว้ผ่านบริบทของครู
+    try { const c = JSON.parse(localStorage.getItem('smartClassScanCtx') || '{}'); c.cls = cls; localStorage.setItem('smartClassScanCtx', JSON.stringify(c)); } catch (e) {}
+  }
+
+  function copyParentLink_(token, btn) {
+    const url = parentUrl_(token);
+    const done = () => { btn.innerHTML = '<i class="fa-solid fa-check"></i> คัดลอกแล้ว'; setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-copy"></i> คัดลอก'; }, 1800); };
+    if (navigator.clipboard) navigator.clipboard.writeText(url).then(done).catch(() => Swal.fire('ลิงก์', url, 'info'));
+    else Swal.fire({ title: 'ลิงก์สำหรับผู้ปกครอง', html: '<div style="word-break:break-all; font-size:0.8rem;">' + url + '</div>', confirmButtonText: 'ปิด' });
+  }
+
+  function rotateParentLinks_() {
+    Swal.fire({
+      title: 'เปลี่ยนลิงก์ใหม่ทั้งหมด?', icon: 'warning',
+      html: 'ลิงก์เดิมที่แจกไปแล้ว<b> จะใช้ไม่ได้ทันที</b><br>ต้องแจกลิงก์ใหม่ให้ผู้ปกครองทุกคน',
+      input: 'text', inputPlaceholder: 'พิมพ์: เปลี่ยนลิงก์ทั้งหมด',
+      showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      google.script.run.withSuccessHandler(res => {
+        if (res && res.success) { Toast(res.message); openParentLinks_(); }
+        else Swal.fire('ไม่สำเร็จ', (res && res.message) || '', 'error');
+      }).withFailureHandler(() => Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้', 'error'))
+        .rotateParentLinks(r.value);
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // หน้าที่ผู้ปกครองเปิด — เข้าทาง #p=<ลิงก์> ไม่ต้องล็อกอิน
+  // ═══════════════════════════════════════════════════════════════
+  function tryParentView_() {
+    const m = (location.hash || '').match(/[#&]p=([A-Za-z0-9_-]{10,40})/);
+    if (!m) return false;
+    document.getElementById('loginSection').classList.add('hidden');
+    document.getElementById('parentSection').classList.remove('hidden');
+    google.script.run.withSuccessHandler(r => renderParent_(r))
+      .withFailureHandler(err => {
+        console.error('getParentSummary failed:', err);
+        document.getElementById('parentBody').innerHTML =
+          '<div class="sc-empty">เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง</div>';
+      }).getParentSummary(m[1]);
+    return true;
+  }
+
+  function renderParent_(r) {
+    const body = document.getElementById('parentBody');
+    if (!r || !r.ok) {
+      body.innerHTML = '<div class="sc-empty">' + ((r && r.message) || 'เปิดไม่ได้') + '</div>';
+      return;
+    }
+    document.getElementById('paName').innerText = r.name;
+    document.getElementById('paAvatar').innerText =
+      (String(r.name || '').trim().replace(/^(เด็กชาย|เด็กหญิง|นาย|นางสาว|น\.ส\.|ด\.ช\.|ด\.ญ\.)\s*/, '')[0] || '·');
+    document.getElementById('paClass').innerText = r.clsLabel;
+    document.getElementById('paTerm').innerText = 'ปี ' + r.year + ' เทอม ' + r.term;
+
+    const a = r.attendance;
+    const pct = a.total ? Math.round(((a.present + a.late) / a.total) * 100) : 0;
+
+    body.innerHTML =
+      '<div class="sc-sec"><span class="t">ผลการเรียน</span></div>' +
+      (r.subjects.length ? r.subjects.map(sj => {
+        const g = Number(sj.grade) || 0;
+        const tone = g >= 3 ? 'mint' : g >= 1 ? 'gold' : 'rose';
+        return '<div class="pa-sub">' +
+          '<div class="r1"><span class="nm">' + sj.label + '</span>' +
+            '<span class="grade-badge ' + (g >= 3 ? 'g-hi' : g >= 1 ? 'g-mid' : 'g-lo') + '">เกรด ' + sj.grade + '</span></div>' +
+          '<div class="track" style="height:7px; border-radius:7px; background:var(--surface-2); margin:11px 0 8px; overflow:hidden;">' +
+            '<i style="display:block; height:100%; width:' + Math.min(100, Number(sj.total100) || 0) + '%; background:var(--grad); border-radius:7px;"></i></div>' +
+          '<div style="display:flex; justify-content:space-between; font-size:0.76rem; color:var(--ink-2);">' +
+            '<span>คะแนนเก็บ <b style="color:var(--ink)">' + (sj.total70 ?? '—') + '</b> / 70</span>' +
+            '<span>ปลายภาค <b style="color:var(--ink)">' + (sj.finalExam || 'ยังไม่สอบ') + '</b></span></div>' +
+          '<div class="pa-note">เรียนไปแล้ว ' + sj.chaptersLearned + ' จาก ' + sj.totalChapters + ' หน่วย' +
+            (sj.weakest ? ' · หน่วยที่ควรทบทวน: หน่วยที่ ' + sj.weakest.ch + ' (' + sj.weakest.total + '/20)' : '') + '</div>' +
+        '</div>';
+      }).join('') : '<div class="sc-empty">ยังไม่มีคะแนนในเทอมนี้</div>') +
+
+      '<div class="sc-sec" style="margin-top:20px;"><span class="t">การมาเรียน</span></div>' +
+      '<div class="pa-sub">' +
+        '<div style="display:flex; align-items:baseline; gap:10px;">' +
+          '<span style="font-family:\'Kanit\',sans-serif; font-weight:600; font-size:2rem; color:' + (pct >= 80 ? 'var(--mint)' : pct >= 60 ? 'var(--gold)' : 'var(--rose)') + '">' + pct + '%</span>' +
+          '<span style="font-size:0.78rem; color:var(--ink-2);">มาเรียน ' + (a.present + a.late) + ' จาก ' + a.total + ' ครั้ง</span>' +
+        '</div>' +
+        '<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:12px;">' +
+          ['มา:' + a.present, 'สาย:' + a.late, 'ลา:' + a.leave, 'ขาด:' + a.absent].map(t => {
+            const [k, v] = t.split(':');
+            return '<div style="background:var(--surface-2); border-radius:10px; padding:9px 6px; text-align:center;">' +
+              '<div style="font-family:\'Kanit\',sans-serif; font-weight:600; font-size:1.1rem;">' + v + '</div>' +
+              '<div style="font-size:0.66rem; color:var(--ink-2);">' + k + '</div></div>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+
+      '<div class="sc-sec" style="margin-top:20px;"><span class="t">แต้มสะสมพิเศษ</span></div>' +
+      '<div class="pa-sub">' +
+        '<div style="display:flex; align-items:baseline; gap:10px;">' +
+          '<span style="font-family:\'Kanit\',sans-serif; font-weight:600; font-size:2rem; color:var(--gold)">' + (r.points ?? 0) + '</span>' +
+          '<span style="font-size:0.78rem; color:var(--ink-2);">แต้ม · เช็คอินแล้ว ' + (r.checkin.checkinCount || 0) + ' วัน</span>' +
+        '</div>' +
+        '<div class="pa-note">แต้มพิเศษได้จากการมาเรียน ส่งงาน และร่วมกิจกรรม ใช้แลกเป็นคะแนนเก็บได้ตามเกณฑ์ที่ครูกำหนด</div>' +
+      '</div>' +
+
+      '<div style="text-align:center; font-size:0.72rem; color:var(--ink-3); margin-top:24px; line-height:1.7;">' +
+        'หน้านี้เปิดดูได้อย่างเดียว · ข้อมูล ณ ' + new Date(r.generatedAt).toLocaleString('th-TH') + '<br>' +
+        'หากมีข้อสงสัยกรุณาติดต่อคุณครูประจำวิชา' +
+      '</div>';
+  }
+
+
+  // ─── ดูแลระบบ: สำรองข้อมูล · ขนาดชีต · เวลาตอบจริง ──────────────
+  // สามเรื่องนี้เป็นงานบำรุงรักษาที่ปกติต้องเข้าไปทำในชีตเอง
+  // รวมมาไว้ที่เดียวให้ครูดูแลได้จากหน้าเว็บ โดยไม่ต้องเปิด Apps Script
+  function renderAdminCare_() {
+    const body = document.getElementById('adminBody');
+    body.innerHTML = '<div class="sc-empty">กำลังโหลด...</div>';
+
+    let got = 0, data = {};
+    const done = () => { if (++got === 3) paintCare_(data); };
+    const grab = (key, fn, ...args) => {
+      google.script.run.withSuccessHandler(r => { data[key] = r; done(); })
+        .withFailureHandler(err => { console.error(fn + ' failed:', err); data[key] = null; done(); })[fn](...args);
+    };
+    grab('backup', 'getBackupStatus');
+    grab('sizes', 'getLogSizes');
+    grab('perf', 'getPerfSummary', 7);
+  }
+
+  function paintCare_(d) {
+    const b = d.backup, sizes = d.sizes || [], perf = d.perf;
+    const when = ts => new Date(ts).toLocaleString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+    const backupCard =
+      '<div class="sc-sec"><span class="t">สำรองข้อมูล</span></div>' +
+      '<div class="card card-pad" style="margin-bottom:16px;">' +
+        (b ? (
+          '<div class="feat-row" style="padding-top:0;">' +
+            '<div class="feat-body">' +
+              '<div class="feat-name">สำรองอัตโนมัติทุกสัปดาห์</div>' +
+              '<div class="feat-desc">คัดลอกทั้งไฟล์ไปเก็บในโฟลเดอร์ “' + b.folder + '” ทุกเช้าวันอาทิตย์ เก็บ ' + b.keep + ' ชุดล่าสุด</div>' +
+              '<div class="feat-usage' + (b.count ? '' : ' zero') + '"><i class="fa-solid fa-box-archive"></i> ' +
+                (b.count ? ('มีสำรองอยู่ ' + b.count + ' ชุด' + (b.last ? ' · ล่าสุด ' + when(b.last.at) : '')) : 'ยังไม่มีสำรองเลย') + '</div>' +
+            '</div>' +
+            '<label class="switch"><input type="checkbox" id="bkSwitch" ' + (b.on ? 'checked' : '') + ' onchange="toggleBackup_(this.checked)"><span class="track"></span></label>' +
+          '</div>' +
+          '<button class="btn btn-ghost btn-block btn-sm" style="margin-top:10px;" onclick="runBackupNow_()">' +
+            '<i class="fa-solid fa-cloud-arrow-up"></i> สำรองเดี๋ยวนี้ 1 ครั้ง</button>'
+        ) : '<div class="sc-empty">อ่านสถานะสำรองไม่ได้</div>') +
+      '</div>';
+
+    const sizeCard =
+      '<div class="sc-sec"><span class="t">ขนาดชีตที่โตไม่หยุด</span></div>' +
+      '<div class="card card-pad" style="margin-bottom:16px;">' +
+        '<div style="font-size:0.78rem; color:var(--ink-2); line-height:1.6; margin-bottom:12px;">' +
+          'สองชีตนี้ถูกอ่าน<b style="color:var(--ink)">ทั้งชีต</b>ทุกครั้งที่นักเรียนเข้าระบบและทุกครั้งที่เปิดหน้าบันทึกกิจกรรม<br>' +
+          'ยิ่งโตยิ่งช้า — พอปิดเทอมแล้วย้ายของเทอมเก่าไปคลังได้เลย' +
+        '</div>' +
+        sizes.map(x =>
+          '<div style="display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line-soft);">' +
+            '<span style="flex:1; font-size:0.85rem; font-weight:500;">' + x.label + '</span>' +
+            '<span style="font-family:\'Kanit\',sans-serif; font-weight:600; font-variant-numeric:tabular-nums;">' + x.rows.toLocaleString('th-TH') + '</span>' +
+            '<span style="font-size:0.7rem; color:' + (x.rows > 5000 ? 'var(--rose)' : x.rows > 2000 ? 'var(--gold)' : 'var(--ink-3)') + '; min-width:96px; text-align:right;">' + x.advice + '</span>' +
+          '</div>').join('') +
+        '<button class="btn btn-ghost btn-block btn-sm" style="margin-top:12px;" onclick="openArchiveLogs_()">' +
+          '<i class="fa-solid fa-box-archive"></i> ย้ายประวัติเทอมเก่าไปคลัง</button>' +
+      '</div>';
+
+    const perfCard =
+      '<div class="sc-sec"><span class="t">เวลาตอบจริง (7 วันล่าสุด)</span></div>' +
+      '<div class="card card-pad">' +
+        (perf && perf.total ? (
+          '<div style="font-size:0.78rem; color:var(--ink-2); margin-bottom:12px;">' +
+            'มีคำขอที่ช้าเกิน ' + (perf.threshold / 1000) + ' วินาที ทั้งหมด <b style="color:var(--rose)">' + perf.total + '</b> ครั้ง' +
+          '</div>' +
+          perf.byFunc.map(f =>
+            '<div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line-soft);">' +
+              '<span style="flex:1; font-size:0.78rem; font-family:ui-monospace,monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + f.func + '</span>' +
+              '<span style="font-size:0.72rem; color:var(--ink-2);">' + f.count + ' ครั้ง</span>' +
+              '<span style="font-family:\'Kanit\',sans-serif; font-weight:600; font-size:0.85rem; color:var(--rose); min-width:64px; text-align:right;">' + (f.worst / 1000).toFixed(1) + ' วิ</span>' +
+            '</div>').join('')
+        ) : (
+          '<div style="font-size:0.8rem; color:var(--ink-2); line-height:1.7;">' +
+            '<i class="fa-solid fa-circle-check" style="color:var(--mint)"></i> <b style="color:var(--ink)">ยังไม่มีคำขอไหนช้าเกิน ' + ((perf && perf.threshold || 4000) / 1000) + ' วินาที</b><br>' +
+            'ตัวจับเวลานี้วัดจากฝั่งเซิร์ฟเวอร์จริง เก็บเฉพาะที่ช้าผิดปกติ<br>' +
+            'ถ้าใช้ไปสักพักแล้วยังว่างอยู่ แปลว่าระบบเร็วพอในการใช้งานจริง' +
+          '</div>'
+        )) +
+      '</div>';
+
+    document.getElementById('adminBody').innerHTML = backupCard + sizeCard + perfCard;
+  }
+
+  function toggleBackup_(on) {
+    google.script.run.withSuccessHandler(r => { Toast((r && r.message) || 'บันทึกแล้ว'); renderAdminCare_(); })
+      .withFailureHandler(() => { Toast('ตั้งค่าไม่สำเร็จ', 'warning'); renderAdminCare_(); })
+      .setBackupSchedule(on);
+  }
+
+  function runBackupNow_() {
+    Swal.fire({ title: 'กำลังสำรอง...', html: 'คัดลอกทั้งไฟล์ อาจใช้เวลาสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    google.script.run.withSuccessHandler(r => {
+      if (r && r.success) { Swal.fire('สำเร็จ', r.message, 'success'); renderAdminCare_(); }
+      else Swal.fire('ไม่สำเร็จ', (r && r.message) || '', 'error');
+    }).withFailureHandler(err => {
+      console.error('runSpreadsheetBackup failed:', err);
+      // เคยเจอว่างานเสร็จแล้วแต่คำตอบหาย จึงไม่บอกว่าล้มเหลวตรงๆ
+      Swal.fire({ title: 'ไม่ได้รับคำตอบ', icon: 'warning',
+        html: 'การสำรองอาจเสร็จแล้วแต่คำตอบหายระหว่างทาง<br>กดปิดแล้วดูที่ “มีสำรองอยู่กี่ชุด” อีกครั้ง' })
+        .then(() => renderAdminCare_());
+    }).runSpreadsheetBackup();
+  }
+
+  function openArchiveLogs_() {
+    const t = (metaData && metaData.term) || null;
+    google.script.run.withSuccessHandler(cur => {
+      // เสนอเทอมก่อนหน้าเป็นค่าเริ่มต้น เพราะเทอมปัจจุบันย้ายไม่ได้อยู่แล้ว
+      const y = cur.term === 1 ? cur.year - 1 : cur.year;
+      const tm = cur.term === 1 ? 2 : 1;
+      Swal.fire({
+        title: 'ย้ายประวัติไปคลัง',
+        html: '<div style="text-align:left; font-size:0.85rem; line-height:1.7;">' +
+          'ย้ายรายการของเทอมที่เลือกออกจากชีตหลัก ไปเก็บในชีตคลังแยก<br>' +
+          '<b>คัดลอกและตรวจให้ครบก่อน ถึงจะลบของเดิม</b> ถ้าตรวจไม่ผ่านจะไม่ลบอะไรเลย<br><br>' +
+          '<label style="font-size:0.8rem; color:#888;">ปีการศึกษา</label>' +
+          '<input id="arcY" class="swal2-input" style="margin:4px 0;" value="' + y + '">' +
+          '<label style="font-size:0.8rem; color:#888;">ภาคเรียน</label>' +
+          '<input id="arcT" class="swal2-input" style="margin:4px 0;" value="' + tm + '">' +
+          '</div>',
+        showCancelButton: true, confirmButtonText: 'ดูก่อนว่าจะย้ายกี่แถว', cancelButtonText: 'ยกเลิก',
+        preConfirm: () => ({ y: parseInt(document.getElementById('arcY').value), t: parseInt(document.getElementById('arcT').value) })
+      }).then(r => { if (r.isConfirmed) previewArchiveLogs_(r.value.y, r.value.t); });
+    }).withFailureHandler(() => Toast('อ่านเทอมปัจจุบันไม่ได้', 'warning')).getCurrentTerm();
+  }
+
+  function previewArchiveLogs_(year, term) {
+    Swal.fire({ title: 'กำลังนับ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    google.script.run.withSuccessHandler(pv => {
+      if (pv.isCurrentTerm) return Swal.fire('ย้ายไม่ได้', 'นี่คือเทอมที่กำลังใช้งานอยู่ ต้องเป็นเทอมที่ผ่านไปแล้วเท่านั้น', 'warning');
+      if (!pv.totalToMove) return Swal.fire('ไม่มีอะไรให้ย้าย', 'ไม่พบรายการของปี ' + year + ' เทอม ' + term, 'info');
+      Swal.fire({
+        title: 'ย้าย ' + pv.totalToMove + ' แถว?', icon: 'question',
+        html: '<div style="text-align:left; font-size:0.85rem; line-height:1.8;">' +
+          pv.items.map(i => '• ' + i.label + ': ย้าย <b>' + i.toMove + '</b> จาก ' + i.total + ' แถว' + (i.alreadyArchived ? ' <span style="color:#C77E00">(มีคลังอยู่แล้ว จะต่อท้าย)</span>' : '')).join('<br>') +
+          '<br><br>พิมพ์คำยืนยันเพื่อดำเนินการ</div>',
+        input: 'text', inputPlaceholder: 'พิมพ์: ย้ายประวัติ',
+        showCancelButton: true, confirmButtonText: 'ย้ายเลย', cancelButtonText: 'ยกเลิก'
+      }).then(c => {
+        if (!c.isConfirmed) return;
+        Swal.fire({ title: 'กำลังย้าย...', html: 'คัดลอก → ตรวจ → ลบของเดิม', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        google.script.run.withSuccessHandler(res => {
+          if (res && res.success) { Swal.fire('สำเร็จ', res.message, 'success'); renderAdminCare_(); }
+          else Swal.fire('ไม่สำเร็จ', (res && res.message) || '', 'error');
+        }).withFailureHandler(() => Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้ — ตรวจที่ขนาดชีตอีกครั้งว่าย้ายไปแล้วหรือยัง', 'warning'))
+          .archiveTermLogs(year, term, c.value);
+      });
+    }).withFailureHandler(() => Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้', 'error'))
+      .previewTermLogArchive(year, term);
   }
 
   // ─── สวิตช์เปิด/ปิดฟีเจอร์ ───────────────────────────────────
@@ -3638,6 +4308,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     if (tab === 'features') renderAdminFeatures_();
     if (tab === 'settings') renderAdminSettings_();
     if (tab === 'integrity') runSheetIntegrityCheck_();
+    if (tab === 'care') renderAdminCare_();
   }
 
   // ─── เปิด/ปิดฟีเจอร์ ─────────────────────────────────────────
@@ -6491,8 +7162,72 @@ function refreshRunSummary_() {
       <button class="btn btn-ghost btn-sm admin-tab-btn" data-atab="features" onclick="switchAdminTab_('features', this)"><i class="fa-solid fa-toggle-on"></i> ฟีเจอร์</button>
       <button class="btn btn-ghost btn-sm admin-tab-btn" data-atab="settings" onclick="switchAdminTab_('settings', this)"><i class="fa-solid fa-sliders"></i> ค่าระบบ</button>
       <button class="btn btn-ghost btn-sm admin-tab-btn" data-atab="integrity" onclick="switchAdminTab_('integrity', this)"><i class="fa-solid fa-shield-halved"></i> ตรวจสอบชีต</button>
+      <button class="btn btn-ghost btn-sm admin-tab-btn" data-atab="care" onclick="switchAdminTab_('care', this)"><i class="fa-solid fa-heart-pulse"></i> ดูแลระบบ</button>
     </div>
     <div id="adminBody"></div>
+  </div>
+</div>
+
+<!-- ═══ กรอกคะแนนทั้งห้องในหน้าเดียว ═══════════════════════════
+     แทนการสแกน QR ทีละคน 25 ครั้ง — ตอนตรวจข้อสอบเสร็จ กระดาษเรียงตามเลขที่อยู่แล้ว
+     พิมพ์เป็นคอลัมน์รวดเดียวเร็วกว่ามาก และยิงคำขอเดียวแทน 25 คำขอ -->
+<div id="bulkScoreModal" class="fullpage-view hidden">
+  <div class="fullpage-head">
+    <div class="section-title" style="margin-bottom:0;"><i class="fa-solid fa-table-list"></i> กรอกคะแนนทั้งห้อง</div>
+    <button class="btn btn-ghost btn-icon" onclick="closeFullpageView_('bulkScoreModal')"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="fullpage-body" id="bulkScoreBody"></div>
+</div>
+
+<!-- ═══ ใบรายงานผลการเรียน (พร้อมพิมพ์) ═══ -->
+<div id="reportModal" class="fullpage-view hidden">
+  <div class="fullpage-head">
+    <div class="section-title" style="margin-bottom:0;"><i class="fa-solid fa-file-lines"></i> ใบรายงานผล</div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-teal btn-sm" onclick="window.print()"><i class="fa-solid fa-print"></i> พิมพ์</button>
+      <button class="btn btn-ghost btn-icon" onclick="closeFullpageView_('reportModal')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+  </div>
+  <div class="fullpage-body" id="reportBody"></div>
+</div>
+
+<!-- ═══ ร่องรอยการแก้ย้อนหลัง ═══ -->
+<div id="changeLogModal" class="fullpage-view hidden">
+  <div class="fullpage-head">
+    <div class="section-title" style="margin-bottom:0;"><i class="fa-solid fa-clock-rotate-left"></i> ร่องรอยการแก้</div>
+    <button class="btn btn-ghost btn-icon" onclick="closeFullpageView_('changeLogModal')"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="fullpage-body" id="changeLogBody"></div>
+</div>
+
+<!-- ═══ ลิงก์สำหรับผู้ปกครอง ═══ -->
+<div id="parentLinkModal" class="fullpage-view hidden">
+  <div class="fullpage-head">
+    <div class="section-title" style="margin-bottom:0;"><i class="fa-solid fa-link"></i> ลิงก์ผู้ปกครอง</div>
+    <button class="btn btn-ghost btn-icon" onclick="closeFullpageView_('parentLinkModal')"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="fullpage-body" id="parentLinkBody"></div>
+</div>
+
+<!-- ═══ หน้าที่ผู้ปกครองเปิด (ไม่ต้องล็อกอิน อ่านอย่างเดียว) ═══ -->
+<div id="parentSection" class="hidden">
+  <div class="app-shell" style="padding-bottom:30px;">
+    <div class="sc-head" style="padding-bottom:26px;">
+      <div class="sc-hrow">
+        <div class="sc-avatar" id="paAvatar">·</div>
+        <div class="sc-id">
+          <div class="sc-hi">รายงานผลการเรียน</div>
+          <div class="sc-nm" id="paName">—</div>
+        </div>
+      </div>
+      <div class="sc-chips" style="margin-top:14px;">
+        <span class="sc-chip" id="paClass">—</span>
+        <span class="sc-chip" id="paTerm">—</span>
+      </div>
+    </div>
+    <div class="sc-pad pa-wrap" id="parentBody">
+      <div class="sc-empty">กำลังโหลด...</div>
+    </div>
   </div>
 </div>
 
