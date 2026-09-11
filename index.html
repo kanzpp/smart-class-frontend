@@ -2247,7 +2247,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
   // "ต้องทำ" = เฉพาะเรื่องที่นักเรียนลงมือได้ตอนนี้จริงๆ
   // ถ้าไม่มีอะไรค้าง ก็บอกไปตรงๆ ว่าไม่มี ดีกว่าโชว์การ์ดเปล่าให้รก
-  function renderStudentTodo_(d, bundle) {
+  function renderStudentTodo_(d) {
     const box = document.getElementById('sTodoList');
     const cnt = document.getElementById('sTodoCount');
     if (!box) return;
@@ -2346,9 +2346,15 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     try { localStorage.setItem('smartClassScanCtx', JSON.stringify(teacherCtx_())); } catch (e) {}
   }
 
+  var _scanProgAt = 0;
   function loadScanProgress_() {
     const c = teacherCtx_();
     if (!c.subject || !c.cls) return;
+    // หน้าจอครูถูกวาดสองรอบตอนเปิดแอป (แคชก่อน แล้วของสด) ถ้าไม่กันไว้จะยิงซ้ำเปล่าๆ ~2 วินาที
+    // และกันครูรัวเปลี่ยนบทเร็วๆ แล้วยิงถี่ด้วย
+    const now = Date.now();
+    if (now - _scanProgAt < 2500) return;
+    _scanProgAt = now;
     const subjName = (metaData?.subjects || []).find(x => x.code === c.subject)?.label || c.subject;
     const clsName  = (metaData?.classes  || []).find(x => x.code === c.cls)?.label  || c.cls;
     const set = (id, v) => { const e = document.getElementById(id); if (e) e.innerHTML = v; };
@@ -2460,7 +2466,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // เช็คว่ามีรายการให้/หักแต้มพิเศษใหม่ที่นักเรียนยังไม่เคยเห็นไหม (เทียบกับ timestamp ล่าสุดที่เคยเห็นซึ่งเก็บไว้ในเครื่อง)
   // ถ้ามี แสดง popup แจ้งเหตุผลทีละรายการ เรียงจากเก่าไปใหม่ (สีเขียว=ได้แต้ม / สีแดง=ถูกหัก)
   // [Perf] preloadedList: ถ้ามีอยู่แล้ว (เช่นมาจาก getStudentBootBundle_ ตอน login) ไม่ต้องยิง google.script.run ซ้ำ
+  var _noticePopupShown = false;
   function checkManualPointNotices(stdId, preloadedList) {
+    if (_noticePopupShown) return;   // เด้งได้ครั้งเดียวต่อการเปิดแอปหนึ่งครั้ง
+    _noticePopupShown = true;
     const handle = (list) => {
       if (!list || list.length === 0) return;
       const seenKey  = 'manualPtsSeen_' + stdId;
@@ -2480,7 +2489,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         }
         const n = unseen[i];
         const isAward = n.points >= 0;
-        const color   = isAward ? '#FF5C97' : '#B01248';
+        const color   = isAward ? 'var(--blue)' : 'var(--rose)';
         Swal.fire({
           title: isAward ? '🎁 ได้รับแต้มพิเศษ' : '⛔ มีการหักแต้มพิเศษ',
           html: `<div style="font-size:2rem; font-weight:900; color:${color}; margin-bottom:10px;">${isAward ? '+' : '-'}${Math.abs(n.points)} แต้ม</div>
@@ -2558,7 +2567,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       const gTerm = document.getElementById('sGradeTerm');
       if (gTerm && bundle.term) gTerm.innerText = 'ปีการศึกษา ' + bundle.term.year + ' เทอม ' + bundle.term.term;
 
-      renderStudentTodo_(d, bundle);
+      renderStudentTodo_(d);
       renderHomeGrade_(d);
       renderMeNotices_(bundle.manualNotices);
 
@@ -2625,7 +2634,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       // QR Code
       new QRCode(document.getElementById('qrcode'), {
         text: String(stdId), width: 200, height: 200,
-        colorDark: "#123C69", colorLight: "#ffffff"
+        colorDark: "#0E1B2A", colorLight: "#ffffff"   // ค่าสีตรงๆ — qrcodejs วาดลง canvas อ่าน var() ของ CSS ไม่ได้
       });
 
       // บัตรประจำตัว — เหลือเฉพาะสิ่งที่ระบุตัวตนสำหรับให้ครูสแกน ตัวเลขสถิติดูที่หน้าหลักแทน
@@ -2707,6 +2716,12 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     google.script.run.withSuccessHandler(d => {
       studentDashboardData = d;
       renderGradeCards(d);
+      // หน้าแรกก็อ่านจากก้อนนี้ ถ้าไม่วาดใหม่ ตัวเลขบนหน้าแรกจะค้างเป็นค่าก่อนแลก/ก่อนเช็คอิน
+      renderHomeGrade_(d);
+      renderStudentTodo_(d);
+      const cs = d.checkinStats || {};
+      const a = document.getElementById('csCheckinCount'); if (a) a.innerText = cs.checkinCount ?? 0;
+      const b = document.getElementById('csStreakCount');  if (b) b.innerText = cs.consecutiveDays ?? 0;
     }).withFailureHandler(err => {
       // เรียกหลังนักเรียนแลกแต้มเป็นคะแนนเก็บ ถ้าเงียบไปเฉยๆ หน้าจอจะยังโชว์คะแนนเดิมทำให้เข้าใจผิดว่าแลกไม่สำเร็จ
       console.error('getStudentDashboard (refresh) failed:', err);
@@ -2789,7 +2804,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
                </div>`,
         showCancelButton: true,
         confirmButtonText: 'ตรวจสอบ', cancelButtonText: 'ยกเลิก',
-        confirmButtonColor: '#B01248',
+        confirmButtonColor: 'var(--rose)',
         preConfirm: () => {
           const amt    = parseInt(document.getElementById('deductAmountInput').value);
           const reason = document.getElementById('deductReasonInput').value.trim();
@@ -2805,7 +2820,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           html: `หัก <b>${r.value.amt} แต้ม</b> จากรหัส <b>${stdId}</b><br><span style="color:var(--slate);font-size:0.85rem;">เหตุผล: ${r.value.reason}</span>`,
           icon: 'warning', showCancelButton: true,
           confirmButtonText: 'ยืนยันหักแต้ม', cancelButtonText: 'ยกเลิก',
-          confirmButtonColor: '#B01248'
+          confirmButtonColor: 'var(--rose)'
         }).then(r2 => {
           if (r2.isConfirmed) executeDeduction(stdId, r.value.amt, r.value.reason);
           else resumeScannerAfterCancel();
@@ -2823,7 +2838,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
                </div>`,
         showCancelButton: true,
         confirmButtonText: 'ให้แต้ม', cancelButtonText: 'ยกเลิก',
-        confirmButtonColor: '#FF5C97',
+        confirmButtonColor: 'var(--blue)',
         preConfirm: () => {
           const amt    = parseInt(document.getElementById('awardAmountInput').value);
           const reason = document.getElementById('awardReasonInput').value.trim();
@@ -4313,7 +4328,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     const pd = d.potentialData || {};
 
     const gradeHtml = Object.values(d.subjects || {}).map(sub => {
-      const gc = parseFloat(sub.grade) >= 3 ? '#E63D7A' : parseFloat(sub.grade) <= 1.5 ? '#E0245E' : '#E0A800';
+      const gc = parseFloat(sub.grade) >= 3 ? 'var(--blue)' : parseFloat(sub.grade) <= 1.5 ? 'var(--rose)' : 'var(--gold)';
       return `<div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #F5FAFF; font-size:0.83rem;">
         <span style="color:#6E88A3;">${sub.label}</span>
         <span style="font-weight:700; color:${gc};">เกรด ${sub.grade} <small style="opacity:0.65;">(${sub.total100} คะแนน)</small></span>
@@ -4323,7 +4338,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     const nickHtml = Object.values(d.classNicknames || {}).map(cat => {
       const myRank = (cat.top3 || []).find(p => String(p.id) === String(stdId));
       return myRank
-        ? `<span style="background:rgba(255,92,151,0.12); color:#E63D7A; padding:3px 10px; border-radius:999px; font-size:0.75rem; font-weight:700; margin:2px; display:inline-block;">${cat.icon} ${cat.label} อันดับ ${myRank.rank}</span>`
+        ? `<span style="background:rgba(255,92,151,0.12); color:var(--blue); padding:3px 10px; border-radius:999px; font-size:0.75rem; font-weight:700; margin:2px; display:inline-block;">${cat.icon} ${cat.label} อันดับ ${myRank.rank}</span>`
         : '';
     }).join('');
 
@@ -4353,7 +4368,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       const bar = (label, val, max, color) => `
         <div style="margin-bottom:6px;">
           <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:#6E88A3; margin-bottom:2px;">
-            <span>${label}</span><b style="color:#123C69;">${val}/${max}</b>
+            <span>${label}</span><b style="color:var(--ink);">${val}/${max}</b>
           </div>
           <div style="background:#F5FAFF; height:8px; border-radius:4px; overflow:hidden;">
             <div style="background:${color}; width:${Math.min(100, Math.round((val / max) * 100))}%; height:100%;"></div>
@@ -4362,10 +4377,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       electiveHtml = `
         <div style="font-size:0.72rem; font-weight:700; color:#6E88A3; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">สาขาวิชาเลือก: ${ep.label} (${s.total50}/50)</div>
         <div style="background:#F5FAFF; border-radius:10px; padding:10px; margin-bottom:14px;">
-          ${bar('🏦 ธนาคารหน่วยกิต', s.creditBankScore, 10, '#123C69')}
-          ${bar('🎬 ดูคลิป', s.videoScore, 10, '#1D63A8')}
-          ${bar('⌨️ ตอบคำถาม', s.submissionScore, 15, '#FFC93C')}
-          ${bar('📝 สอบท้ายหน่วย', s.testScore, 15, '#E63D7A')}
+          ${bar('🏦 ธนาคารหน่วยกิต', s.creditBankScore, 10, 'var(--ink)')}
+          ${bar('🎬 ดูคลิป', s.videoScore, 10, 'var(--blue-2)')}
+          ${bar('⌨️ ตอบคำถาม', s.submissionScore, 15, 'var(--gold)')}
+          ${bar('📝 สอบท้ายหน่วย', s.testScore, 15, 'var(--blue)')}
         </div>`;
     } else {
       electiveHtml = `
@@ -4376,26 +4391,26 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     Swal.fire({
       html: `
         <div style="text-align:left;">
-          <div style="background:linear-gradient(135deg,#123C69,#1D63A8); color:white; border-radius:16px; padding:18px 20px; margin-bottom:14px;">
-            <div style="font-size:0.65rem; color:#FF5C97; font-weight:700; letter-spacing:0.12em; margin-bottom:6px;">SMART CLASS · ประจำตัวนักเรียน</div>
+          <div style="background:linear-gradient(135deg,var(--ink),var(--blue-2)); color:white; border-radius:16px; padding:18px 20px; margin-bottom:14px;">
+            <div style="font-size:0.65rem; color:var(--blue); font-weight:700; letter-spacing:0.12em; margin-bottom:6px;">SMART CLASS · ประจำตัวนักเรียน</div>
             <div style="font-size:1.3rem; font-weight:700; font-family:'Mitr',Prompt,sans-serif; line-height:1.2; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${d.name}</div>
             <div style="font-size:0.82rem; color:rgba(255,255,255,0.55);">${d.clsLabel} &nbsp;·&nbsp; รหัส ${stdId}</div>
           </div>
           <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; margin-bottom:14px;">
             <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
-              <div style="font-size:1.2rem; font-weight:900; color:#E63D7A;">${ci.checkinCount}</div>
+              <div style="font-size:1.2rem; font-weight:900; color:var(--blue);">${ci.checkinCount}</div>
               <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">เช็คอิน</div>
             </div>
             <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
-              <div style="font-size:1.2rem; font-weight:900; color:#FFC93C;">${d.pointsBalance || 0}</div>
+              <div style="font-size:1.2rem; font-weight:900; color:var(--gold);">${d.pointsBalance || 0}</div>
               <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">แต้มสะสม</div>
             </div>
             <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
-              <div style="font-size:1.2rem; font-weight:900; color:#E0A800;">${ci.consecutiveDays}🔥</div>
+              <div style="font-size:1.2rem; font-weight:900; color:var(--gold);">${ci.consecutiveDays}🔥</div>
               <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">ต่อเนื่อง</div>
             </div>
             <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
-              <div style="font-size:1.2rem; font-weight:900; color:#123C69;">${pd.myTotalSigs || 0}</div>
+              <div style="font-size:1.2rem; font-weight:900; color:var(--ink);">${pd.myTotalSigs || 0}</div>
               <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">ลายเซ็น</div>
             </div>
           </div>
@@ -4441,7 +4456,11 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     navigator.geolocation.getCurrentPosition(
       pos => {
         google.script.run.withSuccessHandler(r => {
-          if (r.success) { Swal.fire('สำเร็จ!', r.message, 'success'); refreshPointsBalance(); }
+          if (r.success) {
+            Swal.fire('สำเร็จ!', r.message, 'success');
+            refreshPointsBalance();
+            refreshStudentDashboardData();   // ไม่งั้นแถว "ยังไม่เช็คอินวันนี้" ยังค้างอยู่บนหน้าแรก
+          }
           else Swal.fire('ไม่สำเร็จ', r.message, 'warning');
         }).withFailureHandler(err => {
           console.error('submitGpsCheckin failed:', err);
@@ -4517,7 +4536,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     Swal.fire({
       title: '🔄 แลกแต้มเพิ่มคะแนนรายบท',
       html: `
-        <div style="background:#FFF3CC; border:1px solid #FFC93C; padding:10px; border-radius:10px; margin-bottom:14px; font-size:0.85rem; text-align:left;">
+        <div style="background:#FFF3CC; border:1px solid var(--gold); padding:10px; border-radius:10px; margin-bottom:14px; font-size:0.85rem; text-align:left;">
           <b>อัตราแลกเปลี่ยน:</b> 100 แต้มพิเศษ = 1 คะแนนเก็บ<br>
           <div style="margin-top:6px;">${ruleBox}</div>
         </div>
@@ -4567,7 +4586,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       Swal.fire({
         title: '🔄 แลกแต้มวิ่งเป็นแต้มพิเศษ',
         html: `
-          <div style="background:#FFF3CC; border:1px solid #FFC93C; padding:10px; border-radius:10px; margin-bottom:14px; font-size:0.85rem; text-align:left;">
+          <div style="background:#FFF3CC; border:1px solid var(--gold); padding:10px; border-radius:10px; margin-bottom:14px; font-size:0.85rem; text-align:left;">
             <b>อัตราแลกเปลี่ยน:</b> ${preview.rate} แต้มวิ่ง = 1 แต้มพิเศษ
           </div>
           <div style="font-size:0.9rem; text-align:left; line-height:1.9;">
@@ -4601,9 +4620,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 const WHEEL_SEGS = [
   { pct:25, startDeg:0,     endDeg:90,    midDeg:45,    color:'#7B93B0', border:'#A8BDD4', label:'เกลือ',
     emoji:{ hunger:'🪨', happiness:'😴', exp:'💨' }, val:{ hunger:0,  happiness:0,  exp:0  } },
-  { pct:35, startDeg:90,    endDeg:216,   midDeg:153,   color:'#C42862', border:'#FF5C97', label:'+เล็ก',
+  { pct:35, startDeg:90,    endDeg:216,   midDeg:153,   color:'var(--blue)', border:'var(--blue)', label:'+เล็ก',
     emoji:{ hunger:'🍎', happiness:'⚽', exp:'⭐' }, val:{ hunger:5,  happiness:5,  exp:10 } },
-  { pct:25, startDeg:216,   endDeg:306,   midDeg:261,   color:'#1C86C4', border:'#2AABEE', label:'+กลาง',
+  { pct:25, startDeg:216,   endDeg:306,   midDeg:261,   color:'#1C86C4', border:'var(--blue-2)', label:'+กลาง',
     emoji:{ hunger:'🥕', happiness:'🧸', exp:'⭐' }, val:{ hunger:10, happiness:10, exp:20 } },
   { pct:12, startDeg:306,   endDeg:349.2, midDeg:327.6, color:'#2E6DA4', border:'#4A90D9', label:'+สูง',
     emoji:{ hunger:'🍗', happiness:'🎈', exp:'⭐' }, val:{ hunger:20, happiness:20, exp:40 } },
@@ -4872,7 +4891,7 @@ function showSpinResult(res) {
   const label = isSalt ? 'ไม่ได้อะไรเลย'
     : (type === 'hunger' ? 'ความอิ่ม' : type === 'happiness' ? 'ความสุข' : 'EXP') + ' +' + val + '!';
   resultText.textContent = (isJackpot ? '🎊 แจ็กพอต! ' : '') + label;
-  resultText.style.color = isSalt ? '#6E88A3' : isJackpot ? '#FFC93C' : '#FF5C97';
+  resultText.style.color = isSalt ? '#6E88A3' : isJackpot ? 'var(--gold)' : 'var(--blue)';
 
   resultView.classList.remove('hidden');
 
@@ -4890,10 +4909,10 @@ function showSpinResult(res) {
         Swal.fire({
           title: '🎊 เลเวลอัป!',
           html: `<div style="font-size:2rem;margin:8px 0;">${companionData.petEmoji}</div>
-                 <div style="font-weight:900;color:#FFC93C;">Lv.${companionData.level} · ${companionData.stage}</div>
-                 ${res.bonusPoints > 0 ? `<div style="margin-top:6px;color:#FF5C97;font-weight:700;">+${res.bonusPoints} แต้มพิเศษ!</div>` : ''}`,
+                 <div style="font-weight:900;color:var(--gold);">Lv.${companionData.level} · ${companionData.stage}</div>
+                 ${res.bonusPoints > 0 ? `<div style="margin-top:6px;color:var(--blue);font-weight:700;">+${res.bonusPoints} แต้มพิเศษ!</div>` : ''}`,
           width: '280px',
-          background:'#17518C', color:'#fff', confirmButtonColor:'#FFC93C',
+          background:'var(--blue)', color:'#fff', confirmButtonColor:'var(--gold)',
           timer:3000, timerProgressBar:true, showConfirmButton:false,
         });
         setDialogue(rndDialogue('levelup'));
@@ -5034,8 +5053,8 @@ function renderCompanion(d, dialogue) {
   const hungerPct = d.hunger;
   const happyPct  = d.happiness;
   const expPct    = Math.min(100, Math.round((d.currentExp / d.expTarget) * 100));
-  const hColor    = d.hunger    < 30 ? '#E0245E' : '#FFC93C';
-  const haColor   = d.happiness < 30 ? '#E0245E' : '#FF8CC8';
+  const hColor    = d.hunger    < 30 ? 'var(--rose)' : 'var(--gold)';
+  const haColor   = d.happiness < 30 ? 'var(--rose)' : '#FF8CC8';
   const emojiAnim = isEgg ? '' : (d.hunger < 30 || d.happiness < 30 ? 'hungry' : 'alive');
   const canAct    = d.tickets >= 10;
   const canHatch  = d.tickets >= 100;
@@ -5080,7 +5099,7 @@ function renderCompanion(d, dialogue) {
 
         ${d.hunger < 30 || d.happiness < 30 ? `
         <div style="background:rgba(224,36,94,0.1);border:1px solid rgba(224,36,94,0.3);border-radius:10px;padding:8px 12px;text-align:center;margin-bottom:12px;">
-          <div style="font-size:11px;color:#E0245E;font-weight:700;">⚠️ ${d.hunger < 30 && d.happiness < 30 ? 'หิวและเหงามากแล้ว' : d.hunger < 30 ? 'หิวมากแล้ว' : 'เหงามากแล้ว'}</div>
+          <div style="font-size:11px;color:var(--rose);font-weight:700;">⚠️ ${d.hunger < 30 && d.happiness < 30 ? 'หิวและเหงามากแล้ว' : d.hunger < 30 ? 'หิวมากแล้ว' : 'เหงามากแล้ว'}</div>
         </div>` : ''}
 
         <div class="cp-bar-row">
@@ -5092,15 +5111,15 @@ function renderCompanion(d, dialogue) {
           <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${happyPct}%;background:${haColor};"></div></div>
         </div>
         <div class="cp-bar-row">
-          <div class="cp-bar-head"><span>⭐ EXP</span><span style="color:#FF5C97;">${d.currentExp}/${d.expTarget}</span></div>
-          <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${expPct}%;background:linear-gradient(90deg,#E63D7A,#FF5C97);"></div></div>
+          <div class="cp-bar-head"><span>⭐ EXP</span><span style="color:var(--blue);">${d.currentExp}/${d.expTarget}</span></div>
+          <div class="cp-bar-track"><div class="cp-bar-fill" style="width:${expPct}%;background:linear-gradient(90deg,var(--blue),var(--blue));"></div></div>
         </div>
 
         <div class="cp-actions">
           ${[
             { type:'hunger',    emoji:'🍖', label:'ให้อาหาร',   color:'#FFCB5C' },
             { type:'happiness', emoji:'🎈', label:'เล่นด้วยกัน', color:'#FF6B9D' },
-            { type:'exp',       emoji:'⭐', label:'ฝึกฝน EXP',  color:'#FF5C97' },
+            { type:'exp',       emoji:'⭐', label:'ฝึกฝน EXP',  color:'var(--blue)' },
           ].map(b => `
             <div class="cp-btn ${offCls}"
               style="background:${b.color}18;border-color:${b.color}55;"
@@ -5199,14 +5218,14 @@ function doHatchEgg() {
         Swal.fire({
           title: '🎉 ฟักสำเร็จ!',
           html: `<div style="font-size:4rem;margin:12px 0;">${res.emoji}</div>
-                 ${res.bonusPoints > 0 ? `<div style="margin-bottom:10px;color:#FF5C97;font-weight:700;">+${res.bonusPoints} แต้มพิเศษ!</div>` : ''}
+                 ${res.bonusPoints > 0 ? `<div style="margin-bottom:10px;color:var(--blue);font-weight:700;">+${res.bonusPoints} แต้มพิเศษ!</div>` : ''}
                  <div style="margin-bottom:12px;font-weight:700;">ตั้งชื่อให้คู่หูใหม่:</div>
                  <input id="petNameInput" class="swal2-input" placeholder="ชื่อคู่หู..." maxlength="20" style="text-align:center; display:block; margin:0 auto; width:90%; box-sizing:border-box;">`,
           width: 'min(92vw, 360px)',
           padding: '1.5rem',
           scrollbarPadding: false,
           heightAuto: false,
-          background:'#17518C', color:'#fff', confirmButtonColor:'#FF5C97',
+          background:'var(--blue)', color:'#fff', confirmButtonColor:'var(--blue)',
           confirmButtonText:'ยืนยัน', allowOutsideClick:false,
           preConfirm: () => {
             const n = document.getElementById('petNameInput').value.trim();
@@ -5364,7 +5383,7 @@ function renderHomeElectiveCard_(p) {
     const el = document.getElementById('homeElectiveCard');
     if (!el || !p || !p.hasElective || !featOn_('FEAT_ELECTIVE')) { if (wrap) wrap.style.display = 'none'; return; }
     if (wrap) wrap.style.display = '';
-    if (studentDashboardData) renderStudentTodo_(studentDashboardData, { manualNotices: [] });
+    if (studentDashboardData) renderStudentTodo_(studentDashboardData);
     const s = p.score || { creditBankScore:0, videoScore:0, submissionScore:0, testScore:0, total50:0 };
     const pct = Math.min(100, Math.round((Number(s.total50) / 50) * 100));
 
@@ -6250,12 +6269,12 @@ function updateRunMap_(lat, lng) {
     });
     runMarker = new google.maps.Marker({
       position: currentLatLng, map: runMap,
-      icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: '#FF5C97', fillOpacity: 1, strokeWeight: 2, strokeColor: '#ffffff' }
+      icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: '#0E6FD1', fillOpacity: 1, strokeWeight: 2, strokeColor: '#ffffff' }
     });
     runPathCoords = [currentLatLng];
     runPath = new google.maps.Polyline({
       path: runPathCoords, geodesic: true,
-      strokeColor: '#2AABEE', strokeOpacity: 1.0, strokeWeight: 4, map: runMap
+      strokeColor: '#35B7F2'   // ค่าสีตรงๆ — Google Maps SDK อ่าน var() ของ CSS ไม่ได้, strokeOpacity: 1.0, strokeWeight: 4, map: runMap
     });
   } else {
     runMap.panTo(currentLatLng);
@@ -6354,11 +6373,11 @@ function showRunCompanionExpResult_(companion, onDone) {
     Swal.fire({
       title: '🎊 เลเวลอัป!',
       html: `<div style="font-size:2rem;margin:8px 0;">${companion.petEmoji}</div>
-             <div style="font-weight:900;color:#FFC93C;">Lv.${companion.level} · ${companion.stage}</div>
+             <div style="font-weight:900;color:var(--gold);">Lv.${companion.level} · ${companion.stage}</div>
              <div style="margin-top:4px;color:#7ee787;">+${companion.expGained} EXP จากการวิ่ง</div>
-             ${companion.bonusPoints > 0 ? `<div style="margin-top:6px;color:#FF5C97;font-weight:700;">+${companion.bonusPoints} แต้มพิเศษ!</div>` : ''}`,
+             ${companion.bonusPoints > 0 ? `<div style="margin-top:6px;color:var(--blue);font-weight:700;">+${companion.bonusPoints} แต้มพิเศษ!</div>` : ''}`,
       width: '280px',
-      background:'#17518C', color:'#fff', confirmButtonColor:'#FFC93C',
+      background:'var(--blue)', color:'#fff', confirmButtonColor:'var(--gold)',
       timer:3500, timerProgressBar:true, showConfirmButton:false,
     }).then(() => { if (companion.bonusPoints > 0) refreshPointsBalance(); onDone(); });
   } else {
