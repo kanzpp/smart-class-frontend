@@ -957,6 +957,33 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   .eot-ch input { width:100%; text-align:center; padding:9px 4px; border:1px solid var(--line); border-radius:10px;
                   background:var(--surface-2); color:var(--ink); font-family:'Kanit',sans-serif; font-weight:600; }
 
+  /* แถบวันที่ไทย — วางใต้ชื่อบนหัวจอไล่สี */
+  .sc-today {
+    font-size:.72rem; color:rgba(255,255,255,.82); margin-top:2px;
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+  }
+  .sc-today .tag {
+    font-size:.64rem; font-weight:600; padding:1px 7px; border-radius:6px;
+    background:rgba(255,255,255,.2); color:#fff;
+  }
+  .sc-today .tag.off { background:rgba(255,255,255,.28); }
+
+  /* ปฏิทินโรงเรียน */
+  .cal-row {
+    display:flex; align-items:center; gap:11px; background:var(--surface); border-radius:12px;
+    padding:11px 13px; margin-bottom:6px; box-shadow:var(--shadow-sm); border-left:3px solid var(--line);
+  }
+  .cal-row.off { border-left-color:var(--rose); }
+  .cal-row.sp  { border-left-color:var(--mint); }
+  .cal-d { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .cal-date { font-weight:600; font-size:.84rem; }
+  .cal-note { font-size:.72rem; color:var(--ink-2); margin-top:1px; }
+  .cal-kind { font-size:.68rem; font-weight:600; padding:2px 9px; border-radius:7px; flex:none; }
+  .cal-kind.off { background:var(--rose-dim); color:var(--rose); }
+  .cal-kind.sp  { background:var(--mint-dim); color:var(--mint); }
+  .cal-x { flex:none; background:none; border:none; color:var(--ink-3); cursor:pointer; padding:6px; font-size:.85rem; }
+  .cal-x:hover { color:var(--rose); }
+
   .login-hint {
     margin-top:20px; padding-top:16px; border-top:1px solid var(--line-soft);
     font-size:.76rem; color:var(--ink-2); line-height:1.7; text-align:center;
@@ -1537,6 +1564,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <div class="sc-id">
             <div class="sc-hi" id="sGreeting">สวัสดี</div>
             <div class="sc-nm" id="sNameDisplay">—</div>
+            <div class="sc-today" id="sTodayLine"></div>
           </div>
           <div class="hero-icon-row">
             <button class="hero-logout" onclick="openNotificationCenter()" title="การแจ้งเตือน">
@@ -1742,6 +1770,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <div class="sc-id">
             <div class="sc-hi">ศูนย์ควบคุม</div>
             <div class="sc-nm" id="teacherTermChip">กำลังโหลด...</div>
+            <div class="sc-today" id="tTodayLine"></div>
           </div>
           <div class="hero-icon-row">
             <button class="hero-logout" onclick="openAdminModal()" title="ตั้งค่าระบบ"><i class="fa-solid fa-gear"></i></button>
@@ -1794,6 +1823,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <button class="sc-g" onclick="openReport_()"><span class="ic ic-blue"><i class="fa-solid fa-file-lines"></i></span><span class="lb">ใบรายงานผล</span></button>
           <button class="sc-g" onclick="openParentLinks_()"><span class="ic ic-mint"><i class="fa-solid fa-link"></i></span><span class="lb">ลิงก์ผู้ปกครอง</span></button>
           <button class="sc-g" onclick="openChangeLog_()"><span class="ic ic-rose"><i class="fa-solid fa-clock-rotate-left"></i></span><span class="lb">ร่องรอยการแก้</span></button>
+          <button class="sc-g" onclick="openCalendar_()"><span class="ic ic-gold"><i class="fa-solid fa-calendar-days"></i></span><span class="lb">วันหยุด / วันเรียนพิเศษ</span></button>
           <button class="sc-g" id="tMenuElective" onclick="openElectiveOverviewModal()"><span class="ic ic-gold"><i class="fa-solid fa-shuffle"></i></span><span class="lb">วิชาเลือก</span></button>
           <button class="sc-g" onclick="openAdminTabDirect_('term')"><span class="ic ic-rose"><i class="fa-solid fa-lock"></i></span><span class="lb">ปิดเทอม</span></button>
           <button class="sc-g" onclick="openAdminTabDirect_('term')"><span class="ic ic-mint"><i class="fa-solid fa-arrow-up-right-dots"></i></span><span class="lb">เลื่อนชั้น</span></button>
@@ -2392,6 +2422,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     if (b.overview) renderTeacherOverview_(b.overview);
     if (b.stats) renderTeacherStats_(b.stats);
     if (b.term) renderTermChip_(b.term);
+    paintTodayLine_('tTodayLine', null);
+    // วันนี้เป็นวันหยุดหรือวันเรียนพิเศษไหม — ยิงแยกแบบไม่บล็อก
+    google.script.run.withSuccessHandler(c => paintTodayLine_('tTodayLine', c && c.todayType))
+      .withFailureHandler(() => {}).getSchoolCalendar();
     loadScanProgress_();
   }
 
@@ -2428,7 +2462,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     if (!box) return;
     const rows = [];
 
-    if (featOn_('FEAT_GPS') && d.checkinStats && !d.checkinStats.checkedInToday) {
+    // วันหยุดไม่ต้องเตือนให้เช็คอิน — ไม่ได้มาโรงเรียน และไม่มีผลต่อสถิติต่อเนื่องอยู่แล้ว
+    if (featOn_('FEAT_GPS') && d.checkinStats && !d.checkinStats.checkedInToday && d.checkinStats.isSchoolDay !== false) {
       const streak = d.checkinStats.consecutiveDays || 0;
       rows.push(alertRow_('rose', 'fa-location-dot', 'ยังไม่เช็คอินวันนี้',
         streak > 0 ? ('เช็คอินวันนี้ ได้ต่อเนื่องเป็นวันที่ ' + (streak + 1)) : 'เช็คอินเพื่อเริ่มนับวันต่อเนื่อง',
@@ -3285,6 +3320,109 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         '<i class="fa-solid fa-rotate"></i> ดูสถานะอีกครั้ง</button>';
   }
 
+
+  // ─── วันที่แบบไทยเต็ม ────────────────────────────────────────
+  var TH_DAYS   = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  var TH_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                   'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  // ตัวย่อเดือนไทยมีรูปแบบตายตัว ตัดคำเอาเองจะได้ "ธัน" แทน "ธ.ค."
+  var TH_MON_ABBR = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.',
+                     'ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  function thaiFullDate_(d) {
+    d = d || new Date();
+    return 'วัน' + TH_DAYS[d.getDay()] + 'ที่ ' + d.getDate() + ' ' + TH_MONTHS[d.getMonth()] + ' พ.ศ. ' + (d.getFullYear() + 543);
+  }
+  function thaiShortDate_(str) {
+    const p = String(str || '').split('-');
+    if (p.length !== 3) return str;
+    const d = new Date(+p[0], +p[1] - 1, +p[2]);
+    return TH_DAYS[d.getDay()] + ' ' + d.getDate() + ' ' + TH_MON_ABBR[d.getMonth()] + ' ' + (d.getFullYear() + 543);
+  }
+
+  // เขียนแถบวันที่บนหัวจอ — บอกด้วยว่าวันนี้เป็นวันหยุดหรือวันเรียนพิเศษ
+  function paintTodayLine_(id, todayType) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    let tag = '';
+    if (todayType === 'holiday') tag = '<span class="tag off">วันหยุด</span>';
+    else if (todayType === 'special') tag = '<span class="tag">วันเรียนพิเศษ</span>';
+    else { const w = new Date().getDay(); if (w === 0 || w === 6) tag = '<span class="tag off">วันหยุดสุดสัปดาห์</span>'; }
+    el.innerHTML = '<i class="fa-regular fa-calendar" style="opacity:.8"></i> ' + thaiFullDate_() + ' ' + tag;
+  }
+
+  // ─── ปฏิทินโรงเรียน ─────────────────────────────────────────
+  // สถิติ "เช็คอินต่อเนื่อง" เดิมข้ามแค่เสาร์-อาทิตย์ วันหยุดอื่นจึงทำให้สถิติขาดทั้งที่เด็กไม่ผิด
+  // ครูกำหนดเองได้ที่นี่ หรือจะพิมพ์ลงชีต School_Calendar ตรงๆ ก็ได้ ผลเหมือนกัน
+  function openCalendar_() {
+    openFullpageView_('calModal');
+    loadCalendar_();
+  }
+
+  function loadCalendar_() {
+    const body = document.getElementById('calBody');
+    body.innerHTML = '<div class="sc-empty">กำลังโหลด...</div>';
+    google.script.run.withSuccessHandler(r => renderCalendar_(r))
+      .withFailureHandler(err => { console.error('getSchoolCalendar failed:', err); body.innerHTML = courseErrorHtml_('loadCalendar_()'); })
+      .getSchoolCalendar();
+  }
+
+  function renderCalendar_(r) {
+    const list = (r.entries || []).slice().reverse();   // ใหม่สุดก่อน
+    const today = r.today;
+    document.getElementById('calBody').innerHTML =
+      '<div style="background:var(--blue-dim); border-radius:12px; padding:13px 15px; margin-bottom:14px; font-size:0.8rem; color:var(--ink-2); line-height:1.7;">' +
+        'วันที่ใส่ไว้ที่นี่มีผลกับ <b style="color:var(--ink)">สถิติเช็คอินต่อเนื่อง</b> ของนักเรียน<br>' +
+        '<b style="color:var(--rose)">วันหยุด</b> — ข้ามไป ไม่ตัดสถิติ (เหมือนเสาร์-อาทิตย์)<br>' +
+        '<b style="color:var(--mint)">วันเรียนพิเศษ</b> — นับเป็นวันเรียน แม้ตรงเสาร์-อาทิตย์หรือวันหยุด<br>' +
+        '<span style="font-size:0.74rem; color:var(--ink-3);">เสาร์-อาทิตย์ปกติไม่ต้องใส่ ระบบข้ามให้อยู่แล้ว</span>' +
+      '</div>' +
+
+      '<div class="card card-pad" style="margin-bottom:14px;">' +
+        '<div class="sc-sec" style="margin-bottom:8px;"><span class="t">เพิ่มวัน</span></div>' +
+        '<input type="date" id="calDate" class="field" style="margin-bottom:8px;" value="' + today + '">' +
+        '<input type="text" id="calNote" class="field" placeholder="หมายเหตุ เช่น วันปิยมหาราช (ไม่บังคับ)" style="margin-bottom:10px;">' +
+        '<div style="display:flex; gap:8px;">' +
+          '<button class="btn btn-danger-soft btn-sm" style="flex:1;" onclick="addCalendar_(\'หยุด\')"><i class="fa-solid fa-ban"></i> วันหยุด</button>' +
+          '<button class="btn btn-teal btn-sm" style="flex:1;" onclick="addCalendar_(\'เรียนพิเศษ\')"><i class="fa-solid fa-star"></i> วันเรียนพิเศษ</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="sc-sec"><span class="t">วันที่กำหนดไว้</span><span class="more" style="pointer-events:none;">' + list.length + ' วัน</span></div>' +
+      (list.length ? list.map(e => {
+        const off = e.type === 'holiday';
+        return '<div class="cal-row ' + (off ? 'off' : 'sp') + '">' +
+          '<span class="cal-kind ' + (off ? 'off' : 'sp') + '">' + (off ? 'หยุด' : 'เรียนพิเศษ') + '</span>' +
+          '<span class="cal-d"><span class="cal-date">' + thaiShortDate_(e.date) + (e.date === today ? ' · วันนี้' : '') + '</span>' +
+            (e.note ? '<span class="cal-note">' + e.note + '</span>' : '') + '</span>' +
+          '<button class="cal-x" onclick="removeCalendar_(\'' + e.date + '\')" title="ลบ"><i class="fa-solid fa-xmark"></i></button>' +
+        '</div>';
+      }).join('') : '<div class="sc-empty">ยังไม่ได้กำหนดวันไหนไว้ — เสาร์-อาทิตย์ระบบข้ามให้อยู่แล้ว</div>');
+  }
+
+  function addCalendar_(kind) {
+    const date = document.getElementById('calDate').value;
+    const note = document.getElementById('calNote').value;
+    if (!date) return Toast('เลือกวันที่ก่อน', 'warning');
+    google.script.run.withSuccessHandler(r => {
+      if (r && r.success) { Toast(r.message); loadCalendar_(); }
+      else Swal.fire('ไม่สำเร็จ', (r && r.message) || '', 'error');
+    }).withFailureHandler(() => Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้', 'error'))
+      .setSchoolCalendarEntry(date, kind, note);
+  }
+
+  function removeCalendar_(date) {
+    Swal.fire({ title: 'ลบวันนี้ออกจากปฏิทิน?', text: thaiShortDate_(date), icon: 'question',
+      showCancelButton: true, confirmButtonText: 'ลบ', cancelButtonText: 'ยกเลิก' })
+      .then(c => {
+        if (!c.isConfirmed) return;
+        google.script.run.withSuccessHandler(r => {
+          if (r && r.success) { Toast(r.message); loadCalendar_(); }
+          else Swal.fire('ไม่สำเร็จ', (r && r.message) || '', 'error');
+        }).withFailureHandler(() => Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้', 'error'))
+          .deleteSchoolCalendarEntry(date);
+      });
+  }
+
   // ─── สวิตช์เปิด/ปิดฟีเจอร์ ───────────────────────────────────
   // ครูปิดฟีเจอร์ที่ไม่ได้ใช้จากหน้าตั้งค่าได้ ที่นี่คือฝั่งที่เอาผลไปซ่อน UI จริง
   // ปิด = ซ่อนอย่างเดียว ไม่ลบข้อมูลและไม่ปิดทางฝั่งหลังบ้าน เปิดกลับมาก็เห็นของเดิมครบ
@@ -3455,6 +3593,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
       const gr = document.getElementById('sGreeting');
       if (gr) gr.innerText = greetingByHour_();
+      paintTodayLine_('sTodayLine', d.checkinStats && d.checkinStats.todayType);
       const meSub = document.getElementById('sMeSub');
       if (meSub) meSub.innerText = d.clsLabel + ' · รหัส ' + stdId;
       const gTerm = document.getElementById('sGradeTerm');
@@ -7430,6 +7569,17 @@ function refreshRunSummary_() {
     <button class="btn btn-ghost btn-icon" onclick="closeFullpageView_('parentLinkModal')"><i class="fa-solid fa-xmark"></i></button>
   </div>
   <div class="fullpage-body" id="parentLinkBody"></div>
+</div>
+
+<!-- ═══ ปฏิทินโรงเรียน — วันหยุด / วันเรียนพิเศษ ═══════════════
+     มีผลต่อสถิติ "เช็คอินต่อเนื่อง" โดยตรง: วันหยุดจะข้ามไม่ตัดสถิติ
+     ส่วนวันเรียนพิเศษจะนับเป็นวันเรียนแม้ตรงเสาร์-อาทิตย์ -->
+<div id="calModal" class="fullpage-view hidden">
+  <div class="fullpage-head">
+    <div class="section-title" style="margin-bottom:0;"><i class="fa-solid fa-calendar-days"></i> ปฏิทินโรงเรียน</div>
+    <button class="btn btn-ghost btn-icon" onclick="closeFullpageView_('calModal')"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="fullpage-body" id="calBody"></div>
 </div>
 
 <!-- ═══ ขั้นตอนปลายเทอม ═══════════════════════════════════════
