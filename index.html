@@ -2500,10 +2500,13 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         streak > 0 ? ('เช็คอินวันนี้ ได้ต่อเนื่องเป็นวันที่ ' + (streak + 1)) : 'เช็คอินเพื่อเริ่มนับวันต่อเนื่อง',
         'tryGpsCheckin()'));
     }
-    if (window._electiveProgress && window._electiveProgress.hasElective && featOn_('FEAT_ELECTIVE')) {
-      const t = Number(window._electiveProgress.score?.total50 || 0);
-      if (t < 50) rows.push(alertRow_('gold', 'fa-graduation-cap', 'วิชาเลือกเหลืออีก ' + Math.round(50 - t) + ' คะแนน',
-        'ได้แล้ว ' + t + ' จาก 50', 'openCreditBank_()'));
+    // วิชาเลือก = การลงทะเบียนรายวันในระบบธนาคารหน่วยกิตของส่วนกลาง (ลิงก์ออกไปข้างนอก)
+    // นี่คือส่วนเดียวของวิชาเลือกที่ใช้งานจริง จึงถามว่า "วันนี้เข้าหรือยัง" ไม่ใช่ไล่คะแนน
+    // เดิมขึ้นว่า "เหลืออีก N คะแนน" ซึ่งชี้ให้เด็กไปไล่คะแนนที่ครูให้เต็มอยู่แล้วในทางปฏิบัติ
+    const ep = window._electiveProgress;
+    if (ep && ep.hasElective && featOn_('FEAT_ELECTIVE') && !ep.creditBankToday && ep.isSchoolDay !== false) {
+      rows.push(alertRow_('gold', 'fa-building-columns', 'ยังไม่ได้เข้าธนาคารหน่วยกิตวันนี้',
+        (ep.label || 'วิชาเลือก') + ' · กดเพื่อไปลงทะเบียนในระบบ', 'openCreditBank_()'));
     }
     // บทที่ยังไม่มีคะแนนสอบเลย — เป็นสิ่งที่ตามครูได้
     const subj = d.subjects || {};
@@ -5615,7 +5618,11 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   function openCreditBank_() {
     window.open('https://script.google.com/macros/s/AKfycbz7Qkemj78qK4_tQXQgBUqv1r4xMfFybf925gQssMhWYSl3PkcKt_xB2zztot1p5IM/exec', '_blank');
     google.script.run.withSuccessHandler(res => {
-      if (res.success && !res.alreadyLogged) Toast('✅ บันทึกการเข้าธนาคารหน่วยกิตวันนี้แล้ว (+คะแนนวิชาเลือก)', 'success');
+      if (!res.success) return;
+      if (!res.alreadyLogged) Toast('✅ บันทึกการเข้าธนาคารหน่วยกิตวันนี้แล้ว', 'success');
+      // ลงทะเบียนของวันนี้เรียบร้อยแล้ว เอาแถวเตือนออกทันที ไม่ต้องรอโหลดหน้าใหม่
+      if (window._electiveProgress) window._electiveProgress.creditBankToday = true;
+      if (studentDashboardData) renderStudentTodo_(studentDashboardData);
     }).withFailureHandler(err => console.error('logCreditBankVisit failed:', err))
       .logCreditBankVisit(currentLoggedStudentId);
   }
