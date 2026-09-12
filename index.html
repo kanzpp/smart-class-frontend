@@ -1647,8 +1647,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         <div class="sc-grid">
           <button class="sc-g" onclick="goStudentTab_('grades')"><span class="ic ic-blue"><i class="fa-solid fa-book-open"></i></span><span class="lb">คะแนนรายบท</span></button>
           <button class="sc-g" id="menuElective" onclick="openCreditBank_()"><span class="ic ic-violet"><i class="fa-solid fa-building-columns"></i></span><span class="lb">วิชาเลือก</span></button>
-          <button class="sc-g" onclick="goStudentTab_('me')"><span class="ic ic-gold"><i class="fa-solid fa-ranking-star"></i></span><span class="lb">อันดับห้อง</span></button>
-          <button class="sc-g" onclick="goStudentTab_('me')"><span class="ic ic-mint"><i class="fa-solid fa-chart-simple"></i></span><span class="lb">วิเคราะห์ศักยภาพ</span></button>
+          <button class="sc-g" onclick="goStudentSection_('nicknameContainer')"><span class="ic ic-gold"><i class="fa-solid fa-ranking-star"></i></span><span class="lb">อันดับห้อง</span></button>
+          <button class="sc-g" onclick="goStudentSection_('skillMetersContainer')"><span class="ic ic-mint"><i class="fa-solid fa-chart-simple"></i></span><span class="lb">วิเคราะห์ศักยภาพ</span></button>
           <button class="sc-g" id="menuRun" onclick="openRunModal()"><span class="ic ic-rose"><i class="fa-solid fa-person-running"></i></span><span class="lb">วิ่งแลกแต้ม</span></button>
           <button class="sc-g" id="menuCompanion" onclick="goStudentTab_('companion')"><span class="ic ic-violet"><i class="fa-solid fa-paw"></i></span><span class="lb">คู่หู</span></button>
           <button class="sc-g" onclick="goStudentTab_('card')"><span class="ic ic-blue"><i class="fa-solid fa-id-card"></i></span><span class="lb">บัตรนักเรียน</span></button>
@@ -1846,8 +1846,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <button class="sc-g" onclick="openChangeLog_()"><span class="ic ic-rose"><i class="fa-solid fa-clock-rotate-left"></i></span><span class="lb">ร่องรอยการแก้</span></button>
           <button class="sc-g" onclick="openCalendar_()"><span class="ic ic-gold"><i class="fa-solid fa-calendar-days"></i></span><span class="lb">วันหยุด / วันเรียนพิเศษ</span></button>
           <button class="sc-g" id="tMenuElective" onclick="openElectiveOverviewModal()"><span class="ic ic-gold"><i class="fa-solid fa-shuffle"></i></span><span class="lb">วิชาเลือก</span></button>
-          <button class="sc-g" onclick="openAdminTabDirect_('term')"><span class="ic ic-rose"><i class="fa-solid fa-lock"></i></span><span class="lb">ปิดเทอม</span></button>
-          <button class="sc-g" onclick="openAdminTabDirect_('term')"><span class="ic ic-mint"><i class="fa-solid fa-arrow-up-right-dots"></i></span><span class="lb">เลื่อนชั้น</span></button>
+          <button class="sc-g" onclick="openAdminTabDirect_('term')"><span class="ic ic-rose"><i class="fa-solid fa-calendar-check"></i></span><span class="lb">ปีการศึกษา<br>ปิดเทอม · เลื่อนชั้น</span></button>
+          <button class="sc-g" onclick="openEndOfTerm_()"><span class="ic ic-mint"><i class="fa-solid fa-flag-checkered"></i></span><span class="lb">ขั้นตอน<br>ปลายเทอม</span></button>
           <button class="sc-g" onclick="openAdminModal()"><span class="ic ic-grey"><i class="fa-solid fa-gear"></i></span><span class="lb">ตั้งค่าระบบ</span></button>
         </div>
       </div>
@@ -2220,6 +2220,16 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       .find(b => (b.getAttribute('onclick') || '').includes("'" + name + "'"));
     switchStudentTab(name, btn || null);
   }
+  // ปุ่มสองปุ่มเคยพาไปแท็บเดียวกันโดยไม่บอกว่าของที่ต้องการอยู่ตรงไหน
+  // ตอนนี้เลื่อนไปยังหัวข้อนั้นให้เลย จะได้ไม่ต้องไล่หาเอง
+  function goStudentSection_(id) {
+    goStudentTab_('me');
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 60);
+  }
+
   function goTeacherTab_(name) {
     const btn = [...document.querySelectorAll('#teacherSection .bottom-nav .nav-btn')]
       .find(b => (b.getAttribute('onclick') || '').includes("'" + name + "'"));
@@ -2802,7 +2812,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       '<div class="card card-pad">' +
         '<div class="rep-head">' +
           '<h2>' + r.subjectLabel + ' · ' + r.clsLabel + '</h2>' +
-          '<div class="meta">ปีการศึกษา ' + r.year + ' ภาคเรียนที่ ' + r.term + ' · ' + r.totalChapters + ' หน่วยการเรียน' +
+          '<div class="meta">ปีการศึกษา ' + r.year + ' ภาคเรียนที่ ' + r.term + ' · ' + r.totalChapters + ' บทเรียน' +
             (r.termLocked ? ' · ปิดเทอมแล้ว' : '') + '</div>' +
         '</div>' +
         '<div class="rep-stats">' +
@@ -2977,8 +2987,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           '<div style="display:flex; justify-content:space-between; font-size:0.76rem; color:var(--ink-2);">' +
             '<span>คะแนนเก็บ <b style="color:var(--ink)">' + (sj.total70 ?? '—') + '</b> / 70</span>' +
             '<span>ปลายภาค <b style="color:var(--ink)">' + (sj.finalExam || 'ยังไม่สอบ') + '</b></span></div>' +
-          '<div class="pa-note">เรียนไปแล้ว ' + sj.chaptersLearned + ' จาก ' + sj.totalChapters + ' หน่วย' +
-            (sj.weakest ? ' · หน่วยที่ควรทบทวน: หน่วยที่ ' + sj.weakest.ch + ' (' + sj.weakest.total + '/20)' : '') + '</div>' +
+          '<div class="pa-note">เรียนไปแล้ว ' + sj.chaptersLearned + ' จาก ' + sj.totalChapters + ' บท' +
+            (sj.weakest ? ' · บทที่ควรทบทวน: บทที่ ' + sj.weakest.ch + ' (' + sj.weakest.total + '/20)' : '') + '</div>' +
         '</div>';
       }).join('') : '<div class="sc-empty">ยังไม่มีคะแนนในเทอมนี้</div>') +
 
