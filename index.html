@@ -5296,8 +5296,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         <div style="font-weight:700; margin-bottom:8px;"><i class="fa-solid fa-list-ol"></i> โครงสร้างบทเรียน</div>
         <label style="font-size:0.8rem;">จำนวนบททั้งหมด</label>
         <input class="field" id="set_TOTAL_CHAPTERS" type="number" min="1" max="30" style="width:100%; margin-top:4px;" value="${s.TOTAL_CHAPTERS ?? ''}">
-        <div style="font-size:0.74rem; color:var(--coral); margin-top:6px;">
-          ⚠️ การเปลี่ยนค่านี้จะไปเพิ่ม/ลดคอลัมน์ในชีตคะแนนทุกวิชาทุกห้องทันที การลดจำนวนบทจะทำให้คะแนนของบทที่หายไปถูกลบถาวร
+        <div style="font-size:0.74rem; color:var(--slate); margin-top:6px;">
+          ค่านี้ใช้เป็น<b>ค่าตั้งต้นของชีตคะแนนที่สร้างใหม่</b>เท่านั้น — บันทึกแล้วจะไม่ไปแตะชีตที่มีอยู่
+          <br>ชีตแต่ละห้องกว้างไม่เท่ากันได้ตามปกติ (สอนไปคนละจำนวนบท)
+          <br>จะปรับชีตที่มีอยู่ ให้ไปที่ <b>ดูแลระบบ → ตรวจและขยายจำนวนบท</b> ซึ่งมีตัวอย่างผลกระทบให้ดูก่อน
         </div>
       </div>
 
@@ -5322,15 +5324,16 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         if (el && el.value !== '') payload[k] = el.value;
       });
 
-    const oldChapters = parseInt((metaData.settings || {}).TOTAL_CHAPTERS) || 0;
-    const newChapters = parseInt(payload.TOTAL_CHAPTERS) || oldChapters;
     const run = () => {
       Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
       google.script.run.withSuccessHandler(res => {
         if (res && res.success) {
           google.script.run.withSuccessHandler(m => {
-            metaData = m; populateSelects();
-            Swal.close(); Toast(res.message); renderAdminSettings_();
+            metaData = m; populateSelects(); Swal.close(); renderAdminSettings_();
+            // เปลี่ยนจำนวนบท = เรื่องที่ต้องอ่าน ไม่ใช่ toast ที่หายไปใน 3 วินาที
+            // ต้องรู้ว่า "บันทึกค่าแล้ว แต่ชีตยังเท่าเดิม" ไม่งั้นจะนึกว่าปรับให้แล้ว
+            if (res.chaptersChanged) showChapterSettingNote_(res);
+            else Toast(res.message);
           }).withFailureHandler(() => { Swal.close(); Toast(res.message); }).getMetaConfig();
         } else Swal.fire('บันทึกไม่สำเร็จ', (res && res.message) || 'เกิดข้อผิดพลาด', 'error');
       }).withFailureHandler(err => {
@@ -5339,14 +5342,41 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       }).saveSettings(payload);
     };
 
-    if (newChapters < oldChapters) {
-      Swal.fire({
-        title: 'ลดจำนวนบท?',
-        html: `กำลังจะลดจาก <b>${oldChapters}</b> บท เหลือ <b>${newChapters}</b> บท<br><br>
-               <span style="font-size:0.82rem; color:var(--coral);">คะแนนของบทที่ ${newChapters + 1} ถึง ${oldChapters} ของนักเรียนทุกคนทุกวิชา จะถูกลบถาวร กู้คืนไม่ได้</span>`,
-        icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยันลด', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#FF4D6D'
-      }).then(r => { if (r.isConfirmed) run(); });
-    } else run();
+    // เดิมตรงนี้เตือนเฉพาะตอน "ลดเลข" แล้วปล่อยตอนเพิ่มผ่านไปเงียบๆ ซึ่งกลับหัวกลับหาง
+    // เพราะฝั่งหลังบ้านไล่ปรับทุกชีตให้เท่าเลขนี้ ชีตที่แคบกว่า (M1 = 5 บท) จึงถูก "ขยาย" แม้ตอนที่เลขลดลง
+    // และการขยายคือด้านที่ทำเกรดร่วง ตอนนี้หลังบ้านไม่แตะชีตแล้ว จึงไม่ต้องถามตรงนี้อีก
+    run();
+  }
+
+  // บอกให้ชัดว่าเปลี่ยนเลขแล้ว "ชีตยังเท่าเดิม" พร้อมกางให้ดูว่าตอนนี้แต่ละห้องกว้างกี่บทจริงๆ
+  function showChapterSettingNote_(res) {
+    const list = ((res.preview && res.preview.sheets) || []);
+    const rows = list.length
+      ? list.map(s => {
+          const same = s.oldChapters === s.newChapters;
+          const grow = s.newChapters > s.oldChapters && s.hasScores;
+          return `<tr>
+            <td style="text-align:left; padding:3px 6px;">${s.subject} ${s.cls}</td>
+            <td style="padding:3px 6px;">${s.oldChapters} บท</td>
+            <td style="padding:3px 6px; color:${grow ? 'var(--rose)' : 'var(--slate)'};">
+              ${same ? 'ตรงแล้ว' : (grow ? `ถ้าขยายเป็น ${s.newChapters} บท คะแนนเก็บเหลือ ${Math.round(s.impactFactor * 100)}%` : `ขยายได้ ไม่มีคะแนนค้าง`)}
+            </td></tr>`;
+        }).join('')
+      : `<tr><td colspan="3" style="padding:6px;">ยังไม่มีชีตคะแนน</td></tr>`;
+
+    Swal.fire({
+      title: 'บันทึกค่าแล้ว — ชีตยังเท่าเดิม',
+      html: `<div style="text-align:left; font-size:0.84rem;">
+          ค่า "จำนวนบท" ใช้กับชีตที่<b>สร้างใหม่</b>เท่านั้น ชีตที่มีอยู่ไม่ถูกแตะเลย
+          <div style="margin:10px 0 4px; font-weight:700;">ตอนนี้แต่ละห้องกว้างเท่าไหร่</div>
+          <table class="dt" style="width:100%; font-size:0.78rem;"><tbody>${rows}</tbody></table>
+          <div style="margin-top:10px; font-size:0.78rem; color:var(--slate);">
+            คะแนนเก็บคิดจาก (คะแนนรวม ÷ จำนวนบท × 20) × 70 — <b>ขยายบทกลางเทอมเกรดจะร่วงทั้งห้อง</b>
+            <br>ลำดับที่ถูกคือ เก็บคลัง → ล้างเริ่มเทอมใหม่ → ค่อยขยายบท
+          </div>
+        </div>`,
+      icon: 'info', confirmButtonText: 'เข้าใจแล้ว', width: 520
+    });
   }
 
   // ─── ELECTIVE ENROLLMENT OVERVIEW (ครู) ──────────────────────
