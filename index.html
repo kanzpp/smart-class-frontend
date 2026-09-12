@@ -2503,8 +2503,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     // วิชาเลือก = การลงทะเบียนรายวันในระบบธนาคารหน่วยกิตของส่วนกลาง (ลิงก์ออกไปข้างนอก)
     // นี่คือส่วนเดียวของวิชาเลือกที่ใช้งานจริง จึงถามว่า "วันนี้เข้าหรือยัง" ไม่ใช่ไล่คะแนน
     // เดิมขึ้นว่า "เหลืออีก N คะแนน" ซึ่งชี้ให้เด็กไปไล่คะแนนที่ครูให้เต็มอยู่แล้วในทางปฏิบัติ
+    // ⚠️ เตือน "ทุกวัน" รวมเสาร์-อาทิตย์และวันหยุด (เจ้าของสั่ง 12 ก.ย. 2569) — ต่างจากแถวเช็คอิน GPS
+    // ที่เว้นวันหยุด เพราะอันนั้นผูกกับการมาโรงเรียน ส่วนอันนี้เป็นระบบภายนอกที่ต้องเข้าทุกวัน
     const ep = window._electiveProgress;
-    if (ep && ep.hasElective && featOn_('FEAT_ELECTIVE') && !ep.creditBankToday && ep.isSchoolDay !== false) {
+    if (ep && ep.hasElective && featOn_('FEAT_ELECTIVE') && !ep.creditBankToday) {
       rows.push(alertRow_('gold', 'fa-building-columns', 'ยังไม่ได้เข้าธนาคารหน่วยกิตวันนี้',
         (ep.label || 'วิชาเลือก') + ' · กดเพื่อไปลงทะเบียนในระบบ', 'openCreditBank_()'));
     }
