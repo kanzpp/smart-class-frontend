@@ -2772,6 +2772,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   }
 
   function renderReport_(r) {
+    window._lastReport = r;          // ปุ่มส่งออกไฟล์ใช้ชุดเดียวกันนี้ ไม่ต้องยิงซ้ำ
     const order = [4, 3.5, 3, 2.5, 2, 1.5, 1, 0];
     const maxCount = Math.max(1, ...order.map(g => r.summary.distribution[g] || 0));
     const dist = order.map(g => {
@@ -3406,6 +3407,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           '<button class="btn btn-danger-soft btn-sm" style="flex:1;" onclick="addCalendar_(\'หยุด\')"><i class="fa-solid fa-ban"></i> วันหยุด</button>' +
           '<button class="btn btn-teal btn-sm" style="flex:1;" onclick="addCalendar_(\'เรียนพิเศษ\')"><i class="fa-solid fa-star"></i> วันเรียนพิเศษ</button>' +
         '</div>' +
+        '<button class="btn btn-ghost btn-block btn-sm" style="margin-top:10px;" onclick="fillThaiHolidays_()">' +
+          '<i class="fa-solid fa-wand-magic-sparkles"></i> เติมวันหยุดราชการของปีนี้ให้อัตโนมัติ</button>' +
       '</div>' +
 
       '<div class="sc-sec"><span class="t">วันที่กำหนดไว้</span><span class="more" style="pointer-events:none;">' + list.length + ' วัน</span></div>' +
@@ -3442,6 +3445,91 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         }).withFailureHandler(() => Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้', 'error'))
           .deleteSchoolCalendarEntry(date);
       });
+  }
+
+
+  // ─── ส่งออกใบรายงานเป็นไฟล์ ─────────────────────────────────
+  // เปิดด้วย Excel / Google Sheets / LibreOffice ได้ทันที
+  // ⚠️ ต้องมี BOM นำหน้า ไม่งั้น Excel บนวินโดวส์จะอ่านภาษาไทยเป็นตัวยึกยือ
+  function csvCell_(v) {
+    const t = String(v === null || v === undefined ? '' : v);
+    return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+  }
+
+  function exportReportCsv_() {
+    const r = window._lastReport;
+    if (!r) return Toast('ยังไม่มีข้อมูลรายงาน', 'warning');
+    const rows = [
+      ['ใบรายงานผลการเรียน'],
+      ['รายวิชา', r.subjectLabel], ['ชั้น', r.clsLabel],
+      ['ปีการศึกษา', r.year], ['ภาคเรียนที่', r.term],
+      ['จำนวนหน่วยการเรียน', r.totalChapters],
+      ['ออกรายงานเมื่อ', new Date(r.generatedAt).toLocaleString('th-TH')],
+      [],
+      ['ที่', 'รหัส', 'ชื่อ-สกุล', 'คะแนนเก็บ (70)', 'ปลายภาค (30)', 'รวม (100)', 'เกรด', 'ครูแก้เกรด', 'มาเรียน', 'สาย', 'ลา', 'ขาด']
+    ];
+    r.students.forEach((st, i) => rows.push([
+      i + 1, st.id, st.name,
+      st.norm70 ?? '', st.finalExam ?? '', st.total100 ?? '', st.grade,
+      st.overridden ? 'ใช่' : '',
+      st.attendance.present, st.attendance.late, st.attendance.leave, st.attendance.absent
+    ]));
+    rows.push([]);
+    rows.push(['สรุป', 'นักเรียน ' + r.summary.count + ' คน', 'เฉลี่ย ' + r.summary.average,
+               'ผ่าน ' + r.summary.passed, 'ไม่ผ่าน ' + r.summary.failed]);
+    rows.push(['เกณฑ์เกรด', '4 ≥ ' + r.gradeCuts[4], '3 ≥ ' + r.gradeCuts[3], '2 ≥ ' + r.gradeCuts[2], '1 ≥ ' + r.gradeCuts[1]]);
+
+    const csv = '\ufeff' + rows.map(row => row.map(csvCell_).join(',')).join('\r\n');
+    const name = 'ผลการเรียน_' + r.subjectLabel + '_' + r.clsLabel + '_' + r.year + 'เทอม' + r.term + '.csv';
+    downloadFile_(csv, name, 'text/csv;charset=utf-8');
+  }
+
+  function downloadFile_(text, filename, mime) {
+    try {
+      const blob = new Blob([text], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+      Toast('ดาวน์โหลดแล้ว: ' + filename);
+    } catch (e) {
+      console.error('ดาวน์โหลดไม่สำเร็จ:', e);
+      Swal.fire('ดาวน์โหลดไม่ได้', 'อุปกรณ์นี้อาจไม่รองรับ ลองใช้ปุ่มพิมพ์แทน', 'warning');
+    }
+  }
+
+  // ─── เติมวันหยุดราชการให้อัตโนมัติ ──────────────────────────
+  function fillThaiHolidays_() {
+    Swal.fire({ title: 'กำลังตรวจ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    google.script.run.withSuccessHandler(pv => {
+      const add = pv.entries.filter(x => x.willAdd);
+      const skipWeekend = pv.entries.filter(x => x.weekend).length;
+      const skipHave = pv.entries.filter(x => x.already).length;
+      if (!add.length) {
+        return Swal.fire('ไม่มีวันไหนต้องเติม',
+          'ตรงเสาร์-อาทิตย์ ' + skipWeekend + ' วัน · ใส่ไว้แล้ว ' + skipHave + ' วัน', 'info');
+      }
+      Swal.fire({
+        title: 'เติม ' + add.length + ' วัน?',
+        html: '<div style="text-align:left; font-size:0.82rem; line-height:1.7; max-height:260px; overflow-y:auto;">' +
+          add.map(x => '• ' + thaiShortDate_(x.date) + ' — ' + x.name).join('<br>') +
+          (skipWeekend ? '<br><br><span style="color:#888;">ข้าม ' + skipWeekend + ' วันที่ตรงเสาร์-อาทิตย์ (ระบบข้ามให้อยู่แล้ว)</span>' : '') +
+          (skipHave ? '<br><span style="color:#888;">ข้าม ' + skipHave + ' วันที่ใส่ไว้แล้ว</span>' : '') +
+          '<br><br><b style="color:#B07800;">วันพระใหญ่ (มาฆบูชา วิสาขบูชา อาสาฬหบูชา เข้าพรรษา) ต้องใส่เอง</b><br>' +
+          '<span style="color:#888;">เพราะคิดตามจันทรคติ วันที่เปลี่ยนทุกปี ระบบเดาให้ไม่ได้</span></div>',
+        input: 'text', inputPlaceholder: 'พิมพ์: เติมวันหยุด',
+        showCancelButton: true, confirmButtonText: 'เติมเลย', cancelButtonText: 'ยกเลิก'
+      }).then(c => {
+        if (!c.isConfirmed || !c.value) return;
+        google.script.run.withSuccessHandler(r => {
+          if (r && r.success) { Toast(r.message); loadCalendar_(); }
+          else Swal.fire('ไม่สำเร็จ', (r && r.message) || '', 'error');
+        }).withFailureHandler(() => Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้', 'error'))
+          .addThaiHolidays(pv.academicYear, c.value);
+      });
+    }).withFailureHandler(() => Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้', 'error'))
+      .previewThaiHolidays(null);
   }
 
   // ─── สวิตช์เปิด/ปิดฟีเจอร์ ───────────────────────────────────
@@ -7567,6 +7655,7 @@ function refreshRunSummary_() {
   <div class="fullpage-head">
     <div class="section-title" style="margin-bottom:0;"><i class="fa-solid fa-file-lines"></i> ใบรายงานผล</div>
     <div style="display:flex; gap:8px;">
+      <button class="btn btn-ghost btn-sm" onclick="exportReportCsv_()"><i class="fa-solid fa-file-arrow-down"></i> ไฟล์</button>
       <button class="btn btn-teal btn-sm" onclick="window.print()"><i class="fa-solid fa-print"></i> พิมพ์</button>
       <button class="btn btn-ghost btn-icon" onclick="closeFullpageView_('reportModal')"><i class="fa-solid fa-xmark"></i></button>
     </div>
