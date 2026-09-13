@@ -1973,17 +1973,13 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           </div>
         </div>
 
-        <div class="sc-amount">
-          <div class="cap" id="tProgCap">สแกนแล้ววันนี้</div>
-          <div class="big" id="tProgNum">—<span id="tProgOf"></span></div>
-        </div>
-
-        <div class="sc-chips" id="tContextChips">
-          <button class="sc-chip" onclick="goTeacherTab_('scan')" id="tChipSubj">วิชา <i class="fa-solid fa-chevron-down" style="font-size:0.55rem"></i></button>
-          <button class="sc-chip" onclick="goTeacherTab_('scan')" id="tChipCls">ชั้น <i class="fa-solid fa-chevron-down" style="font-size:0.55rem"></i></button>
-          <button class="sc-chip" onclick="goTeacherTab_('scan')" id="tChipCh">บท <i class="fa-solid fa-chevron-down" style="font-size:0.55rem"></i></button>
-          <span class="sc-chip" id="tChipMissing" style="display:none;"></span>
-        </div>
+        <!-- เอาก้อนสถานะสแกนออกทั้งหมด (13 ก.ย. 2569 เจ้าของสั่ง)
+             เดิมมี: คำบรรยาย "สแกนลายเซ็นแล้ว · วิชา ชั้น บทที่ N" · ตัวเลข "N จาก M คน"
+                    · ป้ายกด วิชา/ชั้น/บท · ป้ายสถานะ "ยังไม่ได้สแกน N / สแกนครบแล้ว"
+             ปุ่มลัด 4 ปุ่มที่อยู่ถัดลงไปทำงานเหมือนเดิม — มันอ่านบริบทจาก teacherCtx_()
+             ใน localStorage อยู่แล้ว ไม่ได้อ่านจากป้ายพวกนี้ จึงเปิดกล้องได้เลยเหมือนเดิม
+             และ loadScanProgress_() ถูกเลิกเรียกด้วย เพราะไม่มีที่ให้ลงแล้ว
+             ผลพลอยได้: หน้าแรกครูลดคำขอไปหนึ่งครั้ง (~2 วินาที) ทุกครั้งที่เปิด -->
       </div>
 
       <div class="sc-quick">
@@ -2491,7 +2487,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     if (strip) strip.style.display = 'block';
     markFabActive_('#teacherSection', name === 'scan');
     window.scrollTo(0, 0);
-    if (name === 'overview') { loadTeacherOverview(); loadScanProgress_(); }
+    if (name === 'overview') loadTeacherOverview();
   }
 
   // ─── META CONFIG ────────────────────────────────────────────
@@ -2574,7 +2570,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       const el = document.getElementById(id);
       if (el && !el.dataset.chapterBound) {
         el.dataset.chapterBound = '1';
-        el.addEventListener('change', () => { refreshChapterButtons_(); saveTeacherCtx_(); loadScanProgress_(); });
+        el.addEventListener('change', () => { refreshChapterButtons_(); saveTeacherCtx_(); });
       }
     });
     refreshChapterButtons_();
@@ -2598,7 +2594,6 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       btn.classList.toggle('active', i + 1 === n);
     });
     saveTeacherCtx_();      // จำบทไว้ให้หน้าแรกใช้เป็นบริบทของปุ่มลัด
-    loadScanProgress_();
   }
 
   // โหลดจำนวนบทเรียนจริงของวิชา+ชั้นที่เลือกอยู่ในแท็บสแกน แล้ววาดปุ่มใหม่ (บทเรียนอาจไม่เท่ากันในแต่ละวิชา/ชั้น)
@@ -2700,7 +2695,6 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     // วันนี้เป็นวันหยุดหรือวันเรียนพิเศษไหม — ยิงแยกแบบไม่บล็อก
     google.script.run.withSuccessHandler(c => paintTodayLine_('tTodayLine', c && c.todayType))
       .withFailureHandler(() => {}).getSchoolCalendar();
-    loadScanProgress_();
   }
 
   // ชิปบอกว่าตอนนี้กำลังทำงานอยู่ในเทอมไหน และห้องไหนถูกปิดเทอมไปแล้ว
@@ -2836,6 +2830,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   }
 
   var _scanProgAt = 0;
+  // ⚠️ เลิกเรียกแล้วตั้งแต่ 13 ก.ย. 2569 — ก้อนสถานะสแกนบนหัวจอครูถูกเอาออกตามที่เจ้าของสั่ง
+  // เก็บตัวฟังก์ชันไว้ตามนโยบายสำรองข้อมูล (ไม่ลบของทิ้ง) เผื่ออยากเอากลับมา
+  // ถ้าจะใช้อีก ต้องเอา .sc-amount กับ .sc-chips#tContextChips ในหัวจอครูกลับมาด้วย
   function loadScanProgress_() {
     const c = teacherCtx_();
     if (!c.subject || !c.cls) return;
