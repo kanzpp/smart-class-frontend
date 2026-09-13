@@ -7,17 +7,25 @@
 
   โครงสร้างไฟล์:
     <head>
-      - โหลดฟอนต์ / ไอคอน / ไลบรารีภายนอก (QR code, SweetAlert2, Chart.js)
-      - <style>  ...........  CSS ทั้งหมด (จัดกลุ่มด้วยคอมเมนต์ในแต่ละส่วน)
-      - <script> ...........  ชั้นจำลอง google.script.run ด้วย fetch ปกติ
-                               (ไฟล์นี้ไม่ได้รันผ่าน HtmlService โดยตรง แต่เรียก
-                               Apps Script Web App ผ่าน GAS_API_URL แทน)
+      - ฟอนต์ / ไอคอน / ไลบรารีภายนอก (QR code, SweetAlert2, Chart.js)
+      - <style>   CSS ทั้งหมด เรียงเป็น 2 ชั้น:
+                    ชั้นเก่า (STUDIO) อยู่บน — ยังไม่ลบเพราะมีของที่ยังใช้อยู่
+                    ชั้น BANK อยู่ล่างสุด เพื่อให้ทับชั้นเก่าได้ทุกจุด
+                    · โทเคนสี → สีประจำวัน (7 วัน x 2 โหมด) → ชิ้นส่วน .u-* → ส่วนประกอบ
+      - <script>  ชั้นจำลอง google.script.run ด้วย fetch (ไม่ได้รันผ่าน HtmlService
+                  แต่ POST ไป Apps Script Web App ที่ GAS_API_URL)
     <body>
-      - LOGIN                 หน้าล็อกอิน เลือกบทบาทนักเรียน/ครู
-      - STUDENT APP SHELL      แท็บ: หน้าหลัก / ฉายา / การเรียน / บัตร
-      - TEACHER APP SHELL      แท็บ: สแกน / ประวัติเช็คชื่อ / คะแนน / ประวัติกิจกรรม / รายชื่อ
-      - MODALS                 หน้าต่างป๊อปอัปต่างๆ (ดูคะแนน, แลกแต้ม, วงล้อคู่หู ฯลฯ)
-      - <script>               โค้ด JS หลักของแอป (ล็อกอิน, สแกน, คะแนน, คู่หู ฯลฯ)
+      - LOGIN            เลือกบทบาทนักเรียน/ครู
+      - STUDENT SHELL    แท็บ: หน้าหลัก · การเรียน · [บัตร QR = ปุ่มลอย] · กิจกรรม · ฉัน
+      - TEACHER SHELL    แท็บ: ภาพรวม · คะแนน · [สแกน = ปุ่มลอย] · บันทึก · นร.
+      - MODALS           หน้าต่างเต็มจอ 12 หน้า (ดูแลระบบ · กรอกคะแนนทั้งห้อง ·
+                         ใบรายงาน · ปฏิทิน · ปลายเทอม · คู่หู · วิ่ง ฯลฯ)
+      - PARENT VIEW      หน้าสรุปสำหรับผู้ปกครอง เข้าทาง #p=<ลิงก์> ไม่ต้องล็อกอิน
+      - <script>         โค้ด JS หลัก
+
+  ⚠️ อ่าน CLAUDE.md ก่อนแก้ — กับดักที่เคยพลาดถูกบันทึกไว้ที่นั่น
+     ที่พลาดบ่อยสุด: โทเคนชื่อเดิม (--teal --navy --grape) ต้องประกาศบน body ไม่ใช่ :root
+     ไม่งั้นปุ่มหลายร้อยจุดจะไม่เปลี่ยนสีตามวัน
   =========================================================================
 -->
 <html lang="th">
@@ -951,6 +959,26 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   body[data-scale="1.15"] .hero-logout .scale-glyph { font-size:.95rem; }
   body[data-scale="1.3"]  .hero-logout .scale-glyph { font-size:1.14rem; }
 
+  /* ═══ ชิ้นส่วนที่ใช้ซ้ำ (ยกออกจากสไตล์ฝังในแท็ก 13 ก.ย. 2569) ═══
+     ที่ต้องยกไม่ใช่เพราะมันยาว แต่เพราะของเดิม
+     (ก) เขียนคนละสำนวนทั้งที่ตั้งใจให้เหมือนกัน — "กล่องว่าง" มี 3 แบบ 22 จุด
+     (ข) ฝังสีดิบที่ไม่ผ่านโทเคน (#6E88A3 · #F5FAFF · #888) ซึ่ง
+         ไม่รู้จักโหมดมืด และไม่เปลี่ยนตามธีมสีประจำวัน */
+  .u-empty    { text-align:center; color:var(--ink-2); padding:24px; }   /* "ยังไม่มีข้อมูล" กลางการ์ด */
+  .u-empty-sm { text-align:center; color:var(--ink-2); padding:20px; }
+  .u-head     { font-weight:700; margin-bottom:8px; }                   /* หัวข้อย่อยในการ์ด/หน้าต่าง */
+  .u-head-sm  { font-weight:700; margin-bottom:6px; }
+  .u-label {                                                            /* ป้ายตัวพิมพ์ใหญ่เหนือค่าตัวเลข */
+    font-size:.72rem; font-weight:700; color:var(--ink-2);
+    text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;
+  }
+  .u-label-sm {
+    font-size:.62rem; font-weight:600; color:var(--ink-2);
+    text-transform:uppercase; margin-top:2px;
+  }
+  .u-stat { background:var(--surface-2); border-radius:10px; padding:10px; text-align:center; }
+  .u-grow { flex:1; min-width:0; }                                      /* ช่องยืดเต็มและยอมให้ตัดคำ */
+
   html, body { background:var(--bg); color:var(--ink); font-family:'Noto Sans Thai','Sarabun',sans-serif; }
   h1,h2,h3,h4,h5,h6,.display,.hero-display { font-family:'Kanit','Prompt',sans-serif; font-weight:500; }
   ::-webkit-scrollbar-thumb { background:var(--line); }
@@ -1810,7 +1838,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
             <div style="width:52px; height:52px; border-radius:16px; background:var(--blue-dim); display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:var(--blue); flex-shrink:0;">
               <i class="fa-solid fa-play"></i>
             </div>
-            <div style="flex:1; min-width:0;">
+            <div class="u-grow">
               <div style="font-weight:700; font-size:0.95rem;">เรียนออนไลน์</div>
               <div style="font-size:0.78rem; color:var(--slate);">ดูวิดีโอ · ส่งแบบฝึกหัด · สอบท้ายบท</div>
             </div>
@@ -1857,7 +1885,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       <div style="width:52px; height:52px; border-radius:16px; background:var(--gold-dim); display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:var(--amber2); flex-shrink:0;">
         <i class="fa-solid fa-person-running"></i>
       </div>
-      <div style="flex:1; min-width:0;">
+      <div class="u-grow">
         <div style="font-weight:700; font-size:0.95rem;">กิจกรรมวิ่งแลกแต้มวิ่ง</div>
         <div style="font-size:0.78rem; color:var(--slate);" id="runSummaryText">สะสม — เมตร · — ก้าว · — แต้มวิ่ง</div>
       </div>
@@ -2124,7 +2152,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <button class="btn btn-amber btn-sm" onclick="openAttendanceModal()"><i class="fa-solid fa-user-check"></i> แก้ไขการเช็คชื่อ</button>
         </div>
         <div id="historyContainer">
-          <div style="text-align:center; color:var(--slate); padding:24px;">เลือกตัวกรองแล้วกด "เช็ค"</div>
+          <div class="u-empty">เลือกตัวกรองแล้วกด "เช็ค"</div>
         </div>
       </div>
     </div>
@@ -2145,7 +2173,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <button class="btn btn-ghost btn-sm" id="electiveOverviewBtn" onclick="openElectiveOverviewModal()"><i class="fa-solid fa-shuffle"></i> ภาพรวมสาขาวิชาเลือก</button>
           <button class="btn btn-amber btn-sm" onclick="openStudentEditor_()"><i class="fa-solid fa-user-plus"></i> เพิ่มนักเรียน</button>
         </div>
-        <div id="allStuBody"><div style="text-align:center; color:var(--slate); padding:20px;">เลือกชั้นแล้วกด "เช็ค"</div></div>
+        <div id="allStuBody"><div class="u-empty-sm">เลือกชั้นแล้วกด "เช็ค"</div></div>
       </div>
     </div>
 
@@ -2649,7 +2677,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     var cached = loadBootCache_('teacher');
     if (cached) { try { renderTeacherBoot_(cached); showStaleBadge_(true); } catch (e) { console.error('วาดจากข้อมูลที่จำไว้ไม่สำเร็จ:', e); } }
     else document.getElementById('overviewContainer').innerHTML =
-      '<div style="text-align:center; color:var(--slate); padding:24px;">กำลังโหลด...</div>';
+      '<div class="u-empty">กำลังโหลด...</div>';
 
     google.script.run.withSuccessHandler(b => {
       saveBootCache_('teacher', b);
@@ -3348,9 +3376,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     Swal.fire({
       title: 'ขยายจำนวนบท',
       html: '<div style="text-align:left;">' +
-        '<label style="font-size:0.8rem; color:#888;">วิชา</label><select id="chSubj" class="swal2-input" style="margin:4px 0;">' + subjOpts + '</select>' +
-        '<label style="font-size:0.8rem; color:#888;">ชั้น</label><select id="chCls" class="swal2-input" style="margin:4px 0;">' + clsOpts + '</select>' +
-        '<label style="font-size:0.8rem; color:#888;">จำนวนบทใหม่</label><input id="chN" class="swal2-input" type="number" min="1" max="20" style="margin:4px 0;" value="9">' +
+        '<label style="font-size:0.8rem; color:var(--ink-2);">วิชา</label><select id="chSubj" class="swal2-input" style="margin:4px 0;">' + subjOpts + '</select>' +
+        '<label style="font-size:0.8rem; color:var(--ink-2);">ชั้น</label><select id="chCls" class="swal2-input" style="margin:4px 0;">' + clsOpts + '</select>' +
+        '<label style="font-size:0.8rem; color:var(--ink-2);">จำนวนบทใหม่</label><input id="chN" class="swal2-input" type="number" min="1" max="20" style="margin:4px 0;" value="9">' +
         '</div>',
       showCancelButton: true, confirmButtonText: 'ตรวจผลกระทบก่อน', cancelButtonText: 'ยกเลิก',
       preConfirm: () => ({ s: document.getElementById('chSubj').value, c: document.getElementById('chCls').value, n: parseInt(document.getElementById('chN').value) })
@@ -3420,9 +3448,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         html: '<div style="text-align:left; font-size:0.85rem; line-height:1.7;">' +
           'ย้ายรายการของเทอมที่เลือกออกจากชีตหลัก ไปเก็บในชีตคลังแยก<br>' +
           '<b>คัดลอกและตรวจให้ครบก่อน ถึงจะลบของเดิม</b> ถ้าตรวจไม่ผ่านจะไม่ลบอะไรเลย<br><br>' +
-          '<label style="font-size:0.8rem; color:#888;">ปีการศึกษา</label>' +
+          '<label style="font-size:0.8rem; color:var(--ink-2);">ปีการศึกษา</label>' +
           '<input id="arcY" class="swal2-input" style="margin:4px 0;" value="' + y + '">' +
-          '<label style="font-size:0.8rem; color:#888;">ภาคเรียน</label>' +
+          '<label style="font-size:0.8rem; color:var(--ink-2);">ภาคเรียน</label>' +
           '<input id="arcT" class="swal2-input" style="margin:4px 0;" value="' + tm + '">' +
           '</div>',
         showCancelButton: true, confirmButtonText: 'ดูก่อนว่าจะย้ายกี่แถว', cancelButtonText: 'ยกเลิก',
@@ -3744,10 +3772,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         title: 'เติม ' + add.length + ' วัน?',
         html: '<div style="text-align:left; font-size:0.82rem; line-height:1.7; max-height:260px; overflow-y:auto;">' +
           add.map(x => '• ' + thaiShortDate_(x.date) + ' — ' + x.name).join('<br>') +
-          (skipWeekend ? '<br><br><span style="color:#888;">ข้าม ' + skipWeekend + ' วันที่ตรงเสาร์-อาทิตย์ (ระบบข้ามให้อยู่แล้ว)</span>' : '') +
-          (skipHave ? '<br><span style="color:#888;">ข้าม ' + skipHave + ' วันที่ใส่ไว้แล้ว</span>' : '') +
+          (skipWeekend ? '<br><br><span style="color:var(--ink-2);">ข้าม ' + skipWeekend + ' วันที่ตรงเสาร์-อาทิตย์ (ระบบข้ามให้อยู่แล้ว)</span>' : '') +
+          (skipHave ? '<br><span style="color:var(--ink-2);">ข้าม ' + skipHave + ' วันที่ใส่ไว้แล้ว</span>' : '') +
           '<br><br><b style="color:#B07800;">วันพระใหญ่ (มาฆบูชา วิสาขบูชา อาสาฬหบูชา เข้าพรรษา) ต้องใส่เอง</b><br>' +
-          '<span style="color:#888;">เพราะคิดตามจันทรคติ วันที่เปลี่ยนทุกปี ระบบเดาให้ไม่ได้</span></div>',
+          '<span style="color:var(--ink-2);">เพราะคิดตามจันทรคติ วันที่เปลี่ยนทุกปี ระบบเดาให้ไม่ได้</span></div>',
         input: 'text', inputPlaceholder: 'พิมพ์: เติมวันหยุด',
         showCancelButton: true, confirmButtonText: 'เติมเลย', cancelButtonText: 'ยกเลิก'
       }).then(c => {
@@ -4032,7 +4060,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     const gc = document.getElementById('gradeCardsContainer');
     gc.innerHTML = '';
     if (!d.subjects || Object.keys(d.subjects).length === 0) {
-      gc.innerHTML = '<div style="text-align:center; color:var(--slate); padding:24px;">ยังไม่มีข้อมูลคะแนน</div>';
+      gc.innerHTML = '<div class="u-empty">ยังไม่มีข้อมูลคะแนน</div>';
       return;
     }
     Object.keys(d.subjects).forEach(k => {
@@ -4294,7 +4322,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // ตอนครูเข้าระบบข้อมูลนี้มากับก้อนรวมอยู่แล้ว จึงเรียกตัววาดตรงๆ ได้เลย ไม่ต้องยิงคำขอซ้ำ
   function loadTeacherOverview() {
     const cont = document.getElementById('overviewContainer');
-    cont.innerHTML = '<div style="text-align:center; color:var(--slate); padding:24px;">กำลังโหลด...</div>';
+    cont.innerHTML = '<div class="u-empty">กำลังโหลด...</div>';
     google.script.run.withSuccessHandler(ov => renderTeacherOverview_(ov))
       .withFailureHandler(err => {
         console.error('getTeacherOverview failed:', err);
@@ -4448,7 +4476,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       const n = data.length || 1;
       summary.style.display = 'block';
       summary.innerHTML = `
-        <div style="font-weight:700; margin-bottom:8px;">สรุปบทที่ ${ch}</div>
+        <div class="u-head">สรุปบทที่ ${ch}</div>
         <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:8px; font-size:0.82rem;">
           <div>เซ็นเฉลี่ย: <b>${(sigSum / n).toFixed(1)}</b></div>
           <div>งานเฉลี่ย: <b>${(workSum / n).toFixed(1)}</b></div>
@@ -4465,7 +4493,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         return `
         <div class="prow">
           <div class="prow-top">
-            <div style="flex:1; min-width:0;">
+            <div class="u-grow">
               <div class="prow-name" title="${std.name}">${shortName_(std.name)}</div>
               <div class="prow-meta"><span>${std.id}</span></div>
             </div>
@@ -4489,7 +4517,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       const n = data.length || 1;
       summary.style.display = 'block';
       summary.innerHTML = `
-        <div style="font-weight:700; margin-bottom:8px;">สรุปคะแนนปลายภาค</div>
+        <div class="u-head">สรุปคะแนนปลายภาค</div>
         <div style="font-size:0.82rem;">เฉลี่ย: <b>${(sum / n).toFixed(1)}</b>/30${zeroCount ? ` · ยังไม่กรอก ${zeroCount} คน` : ''}</div>`;
 
       head.innerHTML = `<tr><th>รหัส</th><th>ชื่อ-สกุล</th><th>คะแนนปลายภาค (30)</th></tr>`;
@@ -4506,7 +4534,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       const sorted = [...data].sort((a, b) => Number(b.total100) - Number(a.total100));
       summary.style.display = 'block';
       summary.innerHTML = `
-        <div style="font-weight:700; margin-bottom:8px;">สรุปคะแนนรวม</div>
+        <div class="u-head">สรุปคะแนนรวม</div>
         <div style="font-size:0.82rem;">เฉลี่ย: <b>${(sum / n).toFixed(1)}</b>/100 · สูงสุด: <b>${sorted[0]?.total100 ?? '-'}</b> · ต่ำสุด: <b>${sorted[sorted.length - 1]?.total100 ?? '-'}</b></div>`;
 
       head.innerHTML = `<tr><th>รหัส</th><th>ชื่อ-สกุล</th><th>เก็บ 70%</th><th>ปลายภาค 30%</th><th>รวม 100</th></tr>`;
@@ -4523,7 +4551,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       const gradeOrder = [4, 3.5, 3, 2.5, 2, 1.5, 1, 0];
       summary.style.display = 'block';
       summary.innerHTML = `
-        <div style="font-weight:700; margin-bottom:8px;">การแจกแจงเกรด</div>
+        <div class="u-head">การแจกแจงเกรด</div>
         <div style="display:flex; flex-wrap:wrap; gap:6px; font-size:0.8rem;">
           ${gradeOrder.filter(g => dist[g]).map(g => `<span style="background:var(--cloud); padding:4px 10px; border-radius:999px;">เกรด ${g}: ${dist[g]} คน</span>`).join('')}
         </div>`;
@@ -4536,7 +4564,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         data.map(std => `
         <div class="prow" style="cursor:pointer;" onclick="openGradeOverride_(${JSON.stringify(std.id)}, ${JSON.stringify(std.name)}, ${std.grade})">
           <div class="prow-top">
-            <div style="flex:1; min-width:0;">
+            <div class="u-grow">
               <div class="prow-name" title="${std.name}">${shortName_(std.name)}</div>
               <div class="prow-meta"><span>${std.id}</span><span>·</span><span>คะแนนรวม ${std.total100}</span></div>
             </div>
@@ -4639,11 +4667,11 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       dateTo:   document.getElementById('histDateTo').value
     };
     const cont = document.getElementById('historyContainer');
-    cont.innerHTML = '<div style="text-align:center; color:var(--slate); padding:24px;">กำลังโหลด...</div>';
+    cont.innerHTML = '<div class="u-empty">กำลังโหลด...</div>';
 
     google.script.run.withSuccessHandler(list => {
       if (!list || list.length === 0) {
-        cont.innerHTML = '<div style="text-align:center; color:var(--slate); padding:24px;">ไม่พบข้อมูลในช่วงที่เลือก</div>';
+        cont.innerHTML = '<div class="u-empty">ไม่พบข้อมูลในช่วงที่เลือก</div>';
         return;
       }
       cont.innerHTML = list.map(item => {
@@ -4679,7 +4707,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     const nameFilter = (document.getElementById('stuFilterName').value || '').trim().toLowerCase();
 
     const cont = document.getElementById('allStuBody');
-    cont.innerHTML = '<div style="text-align:center; color:var(--slate); padding:20px;">กำลังโหลด...</div>';
+    cont.innerHTML = '<div class="u-empty-sm">กำลังโหลด...</div>';
     const results = {};
     let pending = 2;
     const done = () => {
@@ -4696,7 +4724,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       // [UI] เดิมเป็นตาราง 5 คอลัมน์ ซึ่งกว้าง 417px บนจอมือถือ 375px — ต้องเลื่อนขวาถึงจะเห็นปุ่มจัดการ
       // เปลี่ยนเป็นการ์ดต่อคน วางชื่อไว้บรรทัดบน รายละเอียดไว้บรรทัดล่าง จึงพอดีจอไม่ต้องเลื่อน
       cont.innerHTML = filtered.length === 0
-        ? '<div style="text-align:center; color:var(--slate); padding:20px;">ไม่พบนักเรียน</div>'
+        ? '<div class="u-empty-sm">ไม่พบนักเรียน</div>'
         : `<div style="font-size:0.74rem; color:var(--slate); margin-bottom:8px;">${filtered.length} คน</div>` +
           filtered.map(s => {
           const mine = electives[s.id];
@@ -4706,7 +4734,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           return `
           <div class="prow">
             <div class="prow-top">
-              <div style="flex:1; min-width:0;">
+              <div class="u-grow">
                 <div class="prow-name" title="${s.name}">${shortName_(s.name)}</div>
                 <div class="prow-meta"><span>${s.id}</span><span>·</span><span>${s.clsLabel}</span><span>·</span>${elective}</div>
               </div>
@@ -4879,7 +4907,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
   function loadAttendanceLog() {
     const cont = document.getElementById('attendanceContainer');
-    cont.innerHTML = '<div style="text-align:center; color:var(--slate); padding:24px;">กำลังโหลด...</div>';
+    cont.innerHTML = '<div class="u-empty">กำลังโหลด...</div>';
     const filters = {
       cls:      document.getElementById('attClass').value,
       subject:  document.getElementById('attSubject').value,
@@ -4898,7 +4926,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   function renderAttendanceLog_() {
     const cont = document.getElementById('attendanceContainer');
     if (attendanceRows.length === 0) {
-      cont.innerHTML = '<div style="text-align:center; color:var(--slate); padding:24px;">ไม่พบรายการเช็คชื่อในช่วงที่เลือก</div>';
+      cont.innerHTML = '<div class="u-empty">ไม่พบรายการเช็คชื่อในช่วงที่เลือก</div>';
       return;
     }
     const statusOpts = (code) => (metaData.statuses || [])
@@ -5020,7 +5048,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // ปิดแล้วแค่ซ่อนหน้าจอ ข้อมูลเดิมยังอยู่ครบและกลับมาเห็นทันทีที่เปิดใหม่ (ตามนโยบายสำรองข้อมูล)
   function renderAdminFeatures_() {
     const body = document.getElementById('adminBody');
-    body.innerHTML = '<div style="text-align:center; color:var(--slate); padding:24px;">กำลังโหลด...</div>';
+    body.innerHTML = '<div class="u-empty">กำลังโหลด...</div>';
 
     google.script.run.withSuccessHandler(res => {
       const rows = (res.features || []).map(f => {
@@ -5086,13 +5114,13 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // (ให้คะแนน สแกน แลกแต้ม ส่งงาน) นักเรียนยังเปิดดูย้อนหลังได้ตามปกติ
   function renderAdminTerm_() {
     const body = document.getElementById('adminBody');
-    body.innerHTML = '<div style="text-align:center; color:var(--slate); padding:24px;">กำลังโหลด...</div>';
+    body.innerHTML = '<div class="u-empty">กำลังโหลด...</div>';
     google.script.run.withSuccessHandler(st => {
       const auto = st.autoDetected || {};
       const clsRows = st.classes.map(c => `
         <div class="prow">
           <div class="prow-top">
-            <div style="flex:1; min-width:0;">
+            <div class="u-grow">
               <div class="prow-name">${c.label}</div>
               <div class="prow-meta">${c.locked
                 ? '<span style="color:var(--coral); font-weight:700;">🔒 ปิดแล้ว — แก้คะแนน/ให้แต้มไม่ได้</span>'
@@ -5107,7 +5135,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
       body.innerHTML = `
         <div class="card card-pad" style="margin-bottom:12px; text-align:left;">
-          <div style="font-weight:700; margin-bottom:6px;"><i class="fa-solid fa-calendar-check"></i> ตอนนี้อยู่ในช่วง</div>
+          <div class="u-head-sm"><i class="fa-solid fa-calendar-check"></i> ตอนนี้อยู่ในช่วง</div>
           <div style="font-size:1.15rem; font-weight:800; color:var(--teal2);">ปีการศึกษา ${st.year} · เทอม ${st.term}</div>
           <div style="font-size:0.74rem; color:var(--slate); margin-top:6px;">
             ${st.manual
@@ -5298,7 +5326,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       const rows = list.map(a => `
         <div class="prow">
           <div class="prow-top">
-            <div style="flex:1; min-width:0;">
+            <div class="u-grow">
               <div class="prow-name">${a.subjectLabel} ${a.classLabel}</div>
               <div class="prow-meta">ปีการศึกษา ${a.year} เทอม ${a.term} · ${a.students} คน</div>
             </div>
@@ -5390,11 +5418,11 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // ระบบจะยังทำงานต่อเงียบๆ แต่อ่าน/เขียนผิดช่องทั้งห้อง โดยไม่มีอะไรฟ้อง
   function runSheetIntegrityCheck_() {
     const body = document.getElementById('adminBody');
-    body.innerHTML = '<div style="text-align:center; color:var(--slate); padding:24px;">กำลังตรวจสอบโครงสร้างชีต...</div>';
+    body.innerHTML = '<div class="u-empty">กำลังตรวจสอบโครงสร้างชีต...</div>';
     google.script.run.withSuccessHandler(res => {
       const chapterInfo = (res.chapterCounts || []).length
         ? `<div class="card card-pad" style="margin-bottom:10px; text-align:left;">
-             <div style="font-weight:700; margin-bottom:6px;"><i class="fa-solid fa-circle-info"></i> จำนวนบทของแต่ละชีตคะแนน</div>
+             <div class="u-head-sm"><i class="fa-solid fa-circle-info"></i> จำนวนบทของแต่ละชีตคะแนน</div>
              <div style="font-size:0.8rem; color:var(--slate);">
                ${res.chapterCounts.map(c => `${c.sheet} — <b>${c.chapters}</b> บท`).join(' · ')}
              </div>
@@ -5516,7 +5544,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
     document.getElementById('adminBody').innerHTML = `
       <div class="card card-pad" style="margin-bottom:12px; text-align:left;">
-        <div style="font-weight:700; margin-bottom:8px;"><i class="fa-solid fa-list-ol"></i> โครงสร้างบทเรียน</div>
+        <div class="u-head"><i class="fa-solid fa-list-ol"></i> โครงสร้างบทเรียน</div>
         <label style="font-size:0.8rem;">จำนวนบททั้งหมด</label>
         <input class="field" id="set_TOTAL_CHAPTERS" type="number" min="1" max="30" style="width:100%; margin-top:4px;" value="${s.TOTAL_CHAPTERS ?? ''}">
         <div style="font-size:0.74rem; color:var(--slate); margin-top:6px;">
@@ -5527,12 +5555,12 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       </div>
 
       <div class="card card-pad" style="margin-bottom:12px; text-align:left;">
-        <div style="font-weight:700; margin-bottom:8px;"><i class="fa-solid fa-key"></i> PIN เริ่มต้นของนักเรียนใหม่</div>
+        <div class="u-head"><i class="fa-solid fa-key"></i> PIN เริ่มต้นของนักเรียนใหม่</div>
         <input class="field" id="set_DEFAULT_PIN" style="width:100%;" value="${s.DEFAULT_PIN ?? ''}">
       </div>
 
       <div class="card card-pad" style="margin-bottom:12px; text-align:left;">
-        <div style="font-weight:700; margin-bottom:8px;"><i class="fa-solid fa-award"></i> เกณฑ์ตัดเกรด (เต็ม 100)</div>
+        <div class="u-head"><i class="fa-solid fa-award"></i> เกณฑ์ตัดเกรด (เต็ม 100)</div>
         <div class="tbl-wrap"><table class="dt"><tbody>${gradeRows}</tbody></table></div>
       </div>
 
@@ -5670,7 +5698,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         return `
           <div class="prow" style="cursor:pointer;" onclick="Swal.close(); viewStudentProfile('${st.studentId}')">
             <div class="prow-top">
-              <div style="flex:1; min-width:0;">
+              <div class="u-grow">
                 <div class="prow-name" title="${st.name}">${shortName_(st.name)}</div>
                 <div class="prow-meta">🎬 ${st.videoWatched}/${st.videoTotal} · ⌨️ ${st.submissionCorrect}/${st.submissionTotal} · 🏦 ${st.creditBankDays} วัน · 📝 ${st.testAttempts} ครั้ง</div>
               </div>
@@ -5735,7 +5763,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     const gradeHtml = Object.values(d.subjects || {}).map(sub => {
       const gc = parseFloat(sub.grade) >= 3 ? 'var(--blue)' : parseFloat(sub.grade) <= 1.5 ? 'var(--rose)' : 'var(--gold)';
       return `<div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #F5FAFF; font-size:0.83rem;">
-        <span style="color:#6E88A3;">${sub.label}</span>
+        <span style="color:var(--ink-2);">${sub.label}</span>
         <span style="font-weight:700; color:${gc};">เกรด ${sub.grade} <small style="opacity:0.65;">(${sub.total100} คะแนน)</small></span>
       </div>`;
     }).join('');
@@ -5748,20 +5776,20 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     }).join('');
 
     const companionHtml = companion ? `
-      <div style="display:flex; align-items:center; gap:10px; background:#F5FAFF; border-radius:10px; padding:10px; margin-bottom:8px;">
+      <div style="display:flex; align-items:center; gap:10px; background:var(--surface-2); border-radius:10px; padding:10px; margin-bottom:8px;">
         <div style="font-size:1.8rem;">${companion.isEgg ? '🥚' : companion.petEmoji}</div>
         <div style="flex:1;">
           <div style="font-weight:700; font-size:0.85rem;">${companion.isEgg ? 'ยังไม่ฟักไข่' : `${companion.petName || 'คู่หู'} · Lv.${companion.level} ${companion.stage}`}</div>
-          <div style="font-size:0.72rem; color:#6E88A3;">${companion.isEgg ? '' : `⭐ EXP ${companion.currentExp}/${companion.expTarget} · `}🎟️ ${companion.tickets} ตั๋ว</div>
+          <div style="font-size:0.72rem; color:var(--ink-2);">${companion.isEgg ? '' : `⭐ EXP ${companion.currentExp}/${companion.expTarget} · `}🎟️ ${companion.tickets} ตั๋ว</div>
         </div>
       </div>` : '';
 
     const runHtml = `
-      <div style="display:flex; align-items:center; gap:10px; background:#F5FAFF; border-radius:10px; padding:10px; margin-bottom:12px;">
+      <div style="display:flex; align-items:center; gap:10px; background:var(--surface-2); border-radius:10px; padding:10px; margin-bottom:12px;">
         <div style="font-size:1.8rem;">🏃</div>
         <div style="flex:1;">
           <div style="font-weight:700; font-size:0.85rem;">วิ่งสะสม ${running.totalMeters} เมตร</div>
-          <div style="font-size:0.72rem; color:#6E88A3;">${running.totalPoints} แต้มวิ่ง · ${running.totalSteps || 0} ก้าว</div>
+          <div style="font-size:0.72rem; color:var(--ink-2);">${running.totalPoints} แต้มวิ่ง · ${running.totalSteps || 0} ก้าว</div>
         </div>
       </div>`;
 
@@ -5772,16 +5800,16 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       const s = ep.score || { creditBankScore: 0, videoScore: 0, submissionScore: 0, testScore: 0, total50: 0 };
       const bar = (label, val, max, color) => `
         <div style="margin-bottom:6px;">
-          <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:#6E88A3; margin-bottom:2px;">
+          <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--ink-2); margin-bottom:2px;">
             <span>${label}</span><b style="color:var(--ink);">${val}/${max}</b>
           </div>
-          <div style="background:#F5FAFF; height:8px; border-radius:4px; overflow:hidden;">
+          <div style="background:var(--surface-2); height:8px; border-radius:4px; overflow:hidden;">
             <div style="background:${color}; width:${Math.min(100, Math.round((val / max) * 100))}%; height:100%;"></div>
           </div>
         </div>`;
       electiveHtml = `
-        <div style="font-size:0.72rem; font-weight:700; color:#6E88A3; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">สาขาวิชาเลือก: ${ep.label} (${s.total50}/50)</div>
-        <div style="background:#F5FAFF; border-radius:10px; padding:10px; margin-bottom:14px;">
+        <div class="u-label">สาขาวิชาเลือก: ${ep.label} (${s.total50}/50)</div>
+        <div style="background:var(--surface-2); border-radius:10px; padding:10px; margin-bottom:14px;">
           ${bar('🏦 ธนาคารหน่วยกิต', s.creditBankScore, 10, 'var(--ink)')}
           ${bar('🎬 ดูคลิป', s.videoScore, 10, 'var(--blue-2)')}
           ${bar('⌨️ ตอบคำถาม', s.submissionScore, 15, 'var(--gold)')}
@@ -5789,8 +5817,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         </div>`;
     } else {
       electiveHtml = `
-        <div style="font-size:0.72rem; font-weight:700; color:#6E88A3; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">สาขาวิชาเลือก</div>
-        <div style="background:#F5FAFF; border-radius:10px; padding:10px; margin-bottom:14px; text-align:center; color:#6E88A3; font-size:0.82rem;">ยังไม่ได้เลือกสาขาวิชาเลือก</div>`;
+        <div class="u-label">สาขาวิชาเลือก</div>
+        <div style="background:var(--surface-2); border-radius:10px; padding:10px; margin-bottom:14px; text-align:center; color:var(--ink-2); font-size:0.82rem;">ยังไม่ได้เลือกสาขาวิชาเลือก</div>`;
     }
 
     Swal.fire({
@@ -5802,27 +5830,27 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
             <div style="font-size:0.82rem; color:rgba(255,255,255,0.55);">${d.clsLabel} &nbsp;·&nbsp; รหัส ${stdId}</div>
           </div>
           <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; margin-bottom:14px;">
-            <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
+            <div class="u-stat">
               <div style="font-size:1.2rem; font-weight:900; color:var(--blue);">${ci.checkinCount}</div>
-              <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">เช็คอิน</div>
+              <div class="u-label-sm">เช็คอิน</div>
             </div>
-            <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
+            <div class="u-stat">
               <div style="font-size:1.2rem; font-weight:900; color:var(--gold);">${d.pointsBalance || 0}</div>
-              <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">แต้มสะสม</div>
+              <div class="u-label-sm">แต้มสะสม</div>
             </div>
-            <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
+            <div class="u-stat">
               <div style="font-size:1.2rem; font-weight:900; color:var(--gold);">${ci.consecutiveDays}🔥</div>
-              <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">ต่อเนื่อง</div>
+              <div class="u-label-sm">ต่อเนื่อง</div>
             </div>
-            <div style="background:#F5FAFF; border-radius:10px; padding:10px; text-align:center;">
+            <div class="u-stat">
               <div style="font-size:1.2rem; font-weight:900; color:var(--ink);">${pd.myTotalSigs || 0}</div>
-              <div style="font-size:0.62rem; color:#6E88A3; font-weight:600; text-transform:uppercase; margin-top:2px;">ลายเซ็น</div>
+              <div class="u-label-sm">ลายเซ็น</div>
             </div>
           </div>
           ${nickHtml ? `<div style="margin-bottom:12px; flex-wrap:wrap; display:flex; gap:4px;">${nickHtml}</div>` : ''}
-          <div style="font-size:0.72rem; font-weight:700; color:#6E88A3; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">คู่หู &amp; การวิ่ง</div>
+          <div class="u-label">คู่หู &amp; การวิ่ง</div>
           ${companionHtml}${runHtml}
-          ${gradeHtml ? `<div style="font-size:0.72rem; font-weight:700; color:#6E88A3; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">ผลการเรียน</div>${gradeHtml}` : ''}
+          ${gradeHtml ? `<div class="u-label">ผลการเรียน</div>${gradeHtml}` : ''}
           ${electiveHtml}
         </div>`,
       showConfirmButton: false,
@@ -6745,7 +6773,7 @@ function renderCourseSubjects() {
     if (myToken !== courseReqToken) return;
     const hasElective = subjects.some(s => (metaData.electives || []).some(e => e.code === s.code));
     const subjectCards = (!subjects || subjects.length === 0)
-      ? '<div style="text-align:center; padding:24px; color:var(--slate);">ยังไม่มีรายวิชา</div>'
+      ? '<div class="u-empty">ยังไม่มีรายวิชา</div>'
       : subjects.map(s => `
         <div class="action-card" onclick="openCourseSubject('${s.code}', '${s.label.replace(/'/g, "\\'")}')">
           <div class="icon" style="background:rgba(255,92,151,0.12); color:var(--teal2);"><i class="fa-solid fa-book"></i></div>
@@ -6882,7 +6910,7 @@ function openCourseSubject(subjectCode, subjectLabel) {
   google.script.run.withSuccessHandler(chapters => {
     if (myToken !== courseReqToken) return;
     if (!chapters || chapters.length === 0) {
-      body.innerHTML = '<div style="text-align:center; padding:24px; color:var(--slate);">ยังไม่มีบทเรียนของวิชานี้</div>';
+      body.innerHTML = '<div class="u-empty">ยังไม่มีบทเรียนของวิชานี้</div>';
       return;
     }
     body.innerHTML = chapters.map(ch => {
@@ -6927,7 +6955,7 @@ function openCourseChapter(subjectCode, subjectLabel, chapter) {
           </button>`;
     return `
       <div class="card card-pad" style="margin-bottom:10px;">
-        <div style="font-weight:700; margin-bottom:8px;">${t.topicNum}. ${t.topicName}</div>
+        <div class="u-head">${t.topicNum}. ${t.topicName}</div>
         <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">${watchedBadge}${subBadge}</div>
         <div style="display:flex; gap:8px;">
           <button class="btn btn-navy btn-sm" style="flex:1;" onclick='openCourseVideo(${JSON.stringify(subjectCode)}, ${JSON.stringify(clsCode)}, ${chapter.chapterNum}, ${JSON.stringify(t)})'>
@@ -6972,7 +7000,7 @@ function openCourseVideo(subjectCode, clsCode, chapterNum, topic) {
   const body = document.getElementById('courseModalBody');
   const vid = extractYouTubeId_(topic.youtubeUrl);
   if (!vid) {
-    body.innerHTML = '<div style="text-align:center; padding:24px; color:var(--slate);">ยังไม่มีลิงก์วิดีโอของเรื่องนี้</div>';
+    body.innerHTML = '<div class="u-empty">ยังไม่มีลิงก์วิดีโอของเรื่องนี้</div>';
     return;
   }
   body.innerHTML = `
@@ -7041,7 +7069,7 @@ function openCourseExercise(subjectCode, clsCode, chapterNum, topic) {
   const body = document.getElementById('courseModalBody');
   body.innerHTML = `
     <div class="card card-pad" style="margin-bottom:12px;">
-      <div style="font-weight:700; margin-bottom:6px;">📖 โจทย์แบบฝึกหัด</div>
+      <div class="u-head-sm">📖 โจทย์แบบฝึกหัด</div>
       <div style="color:var(--slate); font-size:0.88rem; white-space:pre-line;">${topic.exerciseText || 'ไม่มีคำสั่งเพิ่มเติม'}</div>
     </div>
     <input type="file" id="exercisePhotoInput" accept="image/*" capture="environment" multiple style="display:none;" onchange="onExercisePhotosSelected_(event)">
@@ -7112,12 +7140,12 @@ function openElectiveExercise(subjectCode, clsCode, chapterNum) {
   body.innerHTML = courseLoadingHtml_();
   google.script.run.withSuccessHandler(questions => {
     if (!questions || questions.length === 0) {
-      body.innerHTML = '<div style="text-align:center; padding:24px; color:var(--slate);">ยังไม่มีคำถามของบทนี้</div>';
+      body.innerHTML = '<div class="u-empty">ยังไม่มีคำถามของบทนี้</div>';
       return;
     }
     const qRows = questions.map(q => `
       <div class="card card-pad" style="margin-bottom:10px;">
-        <div style="font-weight:700; margin-bottom:8px;">ข้อ ${q.questionNum}. ${q.questionText}</div>
+        <div class="u-head">ข้อ ${q.questionNum}. ${q.questionText}</div>
         <input type="text" class="field elective-answer-input" data-qnum="${q.questionNum}" placeholder="พิมพ์คำตอบที่นี่">
       </div>`).join('');
     body.innerHTML = qRows + `
@@ -7156,7 +7184,7 @@ function openElectiveTest(subjectCode, clsCode, chapterNum) {
 
     const qRows = res.questions.map((q, i) => `
       <div class="card card-pad" style="margin-bottom:10px;">
-        <div style="font-weight:700; margin-bottom:8px;">ข้อ ${i + 1}. ${q.questionText}</div>
+        <div class="u-head">ข้อ ${i + 1}. ${q.questionText}</div>
         <div style="display:flex; flex-direction:column; gap:6px;">
           ${['A','B','C','D'].map(opt => `
             <button class="btn btn-ghost btn-sm elective-test-opt-btn" data-q="${i}" data-opt="${opt}" style="text-align:left;" onclick="selectElectiveTestAnswer_(${i}, '${opt}', this)">${opt}. ${q.choices[opt] || ''}</button>
@@ -7217,7 +7245,7 @@ function openCourseExam(subjectCode, clsCode, chapter) {
     for (let i = 0; i < res.totalItems; i++) {
       qRows.push(`
         <div class="card card-pad" style="margin-bottom:10px;">
-          <div style="font-weight:700; margin-bottom:8px;">ข้อ ${i + 1}</div>
+          <div class="u-head">ข้อ ${i + 1}</div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             ${['A','B','C','D'].map(opt => `
               <button class="btn btn-ghost btn-sm exam-opt-btn" data-q="${i}" data-opt="${opt}" style="flex:1; min-width:60px;" onclick="selectExamAnswer_(${i}, '${opt}', this)">${opt}</button>
@@ -7297,10 +7325,10 @@ function openSubmissionReviewModal() {
 }
 function loadPendingSubmissions_(subj, cls) {
   const body = document.getElementById('reviewModalBody');
-  body.innerHTML = '<div style="text-align:center; padding:24px; color:var(--slate);">กำลังโหลด...</div>';
+  body.innerHTML = '<div class="u-empty">กำลังโหลด...</div>';
   google.script.run.withSuccessHandler(list => {
     if (!list || list.length === 0) {
-      body.innerHTML = '<div style="text-align:center; padding:24px; color:var(--slate);">ไม่มีงานรอตรวจครับ 🎉</div>';
+      body.innerHTML = '<div class="u-empty">ไม่มีงานรอตรวจครับ 🎉</div>';
       return;
     }
     body.innerHTML = list.map(s => `
@@ -7344,7 +7372,7 @@ function openExamControlModal() {
   const ch   = document.getElementById('activeChapterInput').value;
   openFullpageView_('examCtrlModal');
   const body = document.getElementById('examCtrlModalBody');
-  body.innerHTML = '<div style="text-align:center; padding:24px; color:var(--slate);">กำลังโหลด...</div>';
+  body.innerHTML = '<div class="u-empty">กำลังโหลด...</div>';
   google.script.run.withSuccessHandler(cfg => {
     if (!cfg.hasConfig) {
       body.innerHTML = `<div style="text-align:center; padding:16px; color:var(--slate);">
@@ -7489,7 +7517,7 @@ function renderRunModalByStatus_(status) {
     ? `<div style="text-align:center; color:var(--amber2); font-size:0.82rem; margin-bottom:10px;">มีเซสชันที่ทำค้างไว้ (${status.validMeters || 0} เมตร · ${status.steps || 0} ก้าว) กดปุ่มด้านล่างเพื่อทำต่อ</div>` : '';
   body.innerHTML = `
     <div class="card card-pad" style="margin-bottom:14px;">
-      <div style="font-weight:700; margin-bottom:8px;">📋 กติกา</div>
+      <div class="u-head">📋 กติกา</div>
       <ul style="margin:0; padding-left:20px; color:var(--slate); font-size:0.85rem; line-height:1.7;">
         <li>ต้อง<b>วิ่งจริง</b> (เดินสบายๆ ไม่นับ / ปั่นจักรยาน-มอไซค์ไม่นับ)</li>
         <li>หยุดพักได้ แต่ห้ามเกิน <b>5 นาทีต่อครั้ง</b> ไม่งั้นระบบตัดรอบให้อัตโนมัติ</li>
@@ -7522,7 +7550,7 @@ function loadRunHistory_() {
       </div>`).join('');
     el.innerHTML = `
       <div class="card card-pad">
-        <div style="font-weight:700; margin-bottom:8px;">📜 ประวัติการวิ่ง</div>
+        <div class="u-head">📜 ประวัติการวิ่ง</div>
         ${rows}
       </div>`;
   }).withFailureHandler(err => {
@@ -7880,7 +7908,7 @@ function refreshRunSummary_() {
       <button class="btn btn-teal btn-sm" onclick="loadAttendanceLog()"><i class="fa-solid fa-magnifying-glass"></i> ค้นหา</button>
     </div>
     <div id="attendanceContainer">
-      <div style="text-align:center; color:var(--slate); padding:24px;">เลือกตัวกรองแล้วกด "ค้นหา"</div>
+      <div class="u-empty">เลือกตัวกรองแล้วกด "ค้นหา"</div>
     </div>
   </div>
 </div>
