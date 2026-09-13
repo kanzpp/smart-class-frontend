@@ -2027,6 +2027,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <button class="sc-g" id="tMenuElective" onclick="openElectiveOverviewModal()"><span class="ic ic-gold"><i class="fa-solid fa-shuffle"></i></span><span class="lb">วิชาเลือก</span></button>
           <button class="sc-g" onclick="openAdminTabDirect_('term')"><span class="ic ic-rose"><i class="fa-solid fa-calendar-check"></i></span><span class="lb">ปีการศึกษา<br>ปิดเทอม · เลื่อนชั้น</span></button>
           <button class="sc-g" onclick="openEndOfTerm_()"><span class="ic ic-mint"><i class="fa-solid fa-flag-checkered"></i></span><span class="lb">ขั้นตอน<br>ปลายเทอม</span></button>
+          <button class="sc-g" onclick="openYearGuide_()"><span class="ic ic-mint"><i class="fa-solid fa-compass"></i></span><span class="lb">คู่มือประจำปี</span></button>
           <button class="sc-g" onclick="openAdminModal()"><span class="ic ic-grey"><i class="fa-solid fa-gear"></i></span><span class="lb">ตั้งค่าระบบ</span></button>
           <!-- ย้ายมาจากปุ่มเล็กมุมขวาบนของหัวจอ (⚙ ไม่ต้องย้าย มีอยู่แล้วข้างบนนี้) -->
           <button class="sc-g" data-scale-cycle onclick="cycleUiScale_()"><span class="ic ic-blue"><span class="scale-glyph">ก</span></span><span class="lb">ขนาดตัวอักษร</span></button>
@@ -3685,6 +3686,112 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // ─── ปฏิทินโรงเรียน ─────────────────────────────────────────
   // สถิติ "เช็คอินต่อเนื่อง" เดิมข้ามแค่เสาร์-อาทิตย์ วันหยุดอื่นจึงทำให้สถิติขาดทั้งที่เด็กไม่ผิด
   // ครูกำหนดเองได้ที่นี่ หรือจะพิมพ์ลงชีต School_Calendar ตรงๆ ก็ได้ ผลเหมือนกัน
+  // ─── คู่มือประจำปี ──────────────────────────────────────────
+  // งานที่วนกลับมาทุกเทอม/ทุกปี เจ้าของทำเองได้หมด — ที่พลาดกันคือ "ลำดับ"
+  // จึงเขียนเป็นขั้นเรียงเลข และเน้นข้อที่สลับแล้วพัง
+  // ⚠️ เนื้อหาต้องตรงกับหัวข้อ "ปฏิทินงานประจำปี" ใน CLAUDE.md
+  function openYearGuide_() {
+    openFullpageView_('yearGuideModal');
+    renderYearGuide_();
+  }
+
+  function renderYearGuide_() {
+    const body = document.getElementById('yearGuideBody');
+    if (!body) return;
+
+    // บอกว่า "ตอนนี้อยู่ตรงไหนของปี" จะได้รู้ว่าต้องอ่านหัวข้อไหนก่อน
+    const now = new Date();
+    const y = now.getFullYear() + 543, m = now.getMonth() + 1, d = now.getDate();
+    // เทอม 1 = 1 พ.ค.–31 ต.ค. · เทอม 2 = 1 พ.ย.–31 มี.ค. (เม.ย. ถือเป็นท้ายเทอม 2)
+    const inT1 = (m >= 5 && m <= 10);
+    const endDate = inT1 ? new Date(now.getFullYear(), 9, 31) : new Date(now.getFullYear() + (m >= 11 ? 1 : 0), 2, 31);
+    const daysLeft = Math.ceil((endDate - now) / 86400000);
+    const nextJob = inT1
+      ? { เมื่อ: 'ภายใน 31 ต.ค.', คือ: 'ขั้นตอนปลายเทอม 1', ที่: "openEndOfTerm_()" }
+      : { เมื่อ: 'ภายใน 31 มี.ค.', คือ: 'ขั้นตอนปลายเทอม 2 แล้วเลื่อนชั้น', ที่: "openEndOfTerm_()" };
+
+    const step = (n, title, detail, warn) => `
+      <div class="eot-step" style="display:flex; gap:12px; align-items:flex-start; padding:11px 0; border-bottom:1px solid var(--line-soft);">
+        <span style="flex:none; width:26px; height:26px; border-radius:9px; background:var(--blue-dim); color:var(--blue);
+                     display:grid; place-items:center; font-weight:800; font-size:.78rem;">${n}</span>
+        <span class="u-grow" style="text-align:left;">
+          <span style="display:block; font-weight:700; font-size:.9rem;">${title}</span>
+          <span style="display:block; font-size:.78rem; color:var(--ink-2); margin-top:2px;">${detail}</span>
+          ${warn ? `<span style="display:block; font-size:.76rem; color:var(--rose); font-weight:700; margin-top:5px;">⚠️ ${warn}</span>` : ''}
+        </span>
+      </div>`;
+
+    body.innerHTML = `
+      <div class="card card-pad" style="margin-bottom:14px; background:var(--blue-dim); border:1px solid var(--blue);">
+        <div class="u-label" style="color:var(--blue);">ตอนนี้</div>
+        <div style="font-weight:800; font-size:1.05rem;">ปีการศึกษา ${y} · เทอม ${inT1 ? 1 : 2}</div>
+        <div style="font-size:.82rem; color:var(--ink-2); margin-top:3px;">
+          เหลืออีก <b style="color:var(--ink);">${daysLeft}</b> วันจบเทอม · งานถัดไป: <b style="color:var(--ink);">${nextJob.คือ}</b> (${nextJob.เมื่อ})
+        </div>
+        <button class="btn btn-teal btn-block btn-sm" style="margin-top:10px;"
+                onclick="closeFullpageView_('yearGuideModal'); ${nextJob.ที่}">
+          <i class="fa-solid fa-flag-checkered"></i> เปิดขั้นตอนปลายเทอม
+        </button>
+      </div>
+
+      <div class="card card-pad" style="margin-bottom:14px;">
+        <div class="u-head"><i class="fa-solid fa-1"></i> จบเทอม 1 → ขึ้นเทอม 2</div>
+        <div style="font-size:.82rem; color:var(--ink-2); margin-bottom:8px;">
+          ปุ่มเฟือง → ดูแลระบบ → <b>ขั้นตอนปลายเทอม</b> กดปุ่มเดียวได้ครบ 5 ขั้น
+        </div>
+        <div style="font-size:.78rem; color:var(--rose); font-weight:700;">
+          ⚠️ ต้องทำไม่เกิน 31 ต.ค. — เลยไป 1 พ.ย. ระบบนับเป็นเทอม 2 แล้ว คลังจะติดฉลากผิดเทอม
+        </div>
+        <div style="font-size:.78rem; color:var(--ink-2); margin-top:6px;">รายชื่อนักเรียนไม่เปลี่ยน ยังชั้นเดิม เพราะยังไม่ขึ้นปีใหม่</div>
+      </div>
+
+      <div class="card card-pad" style="margin-bottom:14px;">
+        <div class="u-head"><i class="fa-solid fa-2"></i> จบปีการศึกษา — ลำดับนี้ห้ามสลับ</div>
+        ${step(1, 'ทำขั้นตอนปลายเทอมของเทอม 2 ให้ครบ', 'เก็บคลัง → ล้างคะแนน ต้องเสร็จก่อนแตะเรื่องเลื่อนชั้น')}
+        ${step(2, 'ดูตัวอย่างการเลื่อนชั้น', 'ดูแลระบบ → ปีการศึกษา → ดูตัวอย่าง อ่านให้ครบก่อนกดจริง')}
+        ${step(3, 'เลื่อนชั้น', 'ม.1→ม.2 · ม.2→ม.3 · ม.3 ย้ายเข้าชีต Alumni_Archive แล้วหายจากรายชื่อ (ไม่ได้ลบ ข้อมูลอยู่ครบ)')}
+        ${step(4, 'รับ ม.1 ใหม่', 'แท็บ นร. → เพิ่มนักเรียน · PIN เว้นว่างได้ ระบบใส่ค่าเริ่มต้นให้เอง',
+              'ต้องทำหลังเลื่อนชั้นเท่านั้น — ถ้ารับก่อน เด็กใหม่จะโดนเลื่อนไป ม.2 ทันที')}
+        ${step(5, 'ตรวจว่าปี/เทอมตรง', 'ดูแลระบบ → ปีการศึกษา ควรขึ้นเป็นปีใหม่ เทอม 1')}
+      </div>
+
+      <div class="card card-pad" style="margin-bottom:14px;">
+        <div class="u-head"><i class="fa-solid fa-user-plus"></i> เพิ่ม / ลบนักเรียนกลางเทอม</div>
+        <div style="font-size:.82rem; color:var(--ink-2);">
+          ทำได้ตลอดที่แท็บ <b>นร.</b> ไม่ต้องตั้งค่าอะไรเพิ่ม ชีตคะแนนเติมแถวให้เอง<br>
+          ลบนักเรียนจะ<b>ย้ายเข้าคลัง</b> ไม่ได้ลบถาวร
+        </div>
+      </div>
+
+      <div class="card card-pad" style="margin-bottom:14px; border:1px solid var(--rose);">
+        <div class="u-head" style="color:var(--rose);"><i class="fa-solid fa-triangle-exclamation"></i> กับดักที่ต้องจำให้ได้ข้อเดียว</div>
+        <div style="font-size:.82rem; color:var(--ink-2);">
+          <b style="color:var(--ink);">ขยายจำนวนบท ต้องทำหลังล้างคะแนนเสมอ</b><br>
+          คะแนนเก็บคิดจาก (คะแนนรวม ÷ จำนวนบท × 20) × 70 — ขยายบทตอนที่ยังมีคะแนนค้าง
+          ตัวหารจะโตขึ้นทันที <b style="color:var(--rose);">เกรดร่วงทั้งห้องโดยไม่มีอะไรฟ้อง</b><br>
+          ใช้ทางที่ปลอดภัย: ดูแลระบบ → ตรวจและขยายจำนวนบท (มีตัวอย่างให้ดูก่อน)
+        </div>
+      </div>
+
+      <div class="card card-pad" style="margin-bottom:14px;">
+        <div class="u-head"><i class="fa-solid fa-shield-halved"></i> สำรองข้อมูล</div>
+        <div style="font-size:.82rem; color:var(--ink-2);">
+          ระบบสำรองทั้งไฟล์ <b>ทุกวันตี 3</b> เก็บย้อนหลัง 14 ชุด ไปที่โฟลเดอร์ใน Google Drive<br>
+          ถ้าสำรองหยุดทำงาน หน้าแรกจะขึ้นแถวแดงเตือนเอง <b>ไม่ต้องคอยเข้ามาเช็ค</b><br>
+          ดูสถานะได้ที่ ดูแลระบบ → ดูแลระบบ
+        </div>
+      </div>
+
+      <div class="card card-pad" style="margin-bottom:20px;">
+        <div class="u-head"><i class="fa-solid fa-circle-question"></i> เรื่องพวกนี้ทำเองได้ ไม่ต้องหาคนช่วย</div>
+        <div style="font-size:.82rem; color:var(--ink-2);">
+          เปลี่ยนเทอม · เลื่อนชั้น · รับเด็กใหม่ · เพิ่มวันหยุด · เปิดปิดฟีเจอร์ · ขยายจำนวนบท<br><br>
+          <b style="color:var(--ink);">ที่ควรหาคนช่วย</b>: อยากได้ฟีเจอร์ใหม่ · ตัวอย่างก่อนทำฟ้องตัวเลขที่ดูไม่ถูก ·
+          ทำไปแล้วผลไม่เป็นอย่างที่คิด อยากกู้คืน
+        </div>
+      </div>`;
+  }
+
   function openCalendar_() {
     openFullpageView_('calModal');
     loadCalendar_();
@@ -8031,6 +8138,18 @@ function refreshRunSummary_() {
 <!-- ═══ ปฏิทินโรงเรียน — วันหยุด / วันเรียนพิเศษ ═══════════════
      มีผลต่อสถิติ "เช็คอินต่อเนื่อง" โดยตรง: วันหยุดจะข้ามไม่ตัดสถิติ
      ส่วนวันเรียนพิเศษจะนับเป็นวันเรียนแม้ตรงเสาร์-อาทิตย์ -->
+<!-- ═══ คู่มือประจำปี ═══════════════════════════════════════════
+     งานที่วนกลับมาทุกเทอม/ทุกปี — เจ้าของทำเองได้ทั้งหมด ไม่ต้องเรียกใคร
+     เรื่องที่ต้องระวังคือ "ลำดับ" ไม่ใช่ว่าทำไม่ได้ จึงเขียนเป็นลำดับขั้นชัดๆ
+     เนื้อหาตรงกับหัวข้อ "ปฏิทินงานประจำปี" ใน CLAUDE.md — แก้ที่ไหนต้องแก้อีกที่ด้วย -->
+<div id="yearGuideModal" class="fullpage-view hidden">
+  <div class="fullpage-head">
+    <div class="section-title" style="margin-bottom:0;"><i class="fa-solid fa-compass"></i> คู่มือประจำปี</div>
+    <button class="btn btn-ghost btn-icon" onclick="closeFullpageView_('yearGuideModal')"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="fullpage-body" id="yearGuideBody"></div>
+</div>
+
 <div id="calModal" class="fullpage-view hidden">
   <div class="fullpage-head">
     <div class="section-title" style="margin-bottom:0;"><i class="fa-solid fa-calendar-days"></i> ปฏิทินโรงเรียน</div>
