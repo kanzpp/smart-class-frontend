@@ -2006,6 +2006,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
       <div class="sc-pad">
         <div class="sc-sec"><span class="t">ต้องรู้วันนี้</span><span class="more" id="tAlertCount"></span></div>
+        <!-- คำเตือนสำรองข้อมูล อยู่เหนือทุกอย่างเพราะร้ายแรงที่สุด
+             เจ้าของไม่มีสมุดจดคะแนนสำรอง ชีตคือต้นฉบับเดียวของทั้งโรงเรียน -->
+        <div id="tBackupWarn" style="display:none;"></div>
         <div id="overviewContainer"><div class="sc-empty">กำลังโหลด...</div></div>
       </div>
 
@@ -2714,11 +2717,32 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     }).getTeacherBootBundle_();
   }
 
+  // ─── คำเตือนสำรองข้อมูล ─────────────────────────────────────
+  // เจ้าของไม่มีสมุดจดคะแนนสำรองเลย ชีตคือต้นฉบับเดียว ถ้าสำรองหยุดทำงานเงียบๆ
+  // จะไม่มีใครรู้จนถึงวันที่ต้องใช้จริง ระบบจึงต้องเป็นฝ่ายทัก ไม่ใช่รอให้ครูนึกขึ้นได้
+  // ขึ้นเหนือทุกอย่างในหน้าแรก และไม่มีปุ่มปิด — เพราะถ้าปิดได้ ก็จะถูกปิดแล้วลืม
+  function renderBackupWarn_(bk) {
+    const box = document.getElementById('tBackupWarn');
+    if (!box) return;
+    if (!bk || !bk.stale) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    box.style.display = '';
+    box.innerHTML = `
+      <button class="sc-alert" onclick="openAdminTabDirect_('care')" style="border:1px solid var(--rose);">
+        <span class="ic ic-rose"><i class="fa-solid fa-shield-halved"></i></span>
+        <span class="tx">
+          <span class="t1">สำรองข้อมูลมีปัญหา</span>
+          <span class="t2">${bk.warning || 'ตรวจสอบการสำรองข้อมูล'} · กดเพื่อแก้</span>
+        </span>
+        <i class="fa-solid fa-chevron-right ch"></i>
+      </button>`;
+  }
+
   function renderTeacherBoot_(b) {
     if (b.meta) { metaData = b.meta; populateSelects(); applyFeatureFlags_(); }
     if (b.overview) renderTeacherOverview_(b.overview);
     if (b.stats) renderTeacherStats_(b.stats);
     if (b.term) renderTermChip_(b.term);
+    renderBackupWarn_(b.backup);
     paintTodayLine_('tTodayLine', null);
     // วันนี้เป็นวันหยุดหรือวันเรียนพิเศษไหม — ยิงแยกแบบไม่บล็อก
     google.script.run.withSuccessHandler(c => paintTodayLine_('tTodayLine', c && c.todayType))
