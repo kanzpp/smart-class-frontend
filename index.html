@@ -966,7 +966,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.28); box-shadow:none; color:#fff;
   }
   .login-title { text-align:left; font-size:1.65rem; line-height:1.15; color:#fff; font-family:'Kanit',sans-serif; font-weight:500; }
-  .login-title .accent { color:#BFE6FF; }
+  /* เดิมเป็นฟ้าอ่อนตายตัว เข้ากับพื้นหลังล็อกอินตอนที่มันยังเป็นฟ้าเสมอ
+     ตอนนี้พื้นหลังใช้ --grad จึงเปลี่ยนสีตามวัน — ใช้ขาวหรี่แทน เข้ากับได้ทุกสี */
+  .login-title .accent { color:rgba(255,255,255,.82); }
   .login-sub { text-align:left; color:rgba(255,255,255,.78); margin:14px 0 0; font-size:.84rem; }
   .login-box {
     background:var(--surface); backdrop-filter:none; border:none; position:relative; z-index:1;
@@ -1079,7 +1081,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     border:none; color:#fff; font-size:.82rem;
   }
   .hero-logout:hover { background:rgba(255,255,255,.26); color:#fff; }
-  .hero-logout .notif-dot { top:6px; right:7px; width:6px; height:6px; background:#FFC53D; border:1.5px solid #1587DE; }
+  /* ขอบจุดแจ้งเตือนเดิมเป็นสีฟ้าตายตัว (#1587DE) เพราะสมัยก่อนหัวจอเป็นฟ้าเสมอ
+     จะได้ดูเหมือนเจาะออกมาจากพื้น พอหัวจอเปลี่ยนสีตามวัน มันจะกลายเป็นวงแหวนฟ้าบนพื้นแดง/เขียว/ม่วง
+     เปลี่ยนเป็นขอบขาว — แยกตัวจุดออกจากพื้นได้ทุกสี และยังช่วยให้จุดทองไม่จมในวันจันทร์ซึ่งหัวจอเป็นทอง */
+  .hero-logout .notif-dot { top:6px; right:7px; width:6px; height:6px; background:#FFC53D; border:1.5px solid rgba(255,255,255,.92); }
 
   .sc-amount { position:relative; margin-top:18px; }
   .sc-amount .cap { display:flex; align-items:center; gap:7px; font-size:.75rem; color:rgba(255,255,255,.82); }
@@ -1089,18 +1094,22 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   }
   .sc-amount .big span { font-size:.95rem; font-weight:400; opacity:.8; margin-left:6px; letter-spacing:0; }
   .sc-chips { display:flex; gap:7px; margin-top:13px; position:relative; flex-wrap:wrap; }
+  /* พื้นชิปต้องเป็น "ดำโปร่ง" ไม่ใช่ขาวโปร่ง — ตัวอักษรในชิปเป็นสีขาว
+     ขาวโปร่งจะไปทำให้พื้นข้างหลังสว่างขึ้น ตัวอักษรขาวเลยยิ่งจม
+     วัดแล้ว: ขาว .16 ตกเกณฑ์ 4 ใน 7 วัน (ศุกร์ซึ่งเป็นสีฟ้าเดิมแย่สุด 2.70)
+     เปลี่ยนเป็นดำ .18 แล้วผ่าน AA ทุกวัน (ต่ำสุด 4.67 ที่วันศุกร์) */
   .sc-chip {
     font-size:.7rem; padding:4px 10px; border-radius:8px; color:#fff;
-    background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.16);
+    background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.18);
   }
   .sc-chip b { font-weight:600; }
   button.sc-chip { cursor:pointer; font-family:inherit; }
-  button.sc-chip:active { background:rgba(255,255,255,.3); }
+  button.sc-chip:active { background:rgba(0,0,0,.32); }
   /* กฎเก่าก่อนชุด BANK ใช้ #id ทับพื้นเป็นสีฟ้าทึบ ซึ่ง id ชนะ class เสมอไม่ว่าจะวางทีหลังแค่ไหน
      เดิมมองไม่ออกเพราะหัวจอก็ฟ้า แต่พอหัวจอเปลี่ยนสีตามวัน ป้ายฟ้าจะโดดออกมาทันที
      ของในหัวจอต้องเป็น "ขาวโปร่ง" เท่านั้น ถึงจะเข้ากับพื้นได้ทุกสี */
   #sClassDisplay.sc-chip, #tClassDisplay.sc-chip {
-    background:rgba(255,255,255,.16); box-shadow:none; color:#fff;
+    background:rgba(0,0,0,.18); box-shadow:none; color:#fff;
     font-family:'Noto Sans Thai',sans-serif; font-weight:600; font-size:.7rem; padding:4px 10px;
   }
 
@@ -1179,10 +1188,12 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     position:absolute; left:50%; top:-24px; transform:translateX(-50%);
     width:60px; height:60px; border-radius:21px; display:grid; place-items:center;
     background:var(--grad); color:#fff; font-size:1.5rem; border:4px solid var(--surface);
-    box-shadow:0 8px 20px rgba(14,111,209,.42); cursor:pointer;
+    /* เงาต้องเป็นสีกลางทึบ ไม่ใช่เรืองแสงสีฟ้า — ตัวปุ่มใช้ var(--grad) จึงเปลี่ยนสีตามวัน
+       เงาฟ้าใต้ปุ่มสีแดง/เขียว/ม่วง จะดูเหมือนแสงรั่วมาจากที่อื่น */
+    box-shadow:0 8px 20px rgba(14,42,76,.34); cursor:pointer;
   }
   .sc-fab:active { transform:translateX(-50%) scale(.94); }
-  .sc-fab.fab-on { box-shadow:0 0 0 4px var(--blue-dim), 0 8px 20px rgba(14,111,209,.42); }
+  .sc-fab.fab-on { box-shadow:0 0 0 4px rgba(14,42,76,.10), 0 8px 20px rgba(14,42,76,.34); }
   .sc-fab-lb.fab-on { font-weight:700; }
   .sc-fab-lb {
     position:absolute; left:50%; transform:translateX(-50%); bottom:calc(11px + env(safe-area-inset-bottom));
@@ -1339,7 +1350,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   .cp-bubble { background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.2); color:rgba(255,255,255,.92); box-shadow:none; }
   .cp-bubble::after { border-bottom-color:rgba(255,255,255,.2); }
   .cp-bubble::before { border-bottom-color:rgba(255,255,255,.14); }
-  .cp-stage { color:#BFE6FF; }
+  /* เดิมเป็นฟ้าอ่อนตายตัว เข้ากับการ์ดคู่หูตอนที่การ์ดยังเป็นฟ้าเสมอ
+     ตอนนี้การ์ดใช้ --grad จึงเปลี่ยนสีตามวันด้วย ข้อความฟ้าอ่อนบนการ์ดม่วง/แดงจะดูหลุด */
+  .cp-stage { color:rgba(255,255,255,.86); }
   .cp-btn { border-radius:13px; border-width:1px; }
   .cp-btn-hatch { background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.35); border-radius:13px; }
   .cp-btn-hatch-label { color:#fff; }
@@ -4727,7 +4740,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         </div>
       </div>`,
       icon: 'warning', showCancelButton: true,
-      confirmButtonText: 'ลบเลย', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#FF4D6D'
+      confirmButtonText: 'ลบเลย', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#D13B45'
     }).then(r => {
       if (!r.isConfirmed) return;
       Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
@@ -4852,7 +4865,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         <span style="font-size:0.8rem; color:var(--slate);">ลบแล้วจะถือว่านักเรียนคนนี้ไม่ได้เช็คชื่อในวิชานี้ของวันดังกล่าว และสามารถสแกนเช็คชื่อใหม่ได้อีกครั้ง</span>
       </div>`,
       icon: 'warning', showCancelButton: true,
-      confirmButtonText: 'ลบเลย', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#FF4D6D'
+      confirmButtonText: 'ลบเลย', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#D13B45'
     }).then(c => {
       if (!c.isConfirmed) return;
       Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
@@ -5121,7 +5134,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         confirmButtonText: allArchived ? '📦 เก็บซ้ำ (ทับของเดิม)' : '📦 ขั้นที่ 1 — เก็บเข้าคลัง',
         showDenyButton: allArchived,
         denyButtonText: '🧹 ขั้นที่ 2 — ล้างเริ่มเทอมใหม่',
-        denyButtonColor: '#FF4D6D'
+        denyButtonColor: '#D13B45'
       }).then(r => {
         if (r.isConfirmed) doArchiveTerm_(clsCode, clsLabel, allArchived);
         else if (r.isDenied) confirmResetTerm_(clsCode, clsLabel);
@@ -5163,7 +5176,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       </div>`,
       input: 'text', inputPlaceholder: 'เริ่มเทอมใหม่',
       showCancelButton: true, confirmButtonText: 'ล้างและเริ่มเทอมใหม่', cancelButtonText: 'ยกเลิก',
-      confirmButtonColor: '#FF4D6D', width: 'min(92vw, 440px)'
+      confirmButtonColor: '#D13B45', width: 'min(92vw, 440px)'
     }).then(r => {
       if (!r.isConfirmed) return;
       Swal.fire({ title: 'กำลังล้าง...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
@@ -5212,7 +5225,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       </div>`,
       input: 'text', inputPlaceholder: 'กู้คืน',
       showCancelButton: true, confirmButtonText: 'กู้คืน', cancelButtonText: 'ยกเลิก',
-      confirmButtonColor: '#FF4D6D'
+      confirmButtonColor: '#D13B45'
     }).then(r => {
       if (!r.isConfirmed) return;
       Swal.fire({ title: 'กำลังกู้คืน...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
@@ -5251,7 +5264,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         </div>`,
         input: 'text', inputPlaceholder: 'เลื่อนชั้น',
         showCancelButton: true, confirmButtonText: 'ยืนยันเลื่อนชั้น', cancelButtonText: 'ยกเลิก',
-        confirmButtonColor: '#FF4D6D', width: 'min(92vw, 460px)'
+        confirmButtonColor: '#D13B45', width: 'min(92vw, 460px)'
       }).then(r => {
         if (!r.isConfirmed) return;
         Swal.fire({ title: 'กำลังเลื่อนชั้น...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
@@ -5383,7 +5396,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         title: 'ยืนยันการลบ?',
         html: `กำลังจะลบ <b>${removed.map(r => r.label).join(', ')}</b><br><br>
                <span style="font-size:0.8rem; color:var(--coral);">คะแนนและประวัติที่ผูกกับรหัสนี้จะยังอยู่ในชีต แต่จะไม่แสดงในระบบอีกต่อไป</span>`,
-        icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#FF4D6D'
+        icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยัน', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#D13B45'
       }).then(r => { if (r.isConfirmed) proceed(); });
     } else proceed();
   }
