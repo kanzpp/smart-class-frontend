@@ -150,7 +150,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     }
     .login-orb { position: absolute; border-radius: 50%; filter: blur(60px); pointer-events: none; }
     .login-orb-1 { width: 300px; height: 300px; background: rgba(255,92,151,0.22); top: -80px; right: -60px; }
-    .login-orb-2 { width: 260px; height: 260px; background: rgba(255,201,60,0.18); bottom: -80px; left: -60px; }
+    .login-orb-2 { width: 260px; height: 260px; background: var(--gold-dim); bottom: -80px; left: -60px; }
     .login-orb-3 { width: 180px; height: 180px; background: rgba(42,171,238,0.16); top: 40%; left: 30%; }
     .login-box {
       position: relative; width: 100%; max-width: 400px;
@@ -309,7 +309,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     .action-card.mode-review .icon { background: rgba(42,171,238,0.14); color: var(--sky2); }
     .action-card.mode-review:hover { border-color: var(--sky); }
     .action-card.mode-exam-ctrl { border-color: rgba(255,201,60,0.5); }
-    .action-card.mode-exam-ctrl .icon { background: rgba(255,201,60,0.18); color: var(--amber2); }
+    .action-card.mode-exam-ctrl .icon { background: var(--gold-dim); color: var(--amber2); }
     .action-card.mode-exam-ctrl:hover { border-color: var(--amber); }
     .action-card .info h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 3px; }
     .action-card .info p  { font-size: 0.78rem; color: var(--slate); line-height: 1.4; }
@@ -385,7 +385,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     /* GRADE BADGES */
     .grade-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-weight: 800; font-size: 0.78rem; }
     .g-hi  { background: rgba(255,92,151,0.15); color: var(--teal2); }
-    .g-mid { background: rgba(255,201,60,0.18); color: var(--amber2); }
+    .g-mid { background: var(--gold-dim); color: var(--amber2); }
     .g-lo  { background: rgba(224,36,94,0.15); color: var(--coral); }
 
     /* TABLES */
@@ -488,7 +488,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     }
     .credit-bank-btn:active { transform: scale(0.96); }
     .pill-teal  { background: rgba(255,92,151,0.12); color: var(--teal2); }
-    .pill-amber { background: rgba(255,201,60,0.15); color: var(--amber2); }
+    .pill-amber { background: var(--gold-dim); color: var(--amber2); }
 
     /* HISTORY */
     .history-item { background: var(--surface); border: 2px solid var(--mist); border-radius: var(--r-md); padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
@@ -824,17 +824,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     --violet-dim:#EBE8FD;
     --grad:      linear-gradient(160deg,#0E6FD1 0%,#1587DE 52%,#35B7F2 100%);
 
-    /* ── ชื่อเดิม (ห้ามลบ) ── */
-    --navy:var(--blue); --navy2:var(--blue); --navy3:var(--blue-2);
-    --teal:var(--blue); --teal2:var(--blue); --amber:var(--gold); --amber2:var(--gold);
-    --coral:var(--rose); --cloud:var(--bg); --mist:var(--line); --slate:var(--ink-2);
-    --white:#FFFFFF;
-    --grape:var(--blue); --grape2:var(--blue); --grape3:var(--blue-2);
-    --grass:var(--blue); --grass2:var(--blue); --tang:var(--gold); --tang2:var(--gold);
-    --berry:var(--rose); --sky:var(--blue-2); --sky2:var(--blue); --sun:var(--gold);
-    --cream:var(--surface-2);
-    --bevel-grass:transparent; --bevel-tang:transparent; --bevel-sky:transparent;
-    --bevel-berry:transparent; --bevel-grape:transparent; --border-ink:var(--line);
+    /* ชื่อเดิมย้ายไปประกาศบน body แล้ว — ดูบล็อก "ชื่อเดิม (ห้ามลบ)" ใต้กฎสีประจำวัน
+       เหตุผลอยู่ในคอมเมนต์ตรงนั้น สรุปคือถ้าประกาศตรงนี้ มันจะไม่เปลี่ยนตามสีประจำวัน */
 
     /* ── รูปทรง: มุมโค้งมนแบบแอปธนาคาร เงานุ่มบางๆ ไม่ใช่เงานูน ── */
     --r-sm:12px; --r-md:16px; --r-lg:18px; --r-xl:22px;
@@ -865,22 +856,62 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
      ความหมายจะพังทั้งแอป เช่นวันพุธเขียวจะอ่านเหมือน "ผ่านหมดแล้ว"
      สีถูกทำให้เข้มกว่าสีประจำวันจริง เพื่อให้ตัวอักษรขาวบนหัวจออ่านชัดทุกวัน
      (เหลืองสด/ชมพูสด/ส้มสด ใส่ตัวอักษรขาวแล้วอ่านไม่ออก) */
-  body[data-day="0"] { --grad:linear-gradient(160deg,#A8161D 0%,#C62828 55%,#E14B4B 100%); }  /* อาทิตย์ แดง */
-  body[data-day="1"] { --grad:linear-gradient(160deg,#8A6100 0%,#A67C00 55%,#C89A0E 100%); }  /* จันทร์ เหลือง→ทองเข้ม */
-  body[data-day="2"] { --grad:linear-gradient(160deg,#A3124B 0%,#C2185B 55%,#DE4A80 100%); }  /* อังคาร ชมพู→บานเย็น */
-  body[data-day="3"] { --grad:linear-gradient(160deg,#1F6325 0%,#2E7D32 55%,#4CA152 100%); }  /* พุธ เขียว */
-  body[data-day="4"] { --grad:linear-gradient(160deg,#B84100 0%,#DC5500 55%,#F07A1E 100%); }  /* พฤหัสบดี ส้ม */
-  body[data-day="5"] { --grad:linear-gradient(160deg,#0E6FD1 0%,#1587DE 52%,#35B7F2 100%); }  /* ศุกร์ ฟ้า = สีหลักเดิม */
-  body[data-day="6"] { --grad:linear-gradient(160deg,#59178A 0%,#6A1B9A 55%,#8E3EBF 100%); }  /* เสาร์ ม่วง */
-
-  /* โหมดมืดใช้ชุดเดียวกันแต่หรี่ลง ไม่งั้นหัวจอจะจ้าเกินพื้นเข้ม */
-  body.dark-mode[data-day="0"] { --grad:linear-gradient(160deg,#7A1015 0%,#96201F 55%,#B03A3A 100%); }
-  body.dark-mode[data-day="1"] { --grad:linear-gradient(160deg,#654700 0%,#7D5D00 55%,#9A7508 100%); }
-  body.dark-mode[data-day="2"] { --grad:linear-gradient(160deg,#760D37 0%,#921241 55%,#AE3663 100%); }
-  body.dark-mode[data-day="3"] { --grad:linear-gradient(160deg,#164A1B 0%,#1F5C23 55%,#357A3A 100%); }
-  body.dark-mode[data-day="4"] { --grad:linear-gradient(160deg,#853000 0%,#A33F00 55%,#BF5A15 100%); }
-  body.dark-mode[data-day="5"] { --grad:linear-gradient(160deg,#0B4E96 0%,#1069B4 52%,#1E8FD0 100%); }
-  body.dark-mode[data-day="6"] { --grad:linear-gradient(160deg,#3F1163 0%,#4F1272 55%,#6B2C92 100%); }
+  body[data-day="0"] {
+    --grad:linear-gradient(160deg,#A8161D 0%,#C62828 55%,#E14B4B 100%);
+    --blue:#A8161D; --blue-2:#E14B4B; --blue-dim:rgba(198,40,40,.11);
+  }   /* อาทิตย์ */
+  body[data-day="1"] {
+    --grad:linear-gradient(160deg,#8A6100 0%,#A67C00 55%,#C89A0E 100%);
+    --blue:#8A6100; --blue-2:#C89A0E; --blue-dim:rgba(166,124,0,.11);
+  }   /* จันทร์ */
+  body[data-day="2"] {
+    --grad:linear-gradient(160deg,#A3124B 0%,#C2185B 55%,#DE4A80 100%);
+    --blue:#A3124B; --blue-2:#DE4A80; --blue-dim:rgba(194,24,91,.11);
+  }   /* อังคาร */
+  body[data-day="3"] {
+    --grad:linear-gradient(160deg,#1F6325 0%,#2E7D32 55%,#4CA152 100%);
+    --blue:#1F6325; --blue-2:#4CA152; --blue-dim:rgba(46,125,50,.11);
+  }   /* พุธ */
+  body[data-day="4"] {
+    --grad:linear-gradient(160deg,#B84100 0%,#DC5500 55%,#F07A1E 100%);
+    --blue:#B84100; --blue-2:#F07A1E; --blue-dim:rgba(220,85,0,.11);
+  }   /* พฤหัสบดี */
+  body[data-day="5"] {
+    --grad:linear-gradient(160deg,#0E6FD1 0%,#1587DE 55%,#35B7F2 100%);
+    --blue:#0E6FD1; --blue-2:#35B7F2; --blue-dim:rgba(21,135,222,.11);
+  }   /* ศุกร์ */
+  body[data-day="6"] {
+    --grad:linear-gradient(160deg,#59178A 0%,#6A1B9A 55%,#8E3EBF 100%);
+    --blue:#59178A; --blue-2:#8E3EBF; --blue-dim:rgba(106,27,154,.11);
+  }   /* เสาร์ */
+  body.dark-mode[data-day="0"] {
+    --grad:linear-gradient(160deg,#7A1015 0%,#96201F 55%,#B03A3A 100%);
+    --blue:#E35454; --blue-2:#E87373; --blue-dim:rgba(227,84,84,.16);
+  }   /* อาทิตย์ */
+  body.dark-mode[data-day="1"] {
+    --grad:linear-gradient(160deg,#654700 0%,#7D5D00 55%,#9A7508 100%);
+    --blue:#C89A0E; --blue-2:#D2AC39; --blue-dim:rgba(200,154,14,.16);
+  }   /* จันทร์ */
+  body.dark-mode[data-day="2"] {
+    --grad:linear-gradient(160deg,#760D37 0%,#921241 55%,#AE3663 100%);
+    --blue:#E05386; --blue-2:#E6729C; --blue-dim:rgba(224,83,134,.16);
+  }   /* อังคาร */
+  body.dark-mode[data-day="3"] {
+    --grad:linear-gradient(160deg,#164A1B 0%,#1F5C23 55%,#357A3A 100%);
+    --blue:#4CA152; --blue-2:#6CB271; --blue-dim:rgba(76,161,82,.16);
+  }   /* พุธ */
+  body.dark-mode[data-day="4"] {
+    --grad:linear-gradient(160deg,#853000 0%,#A33F00 55%,#BF5A15 100%);
+    --blue:#F07A1E; --blue-2:#F39247; --blue-dim:rgba(240,122,30,.16);
+  }   /* พฤหัสบดี */
+  body.dark-mode[data-day="5"] {
+    --grad:linear-gradient(160deg,#0B4E96 0%,#1069B4 55%,#1E8FD0 100%);
+    --blue:#35B7F2; --blue-2:#59C4F4; --blue-dim:rgba(53,183,242,.16);
+  }   /* ศุกร์ */
+  body.dark-mode[data-day="6"] {
+    --grad:linear-gradient(160deg,#3F1163 0%,#4F1272 55%,#6B2C92 100%);
+    --blue:#AA6ECF; --blue-2:#B988D8; --blue-dim:rgba(170,110,207,.16);
+  }   /* เสาร์ */
 
   /* ═══════ ขยายขนาดทั้งแอป ═══════════════════════════════════
      ใช้ zoom ไม่ใช่ font-size — ในไฟล์นี้เป็น px 1,390 จุด ต่อ rem 386 จุด
@@ -888,6 +919,26 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
      zoom ขยายทุกอย่างพร้อมกัน สัดส่วนเท่าเดิมเป๊ะ และ layout ยัง reflow พอดีจอ
      ⚠️ ต้องอยู่บน body เท่านั้น — ทดสอบแล้วถ้าใส่บน .app-shell แถบล่างที่เป็น fixed
      จะหดเหลือ 289px บนจอ 375px (ลองชดเชยความกว้างแล้วก็ยังผิด) */
+  /* ── ชื่อเดิม (ห้ามลบ) ──────────────────────────────────────
+     ⚠️ ต้องประกาศบน `body` เท่านั้น ห้ามย้ายกลับไป `:root`
+     CSS แปลงค่า var() ตั้งแต่ตอนที่ประกาศ ไม่ได้แปลงตอนใช้ — ถ้า `--teal2:var(--blue)`
+     อยู่ใน :root มันจะถูกล็อกเป็นสีฟ้าของ :root ทันที แล้ว body[data-day] ที่เปลี่ยน --blue
+     ทีหลังจะไม่มีผลกับมันเลย ผลคือปุ่มและไอคอน "หลายร้อยจุด" ที่ยังเรียกชื่อเดิม
+     ไม่เปลี่ยนสีตามวัน ทั้งที่หัวจอเปลี่ยนไปแล้ว (เจอจากที่เจ้าของทักว่าสีไม่ไปด้วยกัน)
+     ประกาศบน body = แปลงค่าโดยใช้ --blue ของ body ซึ่ง body[data-day] ตั้งไว้แล้ว */
+  body {
+    --navy:var(--blue); --navy2:var(--blue); --navy3:var(--blue-2);
+    --teal:var(--blue); --teal2:var(--blue); --amber:var(--gold); --amber2:var(--gold);
+    --coral:var(--rose); --cloud:var(--bg); --mist:var(--line); --slate:var(--ink-2);
+    --white:#FFFFFF;
+    --grape:var(--blue); --grape2:var(--blue); --grape3:var(--blue-2);
+    --grass:var(--blue); --grass2:var(--blue); --tang:var(--gold); --tang2:var(--gold);
+    --berry:var(--rose); --sky:var(--blue-2); --sky2:var(--blue); --sun:var(--gold);
+    --cream:var(--surface-2);
+    --bevel-grass:transparent; --bevel-tang:transparent; --bevel-sky:transparent;
+    --bevel-berry:transparent; --bevel-grape:transparent; --border-ink:var(--line);
+  }
+
   body { zoom:var(--ui-scale,1); }
 
   /* ปุ่มขนาดตัวอักษร — อยู่ข้างปุ่มโหมดมืดบนหัวจอ กดวนทีละขั้น
@@ -1333,7 +1384,23 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
   /* ═══════ หน้าเต็มจอ / ป๊อปอัป ══════════════════════════════ */
   .fullpage-view { background:var(--bg); }
-  .fullpage-head { background:var(--surface); border-bottom:1px solid var(--line); }
+  /* หน้าต่างเต็มจอ 12 หน้า เดิมหัวเป็นขาวล้วน ไม่ตามธีมเลย — ให้ใช้ไล่สีเดียวกับแท็บ
+     ข้างในหัวมีทั้งข้อความ ปุ่มปิด และปุ่มลัด ต้องบังคับเป็นขาวให้หมด ไม่งั้นตัวอักษรสีเข้มจะจมพื้นสี */
+  .fullpage-head {
+    background:var(--grad); border-bottom:none; color:#fff;
+  }
+  .fullpage-head, .fullpage-head * { color:#fff; }
+  .fullpage-head .fp-title, .fullpage-head b, .fullpage-head strong { color:#fff; }
+  .fullpage-head small, .fullpage-head .sub { color:rgba(255,255,255,.82)!important; }
+  /* ปุ่มในหัวหน้าต่างต้องเป็นแบบโปร่ง ไม่ใช่พื้นทึบสีอื่น */
+  .fullpage-head .btn, .fullpage-head button:not(.swal2-close) {
+    background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.24); color:#fff; box-shadow:none;
+  }
+  .fullpage-head .btn:active, .fullpage-head button:active { background:rgba(0,0,0,.3); }
+  .fullpage-head select, .fullpage-head input {
+    background:rgba(0,0,0,.2); border:1px solid rgba(255,255,255,.26); color:#fff;
+  }
+  .fullpage-head select option { background:var(--surface); color:var(--ink); }
   @media (min-width:620px) {
     .fullpage-head, .fullpage-body { padding-left:calc((100% - 560px) / 2); padding-right:calc((100% - 560px) / 2); }
   }
@@ -1396,14 +1463,17 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
   /* หัวจอของแท็บที่ไม่ใช่หน้าหลัก — แท็บพวกนี้ไม่มีตัวเลขพระเอกให้โชว์
      จึงใช้แถบเรียบบอกว่ากำลังอยู่หน้าไหน แทนหัวไล่สีที่จะกินที่เปล่าๆ */
+  /* หัวแท็บอื่นเดิมเป็นขาวล้วน ตั้งใจให้เรียบเพราะไม่มีตัวเลขพระเอกให้โชว์
+     แต่ผลคือมีแค่หน้าแรกที่เป็นธีม แท็บที่เหลือดูเหมือนคนละแอป และไม่ตามสีประจำวันเลย
+     ตอนนี้ใช้ไล่สีเดียวกับหน้าแรก — เตี้ยกว่าเพราะไม่ต้องแบกตัวเลข แต่เป็นสีเดียวกันทุกวัน */
   .sc-subhead {
     position:sticky; top:0; z-index:60;
-    padding:calc(14px + env(safe-area-inset-top)) 16px 12px;
-    background:var(--surface); border-bottom:1px solid var(--line);
-    display:flex; flex-direction:column; gap:1px;
+    padding:calc(14px + env(safe-area-inset-top)) 16px 13px;
+    background:var(--grad); border-bottom:none;
+    display:flex; flex-direction:column; gap:2px;
   }
-  .sc-subhead .ttl { font-family:'Kanit',sans-serif; font-weight:500; font-size:1.05rem; color:var(--ink); }
-  .sc-subhead .sub { font-size:0.74rem; color:var(--ink-2); }
+  .sc-subhead .ttl { font-family:'Kanit',sans-serif; font-weight:500; font-size:1.05rem; color:#fff; }
+  .sc-subhead .sub { font-size:0.74rem; color:rgba(255,255,255,.82); }
 
   /* แถบแจ้งเตือนแบบย่อบนหัวจอ ใช้ตอนโหลดข้อมูลใหม่ */
   /* ═══ ตารางกรอกคะแนนทั้งห้อง ═══════════════════════════════
@@ -1737,7 +1807,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       <div class="sc-pad">
         <div class="card card-pad" id="onlineCourseCard" style="margin-bottom:16px; cursor:pointer;" onclick="openOnlineCourseModal()">
           <div style="display:flex; align-items:center; gap:14px;">
-            <div style="width:52px; height:52px; border-radius:16px; background:rgba(255,92,151,0.12); display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:var(--teal2); flex-shrink:0;">
+            <div style="width:52px; height:52px; border-radius:16px; background:var(--blue-dim); display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:var(--blue); flex-shrink:0;">
               <i class="fa-solid fa-play"></i>
             </div>
             <div style="flex:1; min-width:0;">
@@ -1784,7 +1854,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
        รวมของประเภทเดียวกันไว้ที่เดียว นักเรียนจึงรู้ว่า "เรื่องเล่นๆ สะสมแต้ม" ต้องมาดูตรงไหน -->
   <div class="card card-pad" id="runCard" style="margin-bottom:16px;">
     <div style="display:flex; align-items:center; gap:14px; cursor:pointer;" onclick="openRunModal()">
-      <div style="width:52px; height:52px; border-radius:16px; background:rgba(255,201,60,0.18); display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:var(--amber2); flex-shrink:0;">
+      <div style="width:52px; height:52px; border-radius:16px; background:var(--gold-dim); display:flex; align-items:center; justify-content:center; font-size:1.4rem; color:var(--amber2); flex-shrink:0;">
         <i class="fa-solid fa-person-running"></i>
       </div>
       <div style="flex:1; min-width:0;">
@@ -1794,7 +1864,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       <i class="fa-solid fa-chevron-right" style="color:var(--mist); flex-shrink:0;"></i>
     </div>
     <button onclick="event.stopPropagation(); openRunExchangeModal()"
-      style="width:100%; margin-top:10px; padding:8px; border:none; border-radius:10px; background:rgba(255,201,60,0.15); color:var(--amber2); font-weight:700; font-size:0.8rem; cursor:pointer;">
+      style="width:100%; margin-top:10px; padding:8px; border:none; border-radius:10px; background:var(--gold-dim); color:var(--amber2); font-weight:700; font-size:0.8rem; cursor:pointer;">
       <i class="fa-solid fa-rotate"></i> แลกแต้มวิ่งเป็นแต้มพิเศษ
     </button>
   </div>
@@ -6685,7 +6755,7 @@ function renderCourseSubjects() {
 
     const electivePrompt = hasElective
       ? `<div class="action-card" onclick="openElectivePicker_()" style="background:rgba(255,201,60,0.08);">
-          <div class="icon" style="background:rgba(255,201,60,0.18); color:var(--amber2);"><i class="fa-solid fa-shuffle"></i></div>
+          <div class="icon" style="background:var(--gold-dim); color:var(--amber2);"><i class="fa-solid fa-shuffle"></i></div>
           <div class="info"><h4>เปลี่ยนสาขาวิชาเลือก</h4><p>ตอนนี้เรียนอยู่: ${subjects.find(s => (metaData.electives || []).some(e => e.code === s.code))?.label || ''}</p></div>
           <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
         </div>`
