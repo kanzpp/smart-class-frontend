@@ -2220,6 +2220,16 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     });
   }
 
+  // ─── ชื่อแบบสั้น ────────────────────────────────────────────
+  // ตัดคำนำหน้าออกสำหรับที่ที่มีเนื้อที่จำกัด — หัวจอมีช่องชื่อแค่ 120px
+  // "เด็กหญิงสุดารัตน์ พงษ์ไพบูลย์" ยาว 185px โดนตัดท้าย ทั้งที่ส่วนที่หายคือชื่อจริง
+  // ตัดคำนำหน้าทิ้งแล้วเหลือ "สุดารัตน์ พงษ์ไพบูลย์" ซึ่งเป็นส่วนที่ต้องอ่านจริงๆ
+  // ⚠️ ใช้เฉพาะที่แสดงผลในที่แคบ — ใบรายงาน/หน้าผู้ปกครอง/ไฟล์ส่งออก ต้องใช้ชื่อเต็มเสมอ
+  const NAME_PREFIX_RE = /^(เด็กชาย|เด็กหญิง|นางสาว|นาย|นาง|ด\.ช\.|ด\.ญ\.|น\.ส\.)\s*/;
+  function shortName_(full) {
+    return String(full || '').trim().replace(NAME_PREFIX_RE, '').trim() || String(full || '').trim();
+  }
+
   // ─── สีประจำวัน ─────────────────────────────────────────────
   // ติดเลขวันไว้บน <body> แล้ว CSS สลับ --grad ให้เอง (ดูบล็อก "สีประจำวัน")
   // เรียกซ้ำได้ไม่มีผลข้างเคียง — เรียกตอนเปิดแอปและตอนกลับมาโฟกัส เผื่อเปิดค้างข้ามเที่ยงคืน
@@ -3821,11 +3831,14 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       const d = bundle.dashboard;
       studentDashboardData = d;
 
-      document.getElementById('sNameDisplay').innerText = d.name;
+      // หัวจอใช้ชื่อสั้น (ตัดคำนำหน้า) เพราะช่องแคบ — ที่อื่นยังใช้ชื่อเต็มจาก d.name เหมือนเดิม
+      const sName = document.getElementById('sNameDisplay');
+      sName.innerText = shortName_(d.name);
+      sName.title = d.name || '';     // ชื่อเต็มยังดูได้ถ้าจิ้มค้าง
       document.getElementById('sClassDisplay').innerText = d.clsLabel;
       // อักษรย่อในวงกลม — ทำให้แถบบนแยกออกทันทีว่าเป็นบัญชีของใคร (สำคัญเวลาใช้เครื่องร่วมกัน)
       const av = document.getElementById('sAvatar');
-      if (av) av.innerText = (String(d.name || '').trim().replace(/^(เด็กชาย|เด็กหญิง|นาย|นางสาว|น\.ส\.|ด\.ช\.|ด\.ญ\.)\s*/, '')[0] || '·');
+      if (av) av.innerText = shortName_(d.name)[0] || '·';
       document.getElementById('csCheckinCount').innerText = d.checkinStats?.checkinCount  ?? 0;
       document.getElementById('csStreakCount').innerText  = d.checkinStats?.consecutiveDays ?? 0;
 
