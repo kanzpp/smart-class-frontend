@@ -801,7 +801,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     --line-soft: #EEF2F7;
     --ink:       #0E1B2A;
     --ink-2:     #62758A;
-    --ink-3:     #96A6B7;
+    /* เดิม #96A6B7 = 2.49 บนพื้นขาว ซึ่งตกเกณฑ์ · ตัวนี้ 3.59 และยังห่างจาก --ink-2 อยู่ 1.15
+       ไม่ดันให้ถึง 4.5 เพราะจะเหลือห่างจาก --ink-2 แค่ 0.3 แล้วลำดับ เข้ม/รอง/จาง จะกลืนเป็นอันเดียว
+       ตัวนี้ใช้กับข้อความประกอบ/ปุ่มที่ยังไม่ได้เลือก ซึ่งเกณฑ์ยอมให้ต่ำกว่าได้ */
+    --ink-3:     #78899C;
 
     /* ── สีเน้น: ฟ้าเป็นสีหลัก ที่เหลือมีความหมายตายตัว ── */
     --blue:      #0E6FD1;
@@ -809,7 +812,11 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     --blue-dim:  #E4F0FC;
     --mint:      #00875A;   /* ได้ / บวก / ผ่าน */
     --mint-dim:  #DDF5EC;
-    --gold:      #C77E00;   /* แต้ม / รอดำเนินการ */
+    /* เดิม #C77E00 → บนขาว 3.27 · บนพื้นทองจาง 2.96 ตกทั้งคู่
+       ตัวนี้ 5.14 และ 4.64 ผ่าน AA ทั้งคู่ · ลองทำ --gold-dim ให้เข้มขึ้นแทนแล้ว "แย่ลง"
+       เพราะพื้นจางก็เป็นโทนทอง ยิ่งเข้มยิ่งเข้าใกล้สีตัวอักษร (2.96 → 2.39)
+       โหมดมืดไม่ต้องแตะ อยู่ที่ 6.92 อยู่แล้ว · ความรู้สึก "ทอง" มาจากพื้น --gold-dim เป็นหลัก */
+    --gold:      #9A6100;   /* แต้ม / รอดำเนินการ */
     --gold-dim:  #FFF2DA;
     --rose:      #D13B45;   /* เสีย / ลบ / ต้องรีบ */
     --rose-dim:  #FDE6E8;
@@ -1359,7 +1366,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   .wheel-close { background:rgba(255,255,255,.18); color:#fff; border-radius:10px; }
   .wheel-center { background:var(--blue); border-color:rgba(255,255,255,.3); }
   #wheelEl { border-color:rgba(255,255,255,.25); box-shadow:none; }
-  .wheel-pointer { color:#FFC53D; }
+  /* เข็มวงล้ออยู่บนแผ่นที่ใช้ --grad จึงเปลี่ยนสีตามวัน — วันจันทร์แผ่นเป็นทอง เข็มทองจะกลืนหายไปเลย
+     ใส่เส้นขอบเข้มรอบตัวอักษร เพื่อให้เข็มแยกออกจากพื้นได้ทุกสี โดยยังคงสีทองที่สื่อว่าเป็น "ของรางวัล" */
+  .wheel-pointer { color:#FFC53D; filter:drop-shadow(0 0 1.5px rgba(0,0,0,.65)) drop-shadow(0 1px 2px rgba(0,0,0,.35)); }
   .wheel-spin-btn { background:#fff; color:var(--blue); box-shadow:none; border-radius:var(--r-sm); text-shadow:none; top:0!important; }
   .wheel-result-text { color:#fff; }
   .pulse { animation:none; }
@@ -2129,6 +2138,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     applyDarkModePreference();
     applyDayColor_();               // สีหัวจอตามวันในสัปดาห์
     applyUiScale_(currentUiScale_());
+    hintUiScaleOnce_();
     // เปิดแอปค้างข้ามคืนแล้วกลับมาใช้ ต้องเปลี่ยนสีตามวันใหม่เอง ไม่ใช่ค้างสีเมื่อวาน
     document.addEventListener('visibilitychange', () => { if (!document.hidden) applyDayColor_(); });
     if (tryParentView_()) return;   // เปิดมาด้วยลิงก์ผู้ปกครอง ไม่ต้องผ่านหน้าล็อกอิน
@@ -2265,6 +2275,17 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     localStorage.setItem('smartClassUiScale', String(v));
     applyUiScale_(v);
   }
+  // ปุ่มเล็กๆ บนหัวจอไม่มีใครสังเกตเอง โดยเฉพาะคนที่ต้องใช้มันที่สุด (สายตาไม่ดี)
+  // บอกครั้งเดียวตอนเข้าระบบครั้งแรกของเครื่องนั้น แล้วไม่กวนอีก
+  function hintUiScaleOnce_() {
+    if (localStorage.getItem('smartClassScaleHinted') === '1') return;
+    if (currentUiScale_() !== 1) { localStorage.setItem('smartClassScaleHinted', '1'); return; }  // ตั้งเองแล้ว ไม่ต้องบอก
+    setTimeout(() => {
+      if (typeof Toast === 'function') Toast('ตัวอักษรเล็กไป? กดปุ่ม "ก" บนหัวจอเพื่อขยาย', 'info');
+      localStorage.setItem('smartClassScaleHinted', '1');
+    }, 2500);   // รอให้หน้าแรกโหลดเสร็จก่อน ไม่ไปแย่งความสนใจกับข้อมูลที่กำลังขึ้น
+  }
+
   // กดหนึ่งครั้ง = ขยับไปขั้นถัดไป ถึงขั้นสุดท้ายแล้ววนกลับ
   function cycleUiScale_() {
     const i = UI_SCALES.findIndex(s => s.v === currentUiScale_());
@@ -2822,7 +2843,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         const cur = isSig ? st.sig : st.test;
         return '<div class="bulk-row" id="brow-' + st.id + '">' +
           '<span class="bulk-no">' + (i + 1) + '</span>' +
-          '<span class="bulk-name">' + st.name + '</span>' +
+          '<span class="bulk-name" title="' + st.name + '">' + shortName_(st.name) + '</span>' +
           '<input type="number" inputmode="decimal" step="0.5" min="0" data-id="' + st.id + '" data-old="' + cur + '" ' +
             'value="' + (cur || '') + '" onkeydown="bulkKey_(event, ' + i + ')" oninput="bulkTouch_(this)">' +
           '<span class="bulk-old"><span class="bulk-oldlb">เดิม</span>' + (cur || '—') + '</span>' +
@@ -3029,7 +3050,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         '</div>' +
         list.map(st =>
           '<div class="plink">' +
-            '<span class="nm">' + st.name + ' <span style="color:var(--ink-3); font-size:0.72rem">' + st.clsLabel + '</span></span>' +
+            '<span class="nm" title="' + st.name + '">' + shortName_(st.name) + ' <span style="color:var(--ink-3); font-size:0.72rem">' + st.clsLabel + '</span></span>' +
             '<button class="btn btn-ghost btn-sm" onclick="copyParentLink_(\'' + st.token + '\', this)"><i class="fa-solid fa-copy"></i> คัดลอก</button>' +
           '</div>').join('') +
         '<button class="btn btn-danger-soft btn-block" style="margin-top:18px;" onclick="rotateParentLinks_()">' +
@@ -3863,7 +3884,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           const rankRows = cat.top3.map(p => `
             <div class="nc-rank-row">
               <div class="rank-badge rank-${p.rank}">${p.rank}</div>
-              <div class="rank-name">${p.name}</div>
+              <div class="rank-name" title="${p.name}">${shortName_(p.name)}</div>
               <div class="rank-val">${p.value}</div>
             </div>`).join('');
           html += `<div class="nickname-card">
@@ -4375,7 +4396,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         <div class="prow">
           <div class="prow-top">
             <div style="flex:1; min-width:0;">
-              <div class="prow-name">${std.name}</div>
+              <div class="prow-name" title="${std.name}">${shortName_(std.name)}</div>
               <div class="prow-meta"><span>${std.id}</span></div>
             </div>
           </div>
@@ -4446,7 +4467,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         <div class="prow" style="cursor:pointer;" onclick="openGradeOverride_(${JSON.stringify(std.id)}, ${JSON.stringify(std.name)}, ${std.grade})">
           <div class="prow-top">
             <div style="flex:1; min-width:0;">
-              <div class="prow-name">${std.name}</div>
+              <div class="prow-name" title="${std.name}">${shortName_(std.name)}</div>
               <div class="prow-meta"><span>${std.id}</span><span>·</span><span>คะแนนรวม ${std.total100}</span></div>
             </div>
             <span class="grade-badge ${std.grade >= 3 ? 'g-hi' : std.grade <= 1.5 ? 'g-lo' : 'g-mid'}" style="flex-shrink:0;">เกรด ${std.grade}</span>
@@ -4568,7 +4589,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         return `<div class="history-item ${typeClass}">
           <div class="hi-icon">${item.typeLabel.split(' ')[0]}</div>
           <div class="hi-body">
-            <div class="hi-name">${item.studentName} <span style="font-weight:400; color:var(--slate); font-size:0.75rem;">(${item.clsLabel || item.cls})</span></div>
+            <div class="hi-name" title="${item.studentName}">${shortName_(item.studentName)} <span style="font-weight:400; color:var(--slate); font-size:0.75rem;">(${item.clsLabel || item.cls})</span></div>
             <div class="hi-meta">${item.typeLabel.substring(2)} · ${item.date} · ${item.note || item.refKey}</div>
           </div>
           ${ptsHtml}
@@ -4616,7 +4637,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <div class="prow">
             <div class="prow-top">
               <div style="flex:1; min-width:0;">
-                <div class="prow-name">${s.name}</div>
+                <div class="prow-name" title="${s.name}">${shortName_(s.name)}</div>
                 <div class="prow-meta"><span>${s.id}</span><span>·</span><span>${s.clsLabel}</span><span>·</span>${elective}</div>
               </div>
               <div class="prow-acts">
@@ -5580,7 +5601,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <div class="prow" style="cursor:pointer;" onclick="Swal.close(); viewStudentProfile('${st.studentId}')">
             <div class="prow-top">
               <div style="flex:1; min-width:0;">
-                <div class="prow-name">${st.name}</div>
+                <div class="prow-name" title="${st.name}">${shortName_(st.name)}</div>
                 <div class="prow-meta">🎬 ${st.videoWatched}/${st.videoTotal} · ⌨️ ${st.submissionCorrect}/${st.submissionTotal} · 🏦 ${st.creditBankDays} วัน · 📝 ${st.testAttempts} ครั้ง</div>
               </div>
               <div style="font-weight:800; color:${color}; white-space:nowrap;">${total}<span style="font-size:0.7rem; color:var(--slate);">/50</span></div>
@@ -7216,7 +7237,7 @@ function loadPendingSubmissions_(subj, cls) {
       <div class="card card-pad" style="margin-bottom:10px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <div>
-            <div style="font-weight:700;">${s.studentName}</div>
+            <div style="font-weight:700;" title="${s.studentName}">${shortName_(s.studentName)}</div>
             <div style="font-size:0.75rem; color:var(--slate);">${s.clsLabel} · บทที่ ${s.chapterNum} · ${s.topicName}</div>
           </div>
           <span style="font-size:0.7rem; color:var(--slate);">${new Date(s.timestamp).toLocaleDateString('th-TH')}</span>
