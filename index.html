@@ -2855,11 +2855,14 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     google.script.run.withSuccessHandler(r => {
       if (!r || !r.ok) { set('tProgNum', '—<span>ยังไม่มีชีตคะแนน</span>'); return; }
       set('tProgNum', r.signed + '<span>จาก ' + r.total + ' คน</span>');
+      // โชว์เฉพาะตอนยังมีคนค้าง — "สแกนครบแล้ว" ไม่ได้บอกให้ทำอะไร มีแต่กินที่
+      // (หลักเดียวกับ renderTeacherOverview_ ที่ซ่อนการ์ดค่าเป็น 0 ไม่งั้นหน้าเต็มไปด้วย "✅ 0")
+      // ตัวเลขพระเอกยังบอกอยู่แล้วว่าได้กี่คนจากกี่คน ถ้าครบมันก็เท่ากันเอง
       const chip = document.getElementById('tChipMissing');
       if (chip) {
         const left = r.total - r.signed;
-        chip.style.display = '';
-        chip.innerHTML = left > 0 ? ('ยังไม่ได้สแกน <b>' + left + '</b>') : 'สแกนครบแล้ว';
+        chip.style.display = left > 0 ? '' : 'none';
+        if (left > 0) chip.innerHTML = 'ยังไม่ได้สแกน <b>' + left + '</b>';
       }
       window._scanProgress = r;
     }).withFailureHandler(err => {
