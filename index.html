@@ -883,15 +883,15 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
      จะหดเหลือ 289px บนจอ 375px (ลองชดเชยความกว้างแล้วก็ยังผิด) */
   body { zoom:var(--ui-scale,1); }
 
-  .scale-row { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
-  .scale-btn {
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
-    padding:11px 4px; border-radius:var(--r-sm); background:var(--surface);
-    border:1px solid var(--line); color:var(--ink-2); cursor:pointer;
-    font-family:'Noto Sans Thai',sans-serif; transition:border-color .15s, color .15s, background .15s;
+  /* ปุ่มขนาดตัวอักษร — อยู่ข้างปุ่มโหมดมืดบนหัวจอ กดวนทีละขั้น
+     ตัว "ก" บนปุ่มโตตามขนาดที่เลือกอยู่ จะได้รู้ว่าตอนนี้อยู่ขั้นไหนโดยไม่ต้องกดลองดู */
+  .hero-logout .scale-glyph {
+    font-family:'Kanit',sans-serif; font-weight:600; line-height:1;
+    transition:font-size .15s;
   }
-  .scale-btn .lb { font-size:.68rem; font-weight:600; }
-  .scale-btn.on { background:var(--blue-dim); border-color:var(--blue); color:var(--blue); }
+  body[data-scale="1"]    .hero-logout .scale-glyph { font-size:.78rem; }
+  body[data-scale="1.15"] .hero-logout .scale-glyph { font-size:.95rem; }
+  body[data-scale="1.3"]  .hero-logout .scale-glyph { font-size:1.14rem; }
 
   html, body { background:var(--bg); color:var(--ink); font-family:'Noto Sans Thai','Sarabun',sans-serif; }
   h1,h2,h3,h4,h5,h6,.display,.hero-display { font-family:'Kanit','Prompt',sans-serif; font-weight:500; }
@@ -1652,8 +1652,12 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
             <button class="hero-logout" onclick="openNotificationCenter()" title="การแจ้งเตือน">
               <i class="fa-solid fa-bell"></i><span class="notif-dot" id="studentNotifDot"></span>
             </button>
+            <button class="hero-logout" data-scale-cycle onclick="cycleUiScale_()"><span class="scale-glyph">ก</span></button>
             <button class="hero-logout" onclick="toggleDarkMode()" title="สลับโหมดสว่าง/มืด"><i class="fa-solid fa-moon" id="darkModeIcon1"></i></button>
-            <button class="hero-logout" onclick="logout()" title="ออกจากระบบ"><i class="fa-solid fa-power-off"></i></button>
+            <!-- ปุ่มออกจากระบบของนักเรียนย้ายไปอยู่แท็บ "ฉัน" อย่างเดียว (เดิมมีทั้งสองที่ = ซ้ำ)
+                 หัวจอมีที่จำกัด ปุ่มยิ่งเยอะช่องชื่อยิ่งแคบ — วัดแล้ว 4 ปุ่มเหลือ 81px
+                 ชื่อยาวปกติอย่าง "เด็กชายสมชาย ใจดี" โดนตัด · 3 ปุ่มได้ 120px กลับมาพอดี
+                 ฝั่งครูยังมีปุ่มนี้บนหัวจอ เพราะครูไม่มีปุ่มออกจากระบบที่อื่น -->
           </div>
         </div>
 
@@ -1815,9 +1819,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         <div id="nicknameContainer" class="nickname-section"></div>
       </div>
       <div class="sc-pad">
-        <div class="sc-sec"><span class="t">ขนาดตัวอักษร</span></div>
-        <div id="sScalePicker" class="scale-row"></div>
-        <button class="btn btn-ghost btn-block" style="margin-top:12px;" onclick="toggleDarkMode()"><i class="fa-solid fa-circle-half-stroke"></i> สลับโหมดสว่าง / มืด</button>
+        <button class="btn btn-ghost btn-block" onclick="toggleDarkMode()"><i class="fa-solid fa-circle-half-stroke"></i> สลับโหมดสว่าง / มืด</button>
         <button class="btn btn-danger-soft btn-block" style="margin-top:8px;" onclick="logout()"><i class="fa-solid fa-power-off"></i> ออกจากระบบ</button>
       </div>
     </div>
@@ -1858,6 +1860,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           </div>
           <div class="hero-icon-row">
             <button class="hero-logout" onclick="openAdminModal()" title="ตั้งค่าระบบ"><i class="fa-solid fa-gear"></i></button>
+            <button class="hero-logout" data-scale-cycle onclick="cycleUiScale_()"><span class="scale-glyph">ก</span></button>
             <button class="hero-logout" onclick="toggleDarkMode()" title="สลับโหมดสว่าง/มืด"><i class="fa-solid fa-moon" id="darkModeIcon2"></i></button>
             <button class="hero-logout" onclick="logout()" title="ออกจากระบบ"><i class="fa-solid fa-power-off"></i></button>
           </div>
@@ -1913,11 +1916,6 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <button class="sc-g" onclick="openEndOfTerm_()"><span class="ic ic-mint"><i class="fa-solid fa-flag-checkered"></i></span><span class="lb">ขั้นตอน<br>ปลายเทอม</span></button>
           <button class="sc-g" onclick="openAdminModal()"><span class="ic ic-grey"><i class="fa-solid fa-gear"></i></span><span class="lb">ตั้งค่าระบบ</span></button>
         </div>
-      </div>
-      <!-- ขนาดตัวอักษรเป็นค่าของ "เครื่องนี้" ไม่ใช่ค่าของระบบ จึงไม่อยู่ในหน้าตั้งค่าระบบที่เขียนลงชีต -->
-      <div class="sc-pad">
-        <div class="sc-sec"><span class="t">ขนาดตัวอักษร</span></div>
-        <div id="tScalePicker" class="scale-row"></div>
       </div>
     </div>
 
@@ -2130,9 +2128,6 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   window.onload = () => {
     applyDarkModePreference();
     applyDayColor_();               // สีหัวจอตามวันในสัปดาห์
-    // ช่องใส่ปุ่มขนาดตัวอักษรอยู่ใน HTML คงที่ทั้งสองฝั่งอยู่แล้ว วาดทีเดียวตอนเปิดได้เลย
-    renderScalePicker_('sScalePicker');
-    renderScalePicker_('tScalePicker');
     applyUiScale_(currentUiScale_());
     // เปิดแอปค้างข้ามคืนแล้วกลับมาใช้ ต้องเปลี่ยนสีตามวันใหม่เอง ไม่ใช่ค้างสีเมื่อวาน
     document.addEventListener('visibilitychange', () => { if (!document.hidden) applyDayColor_(); });
@@ -2236,10 +2231,12 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // ─── ขยายขนาดทั้งแอป ────────────────────────────────────────
   // จำรายเครื่อง ไม่ผูกกับบัญชี เพราะเป็นเรื่องของจอที่ใช้ ไม่ใช่ของคน
   // (เครื่องโรงเรียนใช้ร่วมกัน แต่ขนาดตัวอักษรที่เหมาะกับจอนั้นเหมือนกันทุกคน จึงไม่ล้างตอนออกจากระบบ)
+  // เป็นส่วนเสริม ไม่ใช่ระบบหลัก จึงไม่กินที่เป็นแถวปุ่ม — ยุบเป็นปุ่มกลมปุ่มเดียวข้างปุ่มโหมดมืด
+  // กดวนทีละขั้น ครบแล้ววนกลับมาปกติ (3 ขั้น กดกลับมาที่เดิมอย่างมากแค่ 2 ที)
   const UI_SCALES = [
-    { v: 1,    label: 'ปกติ',  icon: 'fa-a' },
-    { v: 1.15, label: 'ใหญ่',  icon: 'fa-a' },
-    { v: 1.3,  label: 'ใหญ่มาก', icon: 'fa-a' }
+    { v: 1,    label: 'ปกติ' },
+    { v: 1.15, label: 'ใหญ่' },
+    { v: 1.3,  label: 'ใหญ่มาก' }
   ];
   function currentUiScale_() {
     const n = parseFloat(localStorage.getItem('smartClassUiScale'));
@@ -2247,25 +2244,24 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   }
   function applyUiScale_(v) {
     document.documentElement.style.setProperty('--ui-scale', v);
-    document.querySelectorAll('[data-scale-btn]').forEach(b => {
-      b.classList.toggle('on', parseFloat(b.dataset.scaleBtn) === v);
+    document.body.dataset.scale = String(v);   // CSS ใช้ค่านี้ปรับขนาดตัว "ก" บนปุ่มให้ตรงกับขั้นปัจจุบัน
+    const cur = UI_SCALES.find(s => s.v === v) || UI_SCALES[0];
+    document.querySelectorAll('[data-scale-cycle]').forEach(b => {
+      b.title = 'ขนาดตัวอักษร: ' + cur.label + ' (กดเพื่อเปลี่ยน)';
+      b.setAttribute('aria-label', b.title);
     });
   }
   function setUiScale_(v) {
     localStorage.setItem('smartClassUiScale', String(v));
     applyUiScale_(v);
   }
-  // วาดปุ่ม ก/กลาง/ใหญ่ ลงในกล่องที่มี id ตามที่ส่งมา (ใช้ได้ทั้งฝั่งครูและนักเรียน)
-  function renderScalePicker_(boxId) {
-    const box = document.getElementById(boxId);
-    if (!box) return;
-    const cur = currentUiScale_();
-    box.innerHTML = UI_SCALES.map((s, i) => `
-      <button class="scale-btn${s.v === cur ? ' on' : ''}" data-scale-btn="${s.v}"
-              onclick="setUiScale_(${s.v})" title="${s.label}">
-        <span style="font-size:${0.78 + i * 0.22}rem; font-weight:800; line-height:1;">ก</span>
-        <span class="lb">${s.label}</span>
-      </button>`).join('');
+  // กดหนึ่งครั้ง = ขยับไปขั้นถัดไป ถึงขั้นสุดท้ายแล้ววนกลับ
+  function cycleUiScale_() {
+    const i = UI_SCALES.findIndex(s => s.v === currentUiScale_());
+    const next = UI_SCALES[(i + 1) % UI_SCALES.length];
+    setUiScale_(next.v);
+    // ต้องบอกด้วยคำ ไม่ใช่ให้เดาเอาจากขนาดที่เปลี่ยนไป โดยเฉพาะตอนวนกลับมาปกติ
+    if (typeof Toast === 'function') Toast('ขนาดตัวอักษร: ' + next.label, 'info');
   }
 
   // ─── NOTIFICATION CENTER (นักเรียน) ─────────────────────────
