@@ -852,6 +852,47 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     --shadow-lg:0 18px 44px rgba(0,0,0,.5);
   }
 
+  /* ═══════ สีประจำวัน — เปลี่ยนเฉพาะหัวจอไล่สี ═══════════════
+     ⚠️ แตะ --grad อย่างเดียวเท่านั้น ห้ามแตะ --mint/--gold/--rose/--violet
+     เพราะสีพวกนั้นมีความหมายตายตัว (ได้/แต้ม/เสีย/พิเศษ) ถ้าเปลี่ยนตามวัน
+     ความหมายจะพังทั้งแอป เช่นวันพุธเขียวจะอ่านเหมือน "ผ่านหมดแล้ว"
+     สีถูกทำให้เข้มกว่าสีประจำวันจริง เพื่อให้ตัวอักษรขาวบนหัวจออ่านชัดทุกวัน
+     (เหลืองสด/ชมพูสด/ส้มสด ใส่ตัวอักษรขาวแล้วอ่านไม่ออก) */
+  body[data-day="0"] { --grad:linear-gradient(160deg,#A8161D 0%,#C62828 55%,#E14B4B 100%); }  /* อาทิตย์ แดง */
+  body[data-day="1"] { --grad:linear-gradient(160deg,#8A6100 0%,#A67C00 55%,#C89A0E 100%); }  /* จันทร์ เหลือง→ทองเข้ม */
+  body[data-day="2"] { --grad:linear-gradient(160deg,#A3124B 0%,#C2185B 55%,#DE4A80 100%); }  /* อังคาร ชมพู→บานเย็น */
+  body[data-day="3"] { --grad:linear-gradient(160deg,#1F6325 0%,#2E7D32 55%,#4CA152 100%); }  /* พุธ เขียว */
+  body[data-day="4"] { --grad:linear-gradient(160deg,#B84100 0%,#DC5500 55%,#F07A1E 100%); }  /* พฤหัสบดี ส้ม */
+  body[data-day="5"] { --grad:linear-gradient(160deg,#0E6FD1 0%,#1587DE 52%,#35B7F2 100%); }  /* ศุกร์ ฟ้า = สีหลักเดิม */
+  body[data-day="6"] { --grad:linear-gradient(160deg,#59178A 0%,#6A1B9A 55%,#8E3EBF 100%); }  /* เสาร์ ม่วง */
+
+  /* โหมดมืดใช้ชุดเดียวกันแต่หรี่ลง ไม่งั้นหัวจอจะจ้าเกินพื้นเข้ม */
+  body.dark-mode[data-day="0"] { --grad:linear-gradient(160deg,#7A1015 0%,#96201F 55%,#B03A3A 100%); }
+  body.dark-mode[data-day="1"] { --grad:linear-gradient(160deg,#654700 0%,#7D5D00 55%,#9A7508 100%); }
+  body.dark-mode[data-day="2"] { --grad:linear-gradient(160deg,#760D37 0%,#921241 55%,#AE3663 100%); }
+  body.dark-mode[data-day="3"] { --grad:linear-gradient(160deg,#164A1B 0%,#1F5C23 55%,#357A3A 100%); }
+  body.dark-mode[data-day="4"] { --grad:linear-gradient(160deg,#853000 0%,#A33F00 55%,#BF5A15 100%); }
+  body.dark-mode[data-day="5"] { --grad:linear-gradient(160deg,#0B4E96 0%,#1069B4 52%,#1E8FD0 100%); }
+  body.dark-mode[data-day="6"] { --grad:linear-gradient(160deg,#3F1163 0%,#4F1272 55%,#6B2C92 100%); }
+
+  /* ═══════ ขยายขนาดทั้งแอป ═══════════════════════════════════
+     ใช้ zoom ไม่ใช่ font-size — ในไฟล์นี้เป็น px 1,390 จุด ต่อ rem 386 จุด
+     ถ้าขยายด้วย font-size ตัวอักษรจะโตแต่กล่อง/ไอคอน/ระยะห่างที่เป็น px ไม่โตตาม → ข้อความล้นกรอบ
+     zoom ขยายทุกอย่างพร้อมกัน สัดส่วนเท่าเดิมเป๊ะ และ layout ยัง reflow พอดีจอ
+     ⚠️ ต้องอยู่บน body เท่านั้น — ทดสอบแล้วถ้าใส่บน .app-shell แถบล่างที่เป็น fixed
+     จะหดเหลือ 289px บนจอ 375px (ลองชดเชยความกว้างแล้วก็ยังผิด) */
+  body { zoom:var(--ui-scale,1); }
+
+  .scale-row { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .scale-btn {
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+    padding:11px 4px; border-radius:var(--r-sm); background:var(--surface);
+    border:1px solid var(--line); color:var(--ink-2); cursor:pointer;
+    font-family:'Noto Sans Thai',sans-serif; transition:border-color .15s, color .15s, background .15s;
+  }
+  .scale-btn .lb { font-size:.68rem; font-weight:600; }
+  .scale-btn.on { background:var(--blue-dim); border-color:var(--blue); color:var(--blue); }
+
   html, body { background:var(--bg); color:var(--ink); font-family:'Noto Sans Thai','Sarabun',sans-serif; }
   h1,h2,h3,h4,h5,h6,.display,.hero-display { font-family:'Kanit','Prompt',sans-serif; font-weight:500; }
   ::-webkit-scrollbar-thumb { background:var(--line); }
@@ -1055,6 +1096,13 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   .sc-chip b { font-weight:600; }
   button.sc-chip { cursor:pointer; font-family:inherit; }
   button.sc-chip:active { background:rgba(255,255,255,.3); }
+  /* กฎเก่าก่อนชุด BANK ใช้ #id ทับพื้นเป็นสีฟ้าทึบ ซึ่ง id ชนะ class เสมอไม่ว่าจะวางทีหลังแค่ไหน
+     เดิมมองไม่ออกเพราะหัวจอก็ฟ้า แต่พอหัวจอเปลี่ยนสีตามวัน ป้ายฟ้าจะโดดออกมาทันที
+     ของในหัวจอต้องเป็น "ขาวโปร่ง" เท่านั้น ถึงจะเข้ากับพื้นได้ทุกสี */
+  #sClassDisplay.sc-chip, #tClassDisplay.sc-chip {
+    background:rgba(255,255,255,.16); box-shadow:none; color:#fff;
+    font-family:'Noto Sans Thai',sans-serif; font-weight:600; font-size:.7rem; padding:4px 10px;
+  }
 
   /* ── 2. ปุ่มลัด 4 ปุ่ม เกยขึ้นไปบนหัวจอ ────────────────────── */
   .sc-quick {
@@ -1754,7 +1802,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         <div id="nicknameContainer" class="nickname-section"></div>
       </div>
       <div class="sc-pad">
-        <button class="btn btn-ghost btn-block" onclick="toggleDarkMode()"><i class="fa-solid fa-circle-half-stroke"></i> สลับโหมดสว่าง / มืด</button>
+        <div class="sc-sec"><span class="t">ขนาดตัวอักษร</span></div>
+        <div id="sScalePicker" class="scale-row"></div>
+        <button class="btn btn-ghost btn-block" style="margin-top:12px;" onclick="toggleDarkMode()"><i class="fa-solid fa-circle-half-stroke"></i> สลับโหมดสว่าง / มืด</button>
         <button class="btn btn-danger-soft btn-block" style="margin-top:8px;" onclick="logout()"><i class="fa-solid fa-power-off"></i> ออกจากระบบ</button>
       </div>
     </div>
@@ -1850,6 +1900,11 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <button class="sc-g" onclick="openEndOfTerm_()"><span class="ic ic-mint"><i class="fa-solid fa-flag-checkered"></i></span><span class="lb">ขั้นตอน<br>ปลายเทอม</span></button>
           <button class="sc-g" onclick="openAdminModal()"><span class="ic ic-grey"><i class="fa-solid fa-gear"></i></span><span class="lb">ตั้งค่าระบบ</span></button>
         </div>
+      </div>
+      <!-- ขนาดตัวอักษรเป็นค่าของ "เครื่องนี้" ไม่ใช่ค่าของระบบ จึงไม่อยู่ในหน้าตั้งค่าระบบที่เขียนลงชีต -->
+      <div class="sc-pad">
+        <div class="sc-sec"><span class="t">ขนาดตัวอักษร</span></div>
+        <div id="tScalePicker" class="scale-row"></div>
       </div>
     </div>
 
@@ -2061,6 +2116,13 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // ─── INIT ───────────────────────────────────────────────────
   window.onload = () => {
     applyDarkModePreference();
+    applyDayColor_();               // สีหัวจอตามวันในสัปดาห์
+    // ช่องใส่ปุ่มขนาดตัวอักษรอยู่ใน HTML คงที่ทั้งสองฝั่งอยู่แล้ว วาดทีเดียวตอนเปิดได้เลย
+    renderScalePicker_('sScalePicker');
+    renderScalePicker_('tScalePicker');
+    applyUiScale_(currentUiScale_());
+    // เปิดแอปค้างข้ามคืนแล้วกลับมาใช้ ต้องเปลี่ยนสีตามวันใหม่เอง ไม่ใช่ค้างสีเมื่อวาน
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) applyDayColor_(); });
     if (tryParentView_()) return;   // เปิดมาด้วยลิงก์ผู้ปกครอง ไม่ต้องผ่านหน้าล็อกอิน
 
     const todayStr = localDateStr_(new Date());
@@ -2148,6 +2210,49 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       const el = document.getElementById(id);
       if (el) el.className = dark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
     });
+  }
+
+  // ─── สีประจำวัน ─────────────────────────────────────────────
+  // ติดเลขวันไว้บน <body> แล้ว CSS สลับ --grad ให้เอง (ดูบล็อก "สีประจำวัน")
+  // เรียกซ้ำได้ไม่มีผลข้างเคียง — เรียกตอนเปิดแอปและตอนกลับมาโฟกัส เผื่อเปิดค้างข้ามเที่ยงคืน
+  const TH_DAY_COLOR_NAME = ['แดง', 'เหลือง', 'ชมพู', 'เขียว', 'ส้ม', 'ฟ้า', 'ม่วง'];
+  function applyDayColor_() {
+    document.body.dataset.day = String(new Date().getDay());
+  }
+
+  // ─── ขยายขนาดทั้งแอป ────────────────────────────────────────
+  // จำรายเครื่อง ไม่ผูกกับบัญชี เพราะเป็นเรื่องของจอที่ใช้ ไม่ใช่ของคน
+  // (เครื่องโรงเรียนใช้ร่วมกัน แต่ขนาดตัวอักษรที่เหมาะกับจอนั้นเหมือนกันทุกคน จึงไม่ล้างตอนออกจากระบบ)
+  const UI_SCALES = [
+    { v: 1,    label: 'ปกติ',  icon: 'fa-a' },
+    { v: 1.15, label: 'ใหญ่',  icon: 'fa-a' },
+    { v: 1.3,  label: 'ใหญ่มาก', icon: 'fa-a' }
+  ];
+  function currentUiScale_() {
+    const n = parseFloat(localStorage.getItem('smartClassUiScale'));
+    return UI_SCALES.some(s => s.v === n) ? n : 1;
+  }
+  function applyUiScale_(v) {
+    document.documentElement.style.setProperty('--ui-scale', v);
+    document.querySelectorAll('[data-scale-btn]').forEach(b => {
+      b.classList.toggle('on', parseFloat(b.dataset.scaleBtn) === v);
+    });
+  }
+  function setUiScale_(v) {
+    localStorage.setItem('smartClassUiScale', String(v));
+    applyUiScale_(v);
+  }
+  // วาดปุ่ม ก/กลาง/ใหญ่ ลงในกล่องที่มี id ตามที่ส่งมา (ใช้ได้ทั้งฝั่งครูและนักเรียน)
+  function renderScalePicker_(boxId) {
+    const box = document.getElementById(boxId);
+    if (!box) return;
+    const cur = currentUiScale_();
+    box.innerHTML = UI_SCALES.map((s, i) => `
+      <button class="scale-btn${s.v === cur ? ' on' : ''}" data-scale-btn="${s.v}"
+              onclick="setUiScale_(${s.v})" title="${s.label}">
+        <span style="font-size:${0.78 + i * 0.22}rem; font-weight:800; line-height:1;">ก</span>
+        <span class="lb">${s.label}</span>
+      </button>`).join('');
   }
 
   // ─── NOTIFICATION CENTER (นักเรียน) ─────────────────────────
