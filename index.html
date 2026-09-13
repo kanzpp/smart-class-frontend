@@ -37,10 +37,10 @@
 
   <!-- ── PWA / เพิ่มลงหน้าจอหลัก ─────────────────────────── -->
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-  <meta name="theme-color" content="#0E6FD1">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=2">
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png?v=2">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2">
+  <meta name="theme-color" content="#0A4A90">
   <meta name="apple-mobile-web-app-title" content="Smart Class">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2327,6 +2327,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     document.body.classList.toggle('dark-mode', dark);
     localStorage.setItem('smartClassDarkMode', dark ? '1' : '0');
     updateDarkModeIcons(dark);
+    syncThemeColor_();   // ไล่สีหัวจอเปลี่ยนไปด้วย แถบสถานะต้องตามทันที ไม่ใช่รอเปิดแอปใหม่
   }
   function updateDarkModeIcons(dark) {
     ['darkModeIcon1', 'darkModeIcon2'].forEach(id => {
@@ -2351,6 +2352,22 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   const TH_DAY_COLOR_NAME = ['แดง', 'เหลือง', 'ชมพู', 'เขียว', 'ส้ม', 'ฟ้า', 'ม่วง'];
   function applyDayColor_() {
     document.body.dataset.day = String(new Date().getDay());
+    syncThemeColor_();
+  }
+
+  // แถบสถานะของมือถือ (และการ์ดในหน้าสลับแอป) ใช้ค่าจาก <meta name="theme-color">
+  // ถ้าปล่อยเป็นค่าตายตัว มันจะเป็นน้ำเงินขณะที่หัวจอเป็นสีของวัน = ไม่ตรงกัน 6 วันจาก 7
+  // จึงดึง "สีแรกของไล่สี" มาใช้ เพราะนั่นคือสีที่อยู่ติดกับแถบสถานะพอดี
+  // (ใช้ได้ทั้งโหมดสว่างและมืด เพราะอ่านจากค่าที่คำนวณแล้วของ body)
+  function syncThemeColor_() {
+    try {
+      const grad = getComputedStyle(document.body).getPropertyValue('--grad');
+      const first = (grad.match(/#[0-9A-Fa-f]{6}|rgba?\([^)]+\)/) || [])[0];
+      if (!first) return;
+      let tag = document.querySelector('meta[name="theme-color"]');
+      if (!tag) { tag = document.createElement('meta'); tag.name = 'theme-color'; document.head.appendChild(tag); }
+      tag.setAttribute('content', first);
+    } catch (e) { /* ไม่ใช่เรื่องคอขาดบาดตาย ถ้าพลาดก็ปล่อยสีเดิมไป */ }
   }
 
   // ─── ขยายขนาดทั้งแอป ────────────────────────────────────────
