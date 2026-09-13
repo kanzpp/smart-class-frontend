@@ -951,13 +951,13 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
   /* ปุ่มขนาดตัวอักษร — อยู่ข้างปุ่มโหมดมืดบนหัวจอ กดวนทีละขั้น
      ตัว "ก" บนปุ่มโตตามขนาดที่เลือกอยู่ จะได้รู้ว่าตอนนี้อยู่ขั้นไหนโดยไม่ต้องกดลองดู */
-  .hero-logout .scale-glyph {
+  .scale-glyph {
     font-family:'Kanit',sans-serif; font-weight:600; line-height:1;
     transition:font-size .15s;
   }
-  body[data-scale="1"]    .hero-logout .scale-glyph { font-size:.78rem; }
-  body[data-scale="1.15"] .hero-logout .scale-glyph { font-size:.95rem; }
-  body[data-scale="1.3"]  .hero-logout .scale-glyph { font-size:1.14rem; }
+  body[data-scale="1"]    .scale-glyph { font-size:.95rem; }
+  body[data-scale="1.15"] .scale-glyph { font-size:1.15rem; }
+  body[data-scale="1.3"]  .scale-glyph { font-size:1.38rem; }
 
   /* ═══ ชิ้นส่วนที่ใช้ซ้ำ (ยกออกจากสไตล์ฝังในแท็ก 13 ก.ย. 2569) ═══
      ที่ต้องยกไม่ใช่เพราะมันยาว แต่เพราะของเดิม
@@ -1253,7 +1253,16 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     background:none; border:none; cursor:pointer; font-family:inherit; color:inherit;
   }
   .sc-g:active { transform:scale(.93); }
-  .sc-g .ic { width:38px; height:38px; border-radius:13px; display:grid; place-items:center; font-size:.92rem; }
+  .sc-g .ic { width:38px; height:38px; border-radius:13px; display:grid; place-items:center; font-size:.92rem; position:relative; }
+  /* จุดแจ้งเตือนตามมาอยู่บนกระเบื้องเมนูแล้ว ต้องมีตำแหน่งของตัวเองที่นี่ด้วย
+     (ของเดิมผูกกับ .hero-logout ซึ่งไม่มีปุ่มกระดิ่งอยู่แล้ว) */
+  .sc-g .notif-dot {
+    position:absolute; top:-2px; right:-2px; width:9px; height:9px; border-radius:50%;
+    background:var(--rose); border:2px solid var(--surface); display:none;
+  }
+  .sc-g .notif-dot.show { display:block; }
+  /* ตัว "ก" บนกระเบื้อง ใช้ฟอนต์หัวข้อให้เหมือนไอคอนตัวอื่น */
+  .sc-g .scale-glyph { font-family:'Kanit',sans-serif; font-weight:600; line-height:1; }
   .sc-g .lb { font-size:.62rem; font-weight:500; color:var(--ink-2); line-height:1.3; }
 
   /* ── 5. แถบล่าง + ปุ่มลอยกลาง ────────────────────────────── */
@@ -1756,11 +1765,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
             <div class="sc-today" id="sTodayLine"></div>
           </div>
           <div class="hero-icon-row">
-            <button class="hero-logout" onclick="openNotificationCenter()" title="การแจ้งเตือน">
-              <i class="fa-solid fa-bell"></i><span class="notif-dot" id="studentNotifDot"></span>
-            </button>
-            <button class="hero-logout" data-scale-cycle onclick="cycleUiScale_()"><span class="scale-glyph">ก</span></button>
-            <button class="hero-logout" onclick="toggleDarkMode()" title="สลับโหมดสว่าง/มืด"><i class="fa-solid fa-moon" id="darkModeIcon1"></i></button>
+            <!-- ปุ่มเล็กมุมขวาบนย้ายลงไปอยู่ใน "เมนูทั้งหมด" แล้ว (13 ก.ย. 2569 เจ้าของสั่ง)
+                 หัวจอเหลือไว้แสดงตัวตนกับข้อมูลอย่างเดียว ชื่อยาวๆ จะได้มีที่พอ -->
             <!-- ปุ่มออกจากระบบของนักเรียนย้ายไปอยู่แท็บ "ฉัน" อย่างเดียว (เดิมมีทั้งสองที่ = ซ้ำ)
                  หัวจอมีที่จำกัด ปุ่มยิ่งเยอะช่องชื่อยิ่งแคบ — วัดแล้ว 4 ปุ่มเหลือ 81px
                  ชื่อยาวปกติอย่าง "เด็กชายสมชาย ใจดี" โดนตัด · 3 ปุ่มได้ 120px กลับมาพอดี
@@ -1825,6 +1831,11 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <button class="sc-g" id="menuCompanion" onclick="goStudentTab_('companion')"><span class="ic ic-violet"><i class="fa-solid fa-paw"></i></span><span class="lb">คู่หู</span></button>
           <button class="sc-g" onclick="goStudentTab_('card')"><span class="ic ic-blue"><i class="fa-solid fa-id-card"></i></span><span class="lb">บัตรนักเรียน</span></button>
           <button class="sc-g" id="menuOnline" onclick="openOnlineCourseModal()"><span class="ic ic-grey"><i class="fa-solid fa-play"></i></span><span class="lb">เรียนออนไลน์</span></button>
+          <!-- ย้ายมาจากปุ่มเล็กมุมขวาบนของหัวจอ -->
+          <button class="sc-g" onclick="openNotificationCenter()"><span class="ic ic-gold"><i class="fa-solid fa-bell"></i><span class="notif-dot" id="studentNotifDot"></span></span><span class="lb">การแจ้งเตือน</span></button>
+          <button class="sc-g" data-scale-cycle onclick="cycleUiScale_()"><span class="ic ic-blue"><span class="scale-glyph">ก</span></span><span class="lb">ขนาดตัวอักษร</span></button>
+          <button class="sc-g" onclick="toggleDarkMode()"><span class="ic ic-violet"><i class="fa-solid fa-moon" id="darkModeIcon1"></i></span><span class="lb">โหมดสว่าง / มืด</span></button>
+          <button class="sc-g" onclick="logout()"><span class="ic ic-rose"><i class="fa-solid fa-power-off"></i></span><span class="lb">ออกจากระบบ</span></button>
         </div>
       </div>
     </div>
@@ -1925,10 +1936,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         <div class="sc-sec"><span class="t">อันดับห้อง</span></div>
         <div id="nicknameContainer" class="nickname-section"></div>
       </div>
-      <div class="sc-pad">
-        <button class="btn btn-ghost btn-block" onclick="toggleDarkMode()"><i class="fa-solid fa-circle-half-stroke"></i> สลับโหมดสว่าง / มืด</button>
-        <button class="btn btn-danger-soft btn-block" style="margin-top:8px;" onclick="logout()"><i class="fa-solid fa-power-off"></i> ออกจากระบบ</button>
-      </div>
+      <!-- โหมดมืดกับออกจากระบบย้ายไปอยู่ใน "เมนูทั้งหมด" บนหน้าแรกแล้ว
+           เดิมอยู่ทั้งที่นี่และบนหัวจอ = ซ้ำสองที่ ตอนนี้เหลือที่เดียว -->
     </div>
 
   </div>
@@ -1966,10 +1975,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
             <div class="sc-today" id="tTodayLine"></div>
           </div>
           <div class="hero-icon-row">
-            <button class="hero-logout" onclick="openAdminModal()" title="ตั้งค่าระบบ"><i class="fa-solid fa-gear"></i></button>
-            <button class="hero-logout" data-scale-cycle onclick="cycleUiScale_()"><span class="scale-glyph">ก</span></button>
-            <button class="hero-logout" onclick="toggleDarkMode()" title="สลับโหมดสว่าง/มืด"><i class="fa-solid fa-moon" id="darkModeIcon2"></i></button>
-            <button class="hero-logout" onclick="logout()" title="ออกจากระบบ"><i class="fa-solid fa-power-off"></i></button>
+            <!-- ปุ่มเล็กมุมขวาบนย้ายลงไปอยู่ใน "เมนูทั้งหมด" แล้ว (13 ก.ย. 2569 เจ้าของสั่ง)
+                 ⚙ ตั้งค่าระบบ มีอยู่ในเมนูอยู่แล้ว จึงไม่ต้องเพิ่มซ้ำ -->
           </div>
         </div>
 
@@ -2018,6 +2025,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <button class="sc-g" onclick="openAdminTabDirect_('term')"><span class="ic ic-rose"><i class="fa-solid fa-calendar-check"></i></span><span class="lb">ปีการศึกษา<br>ปิดเทอม · เลื่อนชั้น</span></button>
           <button class="sc-g" onclick="openEndOfTerm_()"><span class="ic ic-mint"><i class="fa-solid fa-flag-checkered"></i></span><span class="lb">ขั้นตอน<br>ปลายเทอม</span></button>
           <button class="sc-g" onclick="openAdminModal()"><span class="ic ic-grey"><i class="fa-solid fa-gear"></i></span><span class="lb">ตั้งค่าระบบ</span></button>
+          <!-- ย้ายมาจากปุ่มเล็กมุมขวาบนของหัวจอ (⚙ ไม่ต้องย้าย มีอยู่แล้วข้างบนนี้) -->
+          <button class="sc-g" data-scale-cycle onclick="cycleUiScale_()"><span class="ic ic-blue"><span class="scale-glyph">ก</span></span><span class="lb">ขนาดตัวอักษร</span></button>
+          <button class="sc-g" onclick="toggleDarkMode()"><span class="ic ic-violet"><i class="fa-solid fa-moon" id="darkModeIcon2"></i></span><span class="lb">โหมดสว่าง / มืด</span></button>
+          <button class="sc-g" onclick="logout()"><span class="ic ic-rose"><i class="fa-solid fa-power-off"></i></span><span class="lb">ออกจากระบบ</span></button>
         </div>
       </div>
     </div>
