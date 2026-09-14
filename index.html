@@ -1230,6 +1230,21 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     min-width:0; width:100%; cursor:pointer;
   }
   .sc-ctx-sel:focus { outline:none; border-color:var(--blue); }
+
+  /* ── ขอบเขตของสวิตช์ (เลือกชั้น/วิชา) ────────────────────────
+     ใช้ชิปติ๊กได้ แทน select หลายชั้น เพราะจำนวนชั้น/วิชามีไม่กี่ตัว
+     เห็นพร้อมกันหมดแล้วเข้าใจเร็วกว่าต้องกดเปิดดูทีละอัน */
+  .feat-scope { margin-top:9px; padding-top:9px; border-top:1px dashed var(--line); }
+  .scope-row { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
+  .scope-row:last-child { margin-bottom:0; }
+  .scope-chip {
+    display:inline-flex; align-items:center; gap:5px; cursor:pointer;
+    padding:5px 10px; border-radius:999px; font-size:.72rem; font-weight:600;
+    background:var(--surface-2); border:1px solid var(--line); color:var(--ink-2);
+    transition:background .15s, border-color .15s, color .15s;
+  }
+  .scope-chip input { width:11px; height:11px; margin:0; accent-color:var(--blue); }
+  .scope-chip.on { background:var(--blue-dim); border-color:var(--blue); color:var(--blue); }
   body.dark-mode .sc-ctx-sel {
     background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238FA3B8' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
   }
@@ -1816,7 +1831,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         <button class="sc-q" id="actCoupon" onclick="tryRedeemCouponUI()">
           <span class="ic ic-gold"><i class="fa-solid fa-ticket"></i></span><span class="lb">คูปอง</span>
         </button>
-        <button class="sc-q" onclick="openScoreExchangeModal()">
+        <button class="sc-q" id="actExchange" onclick="openScoreExchangeModal()">
           <span class="ic ic-mint"><i class="fa-solid fa-right-left"></i></span><span class="lb">แลกคะแนน</span>
         </button>
         <button class="sc-q" onclick="goStudentTab_('me')">
@@ -2019,10 +2034,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         <button class="sc-q" onclick="quickMode_('exam')">
           <span class="ic ic-blue"><i class="fa-solid fa-file-pen"></i></span><span class="lb">คะแนนสอบ</span>
         </button>
-        <button class="sc-q" onclick="quickMode_('award')">
+        <button class="sc-q" id="tQuickAward" onclick="quickMode_('award')">
           <span class="ic ic-mint"><i class="fa-solid fa-circle-plus"></i></span><span class="lb">ให้แต้ม</span>
         </button>
-        <button class="sc-q" onclick="quickMode_('deduct')">
+        <button class="sc-q" id="tQuickDeduct" onclick="quickMode_('deduct')">
           <span class="ic ic-rose"><i class="fa-solid fa-circle-minus"></i></span><span class="lb">หักแต้ม</span>
         </button>
 
@@ -3008,6 +3023,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     if (what !== 'ch') fillQuickChapters_();
     saveTeacherCtx_();
     if (typeof refreshChapterButtons_ === 'function') refreshChapterButtons_();
+    applyFeatureFlags_();   // แต้มพิเศษอาจเปิดเฉพาะบางชั้น/บางวิชา ปุ่มให้-หักแต้มต้องคิดใหม่
   }
 
   function quickMode_(mode) {
@@ -4045,6 +4061,17 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     if (!f || f[key] === undefined) return true;   // ยังไม่รู้ค่า ให้ถือว่าเปิดไว้ก่อน จะได้ไม่ซ่อนของที่ยังใช้อยู่
     return f[key] === 1;
   }
+
+  // สวิตช์บางตัวเปิด/ปิดแยกรายชั้นหรือรายวิชาได้ — ต้องเปิด "และ" อยู่ในขอบเขต
+  // ลิสต์ว่าง = ไม่จำกัด (ไม่ใช่ว่าไม่มีสิทธิ์อะไรเลย) ค่าปกติจึงเท่ากับ featOn_ ทุกประการ
+  function featOnFor_(key, cls, subject) {
+    if (!featOn_(key)) return false;
+    const sc = metaData && metaData.featureScopes && metaData.featureScopes[key];
+    if (!sc) return true;
+    if (sc.classes  && sc.classes.length  && cls     && sc.classes.indexOf(cls) < 0) return false;
+    if (sc.subjects && sc.subjects.length && subject && sc.subjects.indexOf(subject) < 0) return false;
+    return true;
+  }
   function showIf_(id, on) {
     const el = document.getElementById(id);
     if (el) el.style.display = on ? '' : 'none';
@@ -4074,6 +4101,17 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       }
     }
 
+    // แต้มพิเศษ — เปิด/ปิดแยกรายชั้นหรือรายวิชาได้
+    // นักเรียน: ดูจากชั้นของตัวเอง · ครู: ดูจากชั้น+วิชาที่กำลังเลือกอยู่บนหน้าแรก
+    // ⚠️ ซ่อนเฉพาะ "ให้/หัก/แลก" — ยอดแต้มกับประวัติยังอยู่ เพราะแต้มจากเช็คอิน/วิ่ง/คูปอง
+    //    ยังได้ตามปกติ ถ้าซ่อนยอดไปด้วยนักเรียนจะงงว่าแต้มที่ได้หายไปไหน
+    const myCls = (studentDashboardData && studentDashboardData.cls) || null;
+    showIf_('actExchange', featOnFor_('FEAT_POINTS_BONUS', myCls, null));
+    const tc = (typeof teacherCtx_ === 'function') ? teacherCtx_() : {};
+    const bonusHere = featOnFor_('FEAT_POINTS_BONUS', tc.cls, tc.subject);
+    showIf_('tQuickAward',  bonusHere);
+    showIf_('tQuickDeduct', bonusHere);
+
     // ฝั่งครู
     showIf_('modeCard-att', featOn_('FEAT_ATT_SCAN'));
     showIf_('modeCard-review', online);
@@ -4087,7 +4125,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       .concat(comp   ? [] : ['COMPANION_HATCH', 'COMPANION_LEVELUP'])
       .concat(featOn_('FEAT_GPS')    ? [] : ['GPS_CHECKIN', 'STREAK_BONUS'])
       .concat(featOn_('FEAT_COUPON') ? [] : ['COUPON'])
-      .concat(featOn_('FEAT_ATT_SCAN') ? [] : ['SCAN_ATTEND']);
+      .concat(featOn_('FEAT_ATT_SCAN') ? [] : ['SCAN_ATTEND'])
+      .concat(featOn_('FEAT_POINTS_BONUS') ? [] : ['MANUAL_AWARD', 'MANUAL_DEDUCT', 'BUY_CHAPTER_SCORE']);
     const sel = document.getElementById('histType');
     if (sel) Array.from(sel.options).forEach(o => { o.hidden = hideTypes.indexOf(o.value) >= 0; });
   }
@@ -5308,11 +5347,29 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
             ${u.count === 0 ? 'ยังไม่เคยถูกใช้เลย' : `ใช้ไปแล้ว ${u.count} ครั้ง${last ? ' · ล่าสุด ' + last : ''}`}
           </div>`;
         }
+        // สวิตช์ที่กำหนดขอบเขตได้ จะมีแถวเลือกชั้น/วิชาต่อท้าย
+        // ไม่ติ๊กอะไรเลย = ใช้ทุกชั้นทุกวิชา (ค่าปกติ) ไม่ใช่ "ไม่ใช้เลย"
+        const sc = (metaData && metaData.featureScopes && metaData.featureScopes[f.key]) || { classes: [], subjects: [] };
+        const chip = (kind, code, label) => `
+          <label class="scope-chip${(sc[kind] || []).indexOf(code) >= 0 ? ' on' : ''}">
+            <input type="checkbox" data-scope="${f.key}" data-kind="${kind}" value="${code}"
+                   ${(sc[kind] || []).indexOf(code) >= 0 ? 'checked' : ''}
+                   onchange="this.closest('label').classList.toggle('on', this.checked)">
+            ${label}
+          </label>`;
+        const scopeHtml = !f.scoped ? '' : `
+          <div class="feat-scope">
+            <div class="u-label-sm" style="margin:0 0 5px;">ใช้เฉพาะ — ไม่เลือก = ทุกชั้นทุกวิชา</div>
+            <div class="scope-row">${(metaData.classes || []).map(c => chip('classes', c.code, c.label)).join('')}</div>
+            <div class="scope-row">${(metaData.subjects || []).map(x => chip('subjects', x.code, x.label)).join('')}</div>
+          </div>`;
+
         return `<div class="feat-row">
           <div class="feat-body">
             <div class="feat-name">${f.label}</div>
             <div class="feat-desc">${f.desc}</div>
             ${usageHtml}
+            ${scopeHtml}
           </div>
           <label class="switch">
             <input type="checkbox" data-feat="${f.key}" ${f.on ? 'checked' : ''}>
@@ -5341,12 +5398,30 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   function saveAdminFeatures_() {
     const flags = {};
     document.querySelectorAll('#adminBody input[data-feat]').forEach(i => { flags[i.dataset.feat] = i.checked ? 1 : 0; });
+    // เก็บขอบเขตที่ติ๊กไว้ด้วย — ไม่ติ๊กเลยคือลิสต์ว่าง = ใช้ทุกชั้นทุกวิชา
+    const scopes = {};
+    document.querySelectorAll('#adminBody input[data-scope]').forEach(i => {
+      const k = i.dataset.scope;
+      scopes[k] = scopes[k] || { classes: [], subjects: [] };
+      if (i.checked) scopes[k][i.dataset.kind].push(i.value);
+    });
     Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     google.script.run.withSuccessHandler(res => {
       if (res && res.success) {
         Swal.close(); Toast(res.message);
         // อัปเดตค่าที่หน้าเว็บถืออยู่ทันที ไม่ต้องรอเข้าระบบใหม่
         if (metaData) metaData.features = res.features;
+        // บันทึกขอบเขตต่อทีละตัว (มีน้อยมาก ไม่คุ้มทำเป็นชุด)
+        Object.keys(scopes).forEach(k => {
+          google.script.run.withSuccessHandler(r => {
+            if (r && r.success && metaData) {
+              metaData.featureScopes = metaData.featureScopes || {};
+              metaData.featureScopes[k] = r.scope;
+              applyFeatureFlags_();
+            }
+          }).withFailureHandler(e => console.error('saveFeatureScope failed:', e))
+            .saveFeatureScope(k, scopes[k]);
+        });
         try { localStorage.removeItem('bootCache_teacher'); } catch (e) {}
         applyFeatureFlags_();
       } else Swal.fire('ไม่สำเร็จ', (res && res.message) || 'เกิดข้อผิดพลาด', 'error');
