@@ -1210,6 +1210,29 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     background:none; border:none; padding:0; cursor:pointer; font-family:inherit; color:inherit;
   }
   .sc-q:active { transform:scale(.94); }
+
+  /* ── แถบเลือกบริบทใต้ปุ่มลัด 4 ปุ่ม ──────────────────────────
+     กินเต็มความกว้างของการ์ด (grid-column:1/-1) จึงไม่ไปรบกวนการวาง 4 ปุ่มข้างบน
+     ขอบบนบางๆ + ระยะห่างด้านบน = บอกว่าคนละหน้าที่ แต่ยังเป็นการ์ดใบเดียวกัน
+     ช่องกว้างไม่เท่ากันโดยตั้งใจ: ชั้นสั้นสุด · วิชายาวสุด · บทสั้น
+     ถ้าแบ่งเท่ากัน 3 ช่อง ชื่อวิชายาวๆ จะโดนตัดทั้งที่ช่องข้างๆ ว่าง */
+  .sc-ctx {
+    grid-column:1 / -1; margin:13px -8px -13px; padding:11px 12px 12px;
+    border-top:1px solid var(--line-soft);
+    display:grid; grid-template-columns:0.82fr 1.36fr 0.82fr; gap:7px;
+  }
+  .sc-ctx-sel {
+    -webkit-appearance:none; appearance:none;
+    background:var(--surface-2) url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2362758A' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;
+    border:1px solid var(--line); border-radius:10px;
+    padding:8px 22px 8px 10px; font-family:'Noto Sans Thai',sans-serif;
+    font-size:.76rem; font-weight:600; color:var(--ink);
+    min-width:0; width:100%; cursor:pointer;
+  }
+  .sc-ctx-sel:focus { outline:none; border-color:var(--blue); }
+  body.dark-mode .sc-ctx-sel {
+    background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238FA3B8' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  }
   .sc-q .ic { width:42px; height:42px; border-radius:14px; display:grid; place-items:center; font-size:1.05rem; }
   .sc-q .lb { font-size:.66rem; font-weight:500; line-height:1.25; color:var(--ink-2); }
   .ic-blue{background:var(--blue-dim);color:var(--blue)}
@@ -2002,6 +2025,16 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         <button class="sc-q" onclick="quickMode_('deduct')">
           <span class="ic ic-rose"><i class="fa-solid fa-circle-minus"></i></span><span class="lb">หักแต้ม</span>
         </button>
+
+        <!-- ตัวเลือกบริบทของ 4 ปุ่มข้างบน — อยู่ในการ์ดใบเดียวกันโดยตั้งใจ
+             ถ้าแยกเป็นการ์ดใหม่ มันจะดูเป็นของคนละเรื่อง ทั้งที่จริงแล้ว
+             "เลือกอะไร" กับ "ทำอะไรกับสิ่งนั้น" คือเรื่องเดียวกัน ต้องอ่านเป็นก้อนเดียว
+             เส้นคั่นบางๆ บอกว่าเป็นคนละหน้าที่ แต่ยังอยู่บ้านเดียวกัน -->
+        <div class="sc-ctx">
+          <select id="qcCls"  class="sc-ctx-sel" onchange="onQuickCtxChange_('cls')"></select>
+          <select id="qcSubj" class="sc-ctx-sel" onchange="onQuickCtxChange_('subj')"></select>
+          <select id="qcCh"   class="sc-ctx-sel" onchange="onQuickCtxChange_('ch')"></select>
+        </div>
       </div>
 
       <div class="sc-pad">
@@ -2602,7 +2635,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       const el = document.getElementById(id);
       if (el && !el.dataset.chapterBound) {
         el.dataset.chapterBound = '1';
-        el.addEventListener('change', () => { refreshChapterButtons_(); saveTeacherCtx_(); });
+        el.addEventListener('change', () => { refreshChapterButtons_(); saveTeacherCtx_(); fillQuickCtx_(); });
       }
     });
     refreshChapterButtons_();
@@ -2626,6 +2659,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       btn.classList.toggle('active', i + 1 === n);
     });
     saveTeacherCtx_();      // จำบทไว้ให้หน้าแรกใช้เป็นบริบทของปุ่มลัด
+    fillQuickChapters_();   // ดรอปดาวน์บทบนหน้าแรกต้องตรงกับปุ่มที่เพิ่งกด
   }
 
   // โหลดจำนวนบทเรียนจริงของวิชา+ชั้นที่เลือกอยู่ในแท็บสแกน แล้ววาดปุ่มใหม่ (บทเรียนอาจไม่เท่ากันในแต่ละวิชา/ชั้น)
@@ -2743,6 +2777,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     if (b.overview) renderTeacherOverview_(b.overview);
     if (b.stats) renderTeacherStats_(b.stats);
     if (b.term) renderTermChip_(b.term);
+    fillQuickCtx_();          // ต้องหลัง populateSelects() เพราะอ่านบริบทจากช่องในแท็บสแกน
     renderBackupWarn_(b.backup);
     paintTodayLine_('tTodayLine', null);
     // วันนี้เป็นวันหยุดหรือวันเรียนพิเศษไหม — ยิงแยกแบบไม่บล็อก
@@ -2922,6 +2957,59 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   }
 
   // ปุ่มลัด 4 ปุ่มบนหน้าแรกครู — ใช้บริบทที่จำไว้ เปิดกล้องได้เลยไม่ต้องเลือกอะไรก่อน
+  // ─── แถบเลือกบริบทบนหน้าแรกครู ──────────────────────────────
+  // ⚠️ teacherCtx_() อ่านจากช่องในแท็บสแกน (activeSubjSelect / activeClassSelect /
+  //    activeChapterInput) เป็นหลัก ดรอปดาวน์ชุดนี้จึงต้อง "เขียนกลับ" ไปที่ช่องพวกนั้น
+  //    ไม่ใช่เก็บค่าไว้เอง ไม่งั้นเลือกแล้วปุ่มลัดจะยังเปิดบทเดิม
+  //    (มีแหล่งความจริงเดียว = เลือกที่ไหนก็ได้ผลเหมือนกัน)
+  function fillQuickCtx_() {
+    if (!metaData || !metaData.classes || !metaData.subjects) return;
+    const c = teacherCtx_();
+    const clsEl = document.getElementById('qcCls');
+    const subEl = document.getElementById('qcSubj');
+    if (!clsEl || !subEl) return;
+
+    clsEl.innerHTML = metaData.classes.map(x =>
+      `<option value="${x.code}"${x.code === c.cls ? ' selected' : ''}>${x.label}</option>`).join('');
+    subEl.innerHTML = metaData.subjects.map(x =>
+      `<option value="${x.code}"${x.code === c.subject ? ' selected' : ''}>${x.label}</option>`).join('');
+    fillQuickChapters_();
+  }
+
+  // จำนวนบทต่างกันตามคู่ วิชา×ชั้น — metaData.chapterCounts มีให้อยู่แล้ว ไม่ต้องยิงคำขอ
+  function fillQuickChapters_() {
+    const chEl = document.getElementById('qcCh');
+    if (!chEl) return;
+    const c = teacherCtx_();
+    const n = (metaData.chapterCounts && metaData.chapterCounts[c.subject + '_' + c.cls]) || 10;
+    let cur = c.chapter;
+    if (cur > n) cur = n;            // เปลี่ยนห้องแล้วบทเดิมเกินจำนวนที่ห้องนั้นมี
+    let html = '';
+    for (let i = 1; i <= n; i++) html += `<option value="${i}"${i === cur ? ' selected' : ''}>บทที่ ${i}</option>`;
+    chEl.innerHTML = html;
+    setHiddenChapter_(cur);
+  }
+
+  function setHiddenChapter_(v) {
+    const hid = document.getElementById('activeChapterInput');
+    if (hid) hid.value = String(v);
+  }
+
+  function onQuickCtxChange_(what) {
+    const clsEl = document.getElementById('qcCls');
+    const subEl = document.getElementById('qcSubj');
+    const chEl  = document.getElementById('qcCh');
+    // เขียนกลับไปที่ช่องในแท็บสแกน ซึ่งเป็นแหล่งความจริง
+    const mirror = (id, val) => { const el = document.getElementById(id); if (el && val != null) el.value = val; };
+    mirror('activeClassSelect', clsEl && clsEl.value);
+    mirror('activeSubjSelect',  subEl && subEl.value);
+    if (what === 'ch') setHiddenChapter_(chEl.value);
+    // เปลี่ยนวิชา/ชั้น → จำนวนบทอาจไม่เท่าเดิม ต้องสร้างรายการบทใหม่
+    if (what !== 'ch') fillQuickChapters_();
+    saveTeacherCtx_();
+    if (typeof refreshChapterButtons_ === 'function') refreshChapterButtons_();
+  }
+
   function quickMode_(mode) {
     const c = teacherCtx_();
     if (!c.subject || !c.cls) { goTeacherTab_('scan'); return; }
