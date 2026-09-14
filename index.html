@@ -3524,7 +3524,87 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           '<i class="fa-solid fa-flag-checkered"></i> ขั้นตอนปลายเทอม — ทำครบ 5 ข้อรวดเดียว</button>' +
       '</div>';
 
-    document.getElementById('adminBody').innerHTML = backupCard + sizeCard + perfCard + chapterCard;
+    // ปิดบัญชีแต้มของห้องที่สอนจบแล้ว — แยกจากสวิตช์โดยตั้งใจ
+    // สวิตช์กดกลับได้ แต่การล้างแต้มกดกลับไม่ได้ ถ้าผูกรวมกัน ปิด-เปิด-ปิด จะล้างซ้ำ
+    const settleCard =
+      '<div class="sc-sec" style="margin-top:20px;"><span class="t">ปิดบัญชีแต้มของห้อง</span></div>' +
+      '<div class="card card-pad">' +
+        '<div style="font-size:0.78rem; color:var(--ink-2); line-height:1.65;">' +
+          'สำหรับห้องที่<b style="color:var(--ink)">สอนจบและให้นักเรียนแลกแต้มครบแล้ว</b> — ' +
+          'แต้มที่เหลือค้างจะถูกล้างเป็นศูนย์<br>' +
+          '<b style="color:var(--mint)">ไม่ลบประวัติสักแถว</b> — ระบบเพิ่มรายการหักลบให้ยอดเหลือศูนย์ ' +
+          'ประวัติเดิมยังอ่านย้อนได้ครบ และลบรายการที่เพิ่งเพิ่มแถวเดียวก็กลับมาเหมือนเดิม<br>' +
+          '<b style="color:var(--rose)">ล้างได้ทีละชั้นเท่านั้น</b> — ยอดแต้มเป็นกระปุกเดียวต่อคนต่อเทอม ' +
+          'ไม่ได้แยกวิชา จึงแยกล้างรายวิชาไม่ได้' +
+        '</div>' +
+        '<div style="display:flex; gap:8px; margin-top:12px;">' +
+          '<select id="settleCls" class="field" style="flex:1; font-size:0.82rem; padding:9px 11px;">' +
+            (metaData.classes || []).map(c => '<option value="' + c.code + '">' + c.label + '</option>').join('') +
+          '</select>' +
+          '<button class="btn btn-ghost btn-sm" onclick="previewSettlePoints_()">' +
+            '<i class="fa-solid fa-magnifying-glass"></i> ดูก่อน</button>' +
+        '</div>' +
+        '<div id="settleResult" style="margin-top:10px;"></div>' +
+      '</div>';
+
+    document.getElementById('adminBody').innerHTML = backupCard + sizeCard + perfCard + chapterCard + settleCard;
+  }
+
+  // ─── ปิดบัญชีแต้มของห้อง ────────────────────────────────────
+  // 2 จังหวะเสมอ: ดูก่อน (อ่านอย่างเดียว) → ยืนยันด้วยคำเฉพาะ ถึงจะเขียน
+  function previewSettlePoints_() {
+    const cls = document.getElementById('settleCls').value;
+    const box = document.getElementById('settleResult');
+    box.innerHTML = '<div class="u-empty-sm">กำลังตรวจ... (ยังไม่เขียนอะไร)</div>';
+    google.script.run.withSuccessHandler(r => {
+      if (!r || !r.ok) { box.innerHTML = '<div class="u-empty-sm">อ่านข้อมูลไม่ได้</div>'; return; }
+      if (!r.countWithPoints) {
+        box.innerHTML = '<div class="u-empty-sm" style="color:var(--mint);">' +
+          '<i class="fa-solid fa-circle-check"></i> ' + r.message + '</div>';
+        return;
+      }
+      const rows = r.students.filter(s => s.balance > 0)
+        .sort((a, b) => b.balance - a.balance)
+        .map(s => '<div style="display:flex; justify-content:space-between; gap:8px; padding:5px 0;' +
+                  ' border-bottom:1px solid var(--line-soft); font-size:0.8rem;">' +
+                  '<span class="u-grow" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"' +
+                  ' title="' + s.name + '">' + shortName_(s.name) + '</span>' +
+                  '<b style="color:var(--gold); white-space:nowrap;">' + s.balance + ' แต้ม</b></div>').join('');
+      box.innerHTML =
+        '<div style="background:var(--gold-dim); border-radius:10px; padding:10px 12px; margin-bottom:10px;">' +
+          '<b style="color:var(--gold);">' + r.message + '</b>' +
+          '<div style="font-size:0.76rem; color:var(--ink-2); margin-top:3px;">ปี ' + r.year + ' เทอม ' + r.term +
+          ' · ยังไม่ได้เขียนอะไร</div>' +
+        '</div>' + rows +
+        '<button class="btn btn-danger-soft btn-block btn-sm" style="margin-top:12px;"' +
+        ' onclick="confirmSettlePoints_(\'' + r.cls + '\', ' + r.countWithPoints + ', ' + r.totalPoints + ')">' +
+        '<i class="fa-solid fa-eraser"></i> ล้างแต้มคงเหลือของชั้นนี้</button>';
+    }).withFailureHandler(err => {
+      console.error('previewClearPoints failed:', err);
+      box.innerHTML = '<div class="u-empty-sm">เชื่อมต่อไม่ได้ ลองใหม่อีกครั้ง</div>';
+    }).previewClearPoints(cls);
+  }
+
+  function confirmSettlePoints_(cls, count, total) {
+    Swal.fire({
+      title: 'ล้างแต้มคงเหลือ?',
+      html: 'ชั้น <b>' + cls + '</b> · นักเรียน <b>' + count + '</b> คน · รวม <b>' + Math.round(total) + '</b> แต้ม<br><br>' +
+            '<span style="font-size:0.82rem; color:var(--ink-2);">ยอดจะกลายเป็นศูนย์ทุกคน<br>' +
+            'ประวัติเดิมไม่ถูกลบ — ย้อนกลับได้ด้วยการลบรายการที่เพิ่งเพิ่ม</span>',
+      icon: 'warning', showCancelButton: true,
+      confirmButtonText: 'ล้างเลย', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#D13B45'
+    }).then(res => {
+      if (!res.isConfirmed) return;
+      Swal.fire({ title: 'กำลังล้าง...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      google.script.run.withSuccessHandler(r => {
+        Swal.close();
+        if (r && r.success) { Toast(r.message, 'success'); previewSettlePoints_(); }
+        else Swal.fire('ไม่สำเร็จ', (r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+      }).withFailureHandler(err => {
+        console.error('clearPointsForClass failed:', err);
+        Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่', 'error');
+      }).clearPointsForClass(cls, 'ล้างแต้มคงเหลือ');
+    });
   }
 
   function openChapterExpand_() {
@@ -5347,21 +5427,25 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
             ${u.count === 0 ? 'ยังไม่เคยถูกใช้เลย' : `ใช้ไปแล้ว ${u.count} ครั้ง${last ? ' · ล่าสุด ' + last : ''}`}
           </div>`;
         }
-        // สวิตช์ที่กำหนดขอบเขตได้ จะมีแถวเลือกชั้น/วิชาต่อท้าย
-        // ไม่ติ๊กอะไรเลย = ใช้ทุกชั้นทุกวิชา (ค่าปกติ) ไม่ใช่ "ไม่ใช้เลย"
-        const sc = (metaData && metaData.featureScopes && metaData.featureScopes[f.key]) || { classes: [], subjects: [] };
-        const chip = (kind, code, label) => `
-          <label class="scope-chip${(sc[kind] || []).indexOf(code) >= 0 ? ' on' : ''}">
-            <input type="checkbox" data-scope="${f.key}" data-kind="${kind}" value="${code}"
-                   ${(sc[kind] || []).indexOf(code) >= 0 ? 'checked' : ''}
-                   onchange="this.closest('label').classList.toggle('on', this.checked)">
-            ${label}
-          </label>`;
+        // สวิตช์ที่กำหนดขอบเขตได้ จะมีแถวเลือกชั้น (และวิชา ถ้าจำกัดรายวิชาได้)
+        // ไม่ติ๊กอะไรเลย = ใช้ทุกชั้นทุกวิชา (ค่าปกติ) ไม่ใช่ "ไม่ใช้เลย" — ป้ายกำกับบอกไว้ชัด
+        // เช็คอิน/วิ่ง/คูปอง/คู่หู จำกัดรายวิชาไม่ได้ เพราะไม่ได้ผูกกับวิชาไหนเลย จึงไม่โชว์แถววิชา
+        const sc = f.scope || { classes: [], subjects: [] };
+        const chip = (kind, code, label) => {
+          const on = (sc[kind] || []).indexOf(code) >= 0;
+          return `<label class="scope-chip${on ? ' on' : ''}">
+            <input type="checkbox" data-scope="${f.key}" data-kind="${kind}" value="${code}" ${on ? 'checked' : ''}
+                   onchange="this.closest('label').classList.toggle('on', this.checked)">${label}</label>`;
+        };
         const scopeHtml = !f.scoped ? '' : `
           <div class="feat-scope">
-            <div class="u-label-sm" style="margin:0 0 5px;">ใช้เฉพาะ — ไม่เลือก = ทุกชั้นทุกวิชา</div>
+            <div class="u-label-sm" style="margin:0 0 5px;">
+              ใช้เฉพาะ — ไม่เลือกเลย = ทุกชั้น${f.scopeBySubject ? 'ทุกวิชา' : ''}
+            </div>
             <div class="scope-row">${(metaData.classes || []).map(c => chip('classes', c.code, c.label)).join('')}</div>
-            <div class="scope-row">${(metaData.subjects || []).map(x => chip('subjects', x.code, x.label)).join('')}</div>
+            ${f.scopeBySubject
+              ? `<div class="scope-row">${(metaData.subjects || []).map(x => chip('subjects', x.code, x.label)).join('')}</div>`
+              : `<div class="u-label-sm" style="margin:2px 0 0; opacity:.75;">จำกัดรายวิชาไม่ได้ — เป็นกิจกรรมทั้งโรงเรียน</div>`}
           </div>`;
 
         return `<div class="feat-row">
