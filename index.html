@@ -1235,6 +1235,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
      ใช้ชิปติ๊กได้ แทน select หลายชั้น เพราะจำนวนชั้น/วิชามีไม่กี่ตัว
      เห็นพร้อมกันหมดแล้วเข้าใจเร็วกว่าต้องกดเปิดดูทีละอัน */
   .feat-scope { margin-top:9px; padding-top:9px; border-top:1px dashed var(--line); }
+  .feat-freeze { margin-top:7px; font-size:.72rem; font-weight:600; color:var(--gold);
+                 background:var(--gold-dim); border-radius:8px; padding:5px 9px; display:inline-block; }
   .scope-row { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
   .scope-row:last-child { margin-bottom:0; }
   .scope-chip {
@@ -3029,6 +3031,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   function quickMode_(mode) {
     const c = teacherCtx_();
     if (!c.subject || !c.cls) { goTeacherTab_('scan'); return; }
+    // ให้/หักแต้มตอนพักรับแต้มพิเศษ → บอกว่าปิดชั่วคราว ปุ่มยังอยู่ ไม่ได้ซ่อน
+    if ((mode === 'award' || mode === 'deduct') && !guardFreeze_('FEAT_BONUS_EARN', c.cls, null)) return;
     saveTeacherCtx_();
     triggerModeSetup(mode);
   }
@@ -3547,7 +3551,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         '<div id="settleResult" style="margin-top:10px;"></div>' +
       '</div>';
 
-    document.getElementById('adminBody').innerHTML = backupCard + sizeCard + perfCard + chapterCard + settleCard;
+    // ⚠️ settleCard (ล้างแต้มคงเหลือ) ไม่แสดงแล้ว — สร้างจากความเข้าใจผิด เจ้าของไม่ได้ต้องการล้างแต้ม
+    //    แค่ต้องการหยุดการแลก ซึ่งสวิตช์ "แลกแต้มเป็นคะแนนเก็บ" ทำได้แล้วโดยไม่ต้องแตะยอดใคร
+    //    เก็บโค้ดไว้ตามนโยบายสำรองข้อมูล (หลังบ้าน previewClearPoints/clearPointsForClass ยังอยู่)
+    document.getElementById('adminBody').innerHTML = backupCard + sizeCard + perfCard + chapterCard;
   }
 
   // ─── ปิดบัญชีแต้มของห้อง ────────────────────────────────────
@@ -3918,6 +3925,20 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         </button>
       </div>
 
+      <div class="card card-pad" style="margin-bottom:14px; border:1px solid var(--gold);">
+        <div class="u-head"><i class="fa-solid fa-pause"></i> ก่อนสอบปลายภาค (ทุกเทอม)</div>
+        <div style="font-size:.82rem; color:var(--ink-2); line-height:1.6;">
+          ให้นักเรียนแลกแต้มครั้งสุดท้าย → ปุ่มเฟือง → ฟีเจอร์ → <b style="color:var(--ink);">ปิด "แลกแต้มเป็นคะแนนเก็บ"</b><br>
+          คะแนนเก็บ 70 จะนิ่งทันที เด็กกดแลกจะเห็นว่าปิดชั่วคราว (เมนูไม่หาย)<br>
+          ถ้าไม่อยากให้แต้มงอกเพิ่มด้วย ปิด "รับแต้มพิเศษ" อีกตัว — เช็คอินยังได้ แต่ไม่ได้แต้ม<br>
+          แล้วค่อยกรอกปลายภาค 30 · <b style="color:var(--ink);">เปิดกลับตอนขึ้นเทอมใหม่</b>
+        </div>
+        <button class="btn btn-ghost btn-block btn-sm" style="margin-top:10px;"
+                onclick="closeFullpageView_('yearGuideModal'); openAdminTabDirect_('features')">
+          <i class="fa-solid fa-toggle-on"></i> ไปที่หน้าสวิตช์
+        </button>
+      </div>
+
       <div class="card card-pad" style="margin-bottom:14px;">
         <div class="u-head"><i class="fa-solid fa-1"></i> จบเทอม 1 → ขึ้นเทอม 2</div>
         <div style="font-size:.82rem; color:var(--ink-2); margin-bottom:8px;">
@@ -4142,11 +4163,45 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     return f[key] === 1;
   }
 
+  // ─── สวิตช์พักชั่วคราว (รับแต้มพิเศษ / แลกแต้ม) ───────────────────
+  // เมนูไม่หาย กดแล้วบอกตรงๆ ว่าปิดชั่วคราว — เด็กจะได้ไม่คิดว่าระบบเสีย แล้วไม่มาถามครูซ้ำ
+  // ตรวจที่หน้าเว็บก่อนเพื่อตอบทันที แต่หลังบ้านก็กันซ้ำอีกชั้นเสมอ (ข้อความตรงกัน)
+  // คืน true = ผ่าน ทำต่อได้ · false = ปิดอยู่ แสดงข้อความแล้ว ให้หยุด
+  const FREEZE_MSG = {
+    FEAT_BONUS_REDEEM: { title: 'การแลกแต้มปิดการใช้งานชั่วคราว', text: 'คะแนนเก็บสรุปแล้ว รอสอบปลายภาค' },
+    FEAT_BONUS_EARN:   { title: 'ระบบให้แต้มพิเศษปิดการใช้งานชั่วคราว', text: 'ตอนนี้ยังรับหรือปรับแต้มพิเศษไม่ได้' }
+  };
+  function guardFreeze_(key, cls, subject) {
+    if (featOnFor_(key, cls, subject)) return true;
+    const m = FREEZE_MSG[key] || { title: 'ปิดการใช้งานชั่วคราว', text: '' };
+    Swal.fire({ icon: 'info', title: m.title, text: m.text, confirmButtonText: 'เข้าใจแล้ว' });
+    return false;
+  }
+  // ผลจากหลังบ้านที่บอกว่าปิดอยู่ (featureOff) → แสดงแบบเดียวกับที่หน้าเว็บตรวจเอง
+  function showFeatureOffResult_(res) {
+    if (!res || !res.featureOff) return false;
+    const m = FREEZE_MSG[res.feature];
+    Swal.fire({ icon: 'info', title: m ? m.title : 'ปิดการใช้งานชั่วคราว',
+                text: m ? m.text : (res.message || ''), confirmButtonText: 'เข้าใจแล้ว' });
+    return true;
+  }
+
   // สวิตช์บางตัวเปิด/ปิดแยกรายชั้นหรือรายวิชาได้ — ต้องเปิด "และ" อยู่ในขอบเขต
   // ลิสต์ว่าง = ไม่จำกัด (ไม่ใช่ว่าไม่มีสิทธิ์อะไรเลย) ค่าปกติจึงเท่ากับ featOn_ ทุกประการ
+  // ⚠️ ต้องตรงกับ cFeatureOnFor_ ฝั่งหลังบ้านทุกกรณี ไม่งั้นหน้าเว็บบอกว่าแลกได้ แต่หลังบ้านปฏิเสธ
+  const FREEZE_KEYS = ['FEAT_BONUS_EARN', 'FEAT_BONUS_REDEEM'];
   function featOnFor_(key, cls, subject) {
-    if (!featOn_(key)) return false;
     const sc = metaData && metaData.featureScopes && metaData.featureScopes[key];
+    // สวิตช์พักชั่วคราว: ชิป = "พักเฉพาะที่เลือก" (เปิด = ใช้ได้หมด · ปิดไม่เลือก = พักหมด · ปิดเลือก = พักเฉพาะที่เลือก)
+    if (FREEZE_KEYS.indexOf(key) >= 0) {
+      if (featOn_(key)) return true;
+      if (!sc || (!(sc.classes || []).length && !(sc.subjects || []).length)) return false;
+      const clsHit = !(sc.classes || []).length  || (cls     && sc.classes.indexOf(cls) >= 0);
+      const subHit = !(sc.subjects || []).length || (subject && sc.subjects.indexOf(subject) >= 0);
+      return !(clsHit && subHit);
+    }
+    // สวิตช์ทั่วไป: ชิป = "ใช้เฉพาะที่เลือก"
+    if (!featOn_(key)) return false;
     if (!sc) return true;
     if (sc.classes  && sc.classes.length  && cls     && sc.classes.indexOf(cls) < 0) return false;
     if (sc.subjects && sc.subjects.length && subject && sc.subjects.indexOf(subject) < 0) return false;
@@ -4181,16 +4236,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       }
     }
 
-    // แต้มพิเศษ — เปิด/ปิดแยกรายชั้นหรือรายวิชาได้
-    // นักเรียน: ดูจากชั้นของตัวเอง · ครู: ดูจากชั้น+วิชาที่กำลังเลือกอยู่บนหน้าแรก
-    // ⚠️ ซ่อนเฉพาะ "ให้/หัก/แลก" — ยอดแต้มกับประวัติยังอยู่ เพราะแต้มจากเช็คอิน/วิ่ง/คูปอง
-    //    ยังได้ตามปกติ ถ้าซ่อนยอดไปด้วยนักเรียนจะงงว่าแต้มที่ได้หายไปไหน
-    const myCls = (studentDashboardData && studentDashboardData.cls) || null;
-    showIf_('actExchange', featOnFor_('FEAT_POINTS_BONUS', myCls, null));
-    const tc = (typeof teacherCtx_ === 'function') ? teacherCtx_() : {};
-    const bonusHere = featOnFor_('FEAT_POINTS_BONUS', tc.cls, tc.subject);
-    showIf_('tQuickAward',  bonusHere);
-    showIf_('tQuickDeduct', bonusHere);
+    // ⚠️ สวิตช์ "รับแต้มพิเศษ" กับ "แลกแต้ม" ห้ามซ่อนเมนู (เจ้าของสั่ง 14 ก.ย. 2569)
+    // สองตัวนี้ใช้พักชั่วคราวตอนรอสอบปลายภาค ไม่ใช่เลิกใช้ — เมนูต้องอยู่ครบ
+    // กดแล้วขึ้นข้อความว่าปิดชั่วคราวแทน (ดู guardFreeze_) จึงไม่มี showIf_ ของสองตัวนี้ตรงนี้
 
     // ฝั่งครู
     showIf_('modeCard-att', featOn_('FEAT_ATT_SCAN'));
@@ -4205,8 +4253,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       .concat(comp   ? [] : ['COMPANION_HATCH', 'COMPANION_LEVELUP'])
       .concat(featOn_('FEAT_GPS')    ? [] : ['GPS_CHECKIN', 'STREAK_BONUS'])
       .concat(featOn_('FEAT_COUPON') ? [] : ['COUPON'])
-      .concat(featOn_('FEAT_ATT_SCAN') ? [] : ['SCAN_ATTEND'])
-      .concat(featOn_('FEAT_POINTS_BONUS') ? [] : ['MANUAL_AWARD', 'MANUAL_DEDUCT', 'BUY_CHAPTER_SCORE']);
+      .concat(featOn_('FEAT_ATT_SCAN') ? [] : ['SCAN_ATTEND']);
+    // ไม่ซ่อนประเภทของสวิตช์พักชั่วคราวในตัวกรอง — ประวัติก่อนพักยังต้องค้นดูได้ตามปกติ
     const sel = document.getElementById('histType');
     if (sel) Array.from(sel.options).forEach(o => { o.hidden = hideTypes.indexOf(o.value) >= 0; });
   }
@@ -5437,10 +5485,15 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
             <input type="checkbox" data-scope="${f.key}" data-kind="${kind}" value="${code}" ${on ? 'checked' : ''}
                    onchange="this.closest('label').classList.toggle('on', this.checked)">${label}</label>`;
         };
+        // สวิตช์พักชั่วคราวต้องบอกให้รู้ว่าปิดแล้วเมนูไม่หาย ต่างจากสวิตช์ด้านบนที่ปิดแล้วซ่อน
+        const freezeHtml = !f.freeze ? '' : `
+          <div class="feat-freeze"><i class="fa-solid fa-pause"></i> สวิตช์พักชั่วคราว — ปิดแล้วเมนูยังอยู่ นักเรียนกดแล้วจะเห็นว่าปิดชั่วคราว</div>`;
         const scopeHtml = !f.scoped ? '' : `
           <div class="feat-scope">
             <div class="u-label-sm" style="margin:0 0 5px;">
-              ใช้เฉพาะ — ไม่เลือกเลย = ทุกชั้น${f.scopeBySubject ? 'ทุกวิชา' : ''}
+              ${f.freeze
+                ? `ปิดสวิตช์แล้ว พักเฉพาะที่เลือก — ไม่เลือกเลย = พักทุกชั้น${f.scopeBySubject ? 'ทุกวิชา' : ''}`
+                : `ใช้เฉพาะ — ไม่เลือกเลย = ทุกชั้น${f.scopeBySubject ? 'ทุกวิชา' : ''}`}
             </div>
             <div class="scope-row">${(metaData.classes || []).map(c => chip('classes', c.code, c.label)).join('')}</div>
             ${f.scopeBySubject
@@ -5453,6 +5506,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
             <div class="feat-name">${f.label}</div>
             <div class="feat-desc">${f.desc}</div>
             ${usageHtml}
+            ${freezeHtml}
             ${scopeHtml}
           </div>
           <label class="switch">
@@ -6300,7 +6354,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       pos => {
         google.script.run.withSuccessHandler(r => {
           if (r.success) {
-            Swal.fire('สำเร็จ!', r.message, 'success');
+            // พักรับแต้มพิเศษอยู่ → เช็คอินได้จริง แต่ต้องบอกให้ชัดว่าไม่ได้แต้ม ไม่งั้นเด็กจะรอแต้มที่ไม่มา
+            if (r.bonusOff) Swal.fire({ icon: 'success', title: 'เช็คอินสำเร็จ', html: r.message.replace(' · ', '<br><br>'), confirmButtonText: 'เข้าใจแล้ว' });
+            else Swal.fire('สำเร็จ!', r.message, 'success');
             refreshPointsBalance();
             refreshStudentDashboardData();   // ไม่งั้นแถว "ยังไม่เช็คอินวันนี้" ยังค้างอยู่บนหน้าแรก
           }
@@ -6325,7 +6381,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         Swal.fire({ title: 'ตรวจสอบ...', didOpen: () => Swal.showLoading() });
         google.script.run.withSuccessHandler(res => {
           if (res.success) { Swal.fire('ยินดีด้วย!', res.message, 'success'); refreshPointsBalance(); }
-          else Swal.fire('เสียใจด้วย', res.message, 'error');
+          else if (!showFeatureOffResult_(res)) Swal.fire('เสียใจด้วย', res.message, 'error');
         }).withFailureHandler(err => {
           console.error('submitCouponRedeem failed:', err);
           Swal.fire('เชื่อมต่อไม่สำเร็จ', 'แลกคูปองไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
@@ -6349,6 +6405,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // เกณฑ์การแลกต่างกันไปตามเทอม จึงต้องถามเซิร์ฟเวอร์ก่อนว่าเทอมนี้ใช้เกณฑ์ไหน
   // เกณฑ์เดิม = เติมรวมทั้งบทจนเต็ม 20 · เกณฑ์ใหม่ = ต้องเลือกว่าจะเติมช่อง "สมุด" หรือ "คะแนนสอบ" ซึ่งมีเพดานคนละตัว
   function openScoreExchangeModal() {
+    // พักการแลกทั้งชั้นอยู่ → บอกเลยไม่ต้องเปิดหน้าต่าง · ถ้าพักเฉพาะบางวิชา หลังบ้านจะบอกตอนกดแลกวิชานั้น
+    const myCls = (studentDashboardData && studentDashboardData.cls) || null;
+    if (!guardFreeze_('FEAT_BONUS_REDEEM', myCls, null)) return;
     Swal.fire({ title: 'กำลังตรวจเกณฑ์ของเทอมนี้...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     google.script.run.withSuccessHandler(rule => { Swal.close(); showScoreExchangeDialog_(rule); })
       .withFailureHandler(err => {
@@ -6409,7 +6468,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         Swal.fire({ title: 'ตรวจสอบเพดานคะแนน...', didOpen: () => Swal.showLoading() });
         google.script.run.withSuccessHandler(res => {
           if (res.success) { Swal.fire('สำเร็จ!', res.message, 'success').then(() => { refreshPointsBalance(); refreshStudentDashboardData(); }); }
-          else Swal.fire('แลกไม่สำเร็จ', res.message, 'warning');
+          else if (!showFeatureOffResult_(res)) Swal.fire('แลกไม่สำเร็จ', res.message, 'warning');
         }).withFailureHandler(err => {
           console.error('redeemPointsForChapter failed:', err);
           Swal.fire('เชื่อมต่อไม่สำเร็จ', 'แลกคะแนนไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
@@ -6445,7 +6504,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           Swal.fire({ title: 'กำลังแลก...', didOpen: () => Swal.showLoading() });
           google.script.run.withSuccessHandler(res => {
             if (res.success) { Swal.fire('สำเร็จ!', res.message, 'success').then(() => { refreshPointsBalance(); refreshRunSummary_(); }); }
-            else Swal.fire('แลกไม่สำเร็จ', res.message, 'warning');
+            else if (!showFeatureOffResult_(res)) Swal.fire('แลกไม่สำเร็จ', res.message, 'warning');
           }).withFailureHandler(err => {
             console.error('exchangeRunPoints failed:', err);
             Swal.fire('เชื่อมต่อไม่สำเร็จ', 'แลกแต้มวิ่งไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
