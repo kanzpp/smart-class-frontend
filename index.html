@@ -1718,33 +1718,69 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
     }
 
+    // รหัสผ่านครู สำหรับคำสั่งที่กระทบข้อมูลของคนทั้งชั้น (ล้างคะแนน · เลื่อนชั้น · ขยายบท ฯลฯ)
+    // เก็บไว้ในหน่วยความจำของแท็บนี้เท่านั้น — ไม่เขียนลง localStorage เพราะเครื่องที่โรงเรียนใช้ร่วมกัน
+    // ปิดแท็บ/โหลดหน้าใหม่/ออกจากระบบ = หายทันที ครูกรอกครั้งเดียวต่อการเข้าใช้หนึ่งรอบ
+    let ADMIN_PASS = '';
+
+    // หลังบ้านเป็นฝ่ายบอกเองว่าคำสั่งไหนต้องยืนยันตัวตน หน้าเว็บจึงไม่ต้องรู้รายชื่อ
+    // (ถ้าเก็บรายชื่อไว้สองที่ วันหนึ่งจะไม่ตรงกัน แล้วครูจะเจอคำสั่งที่กดไม่ผ่านโดยไม่มีกล่องให้กรอก)
+    function askAdminPass_(reason) {
+      return new Promise((resolve) => {
+        if (typeof Swal === 'undefined') { resolve(String(prompt(reason || 'รหัสผ่านครู') || '').trim()); return; }
+        Swal.fire({
+          icon: 'warning',
+          title: 'ยืนยันว่าเป็นครู',
+          text: reason || 'คำสั่งนี้ต้องใช้รหัสผ่านครู',
+          input: 'password',
+          inputPlaceholder: 'รหัสผ่านครู',
+          inputAttributes: { autocomplete: 'off' },
+          showCancelButton: true,
+          confirmButtonText: 'ยืนยัน',
+          cancelButtonText: 'ยกเลิก',
+          footer: 'ลืมรหัส? เปิดชีต Teacher_Config ดูได้'
+        }).then(r => resolve(r.isConfirmed ? String(r.value || '').trim() : ''));
+      });
+    }
+
     function executeGasCall(funcName, args, onSuccess, onFail) {
       const reqId = newRequestId_();
       const MAX_TRY = 3;
 
-      const attempt = (tryNo) => {
+      const attempt = (tryNo, askedPass) => {
         fetch(GAS_API_URL, {
           method: 'POST',
-          body: JSON.stringify({ func: funcName, args: args, reqId: reqId })
+          body: JSON.stringify({ func: funcName, args: args, reqId: reqId, adminPass: ADMIN_PASS || undefined })
         })
           .then(r => r.text())
           .then(txt => {
             // คำตอบว่างเปล่า = งานอาจเสร็จแล้วแต่คำตอบหายระหว่างทาง ให้ลองใหม่ด้วยรหัสเดิม
             if (!txt || !txt.trim()) throw new Error('คำตอบว่างเปล่า');
             const d = JSON.parse(txt);
-            if (d.status === 'success') { if (onSuccess) onSuccess(d.response); }
-            else { if (onFail) onFail(d.message); else console.error('GAS Error:', d.message); }
+            if (d.status === 'success') { if (onSuccess) onSuccess(d.response); return; }
+            // หลังบ้านขอรหัสผ่านครูก่อนลงมือ — ถามแล้วยิงใหม่ให้เอง ครูไม่ต้องกดคำสั่งซ้ำ
+            // ตรงนี้ยังไม่มีอะไรถูกเขียน คำสั่งถูกปฏิเสธตั้งแต่หน้าประตู
+            if (d.needAdminPass && !askedPass) {
+              askAdminPass_(d.message).then(pass => {
+                if (!pass) { if (onFail) onFail('ยกเลิกแล้ว ยังไม่ได้ทำอะไรกับข้อมูล'); return; }
+                ADMIN_PASS = pass;
+                attempt(1, true);
+              });
+              return;
+            }
+            if (d.needAdminPass) ADMIN_PASS = '';   // รหัสไม่ถูก อย่าจำไว้ ไม่งั้นครั้งหน้าจะไม่ถามอีก
+            if (onFail) onFail(d.message); else console.error('GAS Error:', d.message);
           })
           .catch(err => {
             if (tryNo < MAX_TRY) {
               console.warn('ลองใหม่ครั้งที่ ' + (tryNo + 1) + ' สำหรับ ' + funcName + ':', err.message || err);
-              setTimeout(() => attempt(tryNo + 1), 1200 * tryNo);   // ถอยห่างขึ้นเรื่อยๆ
+              setTimeout(() => attempt(tryNo + 1, askedPass), 1200 * tryNo);   // ถอยห่างขึ้นเรื่อยๆ
               return;
             }
             if (onFail) onFail(String(err)); else console.error('GAS Network Error:', funcName, err);
           });
       };
-      attempt(1);
+      attempt(1, false);
     }
   </script>
 </head>
@@ -2503,6 +2539,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
   // ออกจากระบบ: ล้าง session แล้วโหลดหน้าใหม่
   function logout() {
+    ADMIN_PASS = '';   // รหัสผ่านครูอยู่ในหน่วยความจำ ต้องไม่ค้างไว้ให้คนที่ใช้เครื่องต่อ
     localStorage.removeItem('smartClassSession');
     // ต้องลบข้อมูลที่จำไว้ด้วย ไม่งั้นคนที่ใช้เครื่องต่อจะเห็นข้อมูลของคนก่อนหน้าตอนเปิดแอป
     try {
