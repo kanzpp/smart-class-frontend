@@ -3565,6 +3565,20 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           '<i class="fa-solid fa-flag-checkered"></i> ขั้นตอนปลายเทอม — ทำครบ 5 ข้อรวดเดียว</button>' +
       '</div>';
 
+    // คำสั่งที่ล้าง/เขียนทับข้อมูลทั้งชั้นจะถามรหัสผ่านครูก่อนเสมอ
+    // ปุ่มนี้มีไว้ให้ลองล่วงหน้าโดยไม่ต้องเสี่ยงกดคำสั่งจริง — จะได้ไม่ไปติดตอนปลายเทอมซึ่งเป็นจังหวะที่รีบที่สุด
+    const guardCard =
+      '<div class="sc-sec" style="margin-top:20px;"><span class="t">การยืนยันตัวตน</span></div>' +
+      '<div class="card card-pad">' +
+        '<div style="font-size:0.78rem; color:var(--ink-2); line-height:1.65;">' +
+          'คำสั่งที่กระทบข้อมูลของคนทั้งชั้น (ล้างคะแนน · เลื่อนชั้น · ขยายบท · ย้ายประวัติ · ลบนักเรียน) ' +
+          'จะถามรหัสผ่านครูก่อนทำเสมอ กรอกครั้งเดียวต่อการเข้าใช้หนึ่งรอบ<br>' +
+          'ลืมรหัส? เปิดชีต <b style="color:var(--ink)">Teacher_Config</b> ดูได้เอง' +
+        '</div>' +
+        '<button class="btn btn-ghost btn-block btn-sm" style="margin-top:12px;" onclick="testAdminPass_()">' +
+          '<i class="fa-solid fa-shield-halved"></i> ลองยืนยันรหัสผ่านครู (ไม่แตะข้อมูล)</button>' +
+      '</div>';
+
     // ปิดบัญชีแต้มของห้องที่สอนจบแล้ว — แยกจากสวิตช์โดยตั้งใจ
     // สวิตช์กดกลับได้ แต่การล้างแต้มกดกลับไม่ได้ ถ้าผูกรวมกัน ปิด-เปิด-ปิด จะล้างซ้ำ
     const settleCard =
@@ -3591,7 +3605,17 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     // ⚠️ settleCard (ล้างแต้มคงเหลือ) ไม่แสดงแล้ว — สร้างจากความเข้าใจผิด เจ้าของไม่ได้ต้องการล้างแต้ม
     //    แค่ต้องการหยุดการแลก ซึ่งสวิตช์ "แลกแต้มเป็นคะแนนเก็บ" ทำได้แล้วโดยไม่ต้องแตะยอดใคร
     //    เก็บโค้ดไว้ตามนโยบายสำรองข้อมูล (หลังบ้าน previewClearPoints/clearPointsForClass ยังอยู่)
-    document.getElementById('adminBody').innerHTML = backupCard + sizeCard + perfCard + chapterCard;
+    document.getElementById('adminBody').innerHTML = backupCard + sizeCard + perfCard + chapterCard + guardCard;
+  }
+
+  // ลองยืนยันรหัสผ่านครูโดยไม่แตะข้อมูลเลย — `checkAdminPass` อยู่ในกลุ่มคำสั่งที่ต้องมีรหัส
+  // ถ้ารหัสผ่านด่าน ตัวฟังก์ชันก็แค่ตอบกลับว่าผ่าน ไม่ได้อ่านหรือเขียนอะไรทั้งนั้น
+  function testAdminPass_() {
+    ADMIN_PASS = '';   // ล้างของที่กรอกไว้ก่อนหน้า เพื่อให้ได้ลองกรอกจริงทุกครั้งที่กดปุ่มนี้
+    google.script.run
+      .withSuccessHandler(r => Swal.fire('รหัสผ่านถูกต้อง', (r && r.message) || 'ยืนยันตัวตนผ่านแล้ว', 'success'))
+      .withFailureHandler(err => Swal.fire('ยังยืนยันไม่ผ่าน', String(err || ''), 'info'))
+      .checkAdminPass();
   }
 
   // ─── ปิดบัญชีแต้มของห้อง ────────────────────────────────────
