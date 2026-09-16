@@ -49,9 +49,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Noto+Sans+Thai:wght@400;500;600;700&family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=Mitr:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="https://unpkg.com/html5-qrcode"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- ⚠️ ทุกตัวต้องปักเลขเวอร์ชันไว้เสมอ ห้ามเขียนแบบ "เอาตัวล่าสุด"
+       ตัวสแกน QR เคยเขียนไว้เป็น unpkg.com/html5-qrcode เฉยๆ = ดึงตัวล่าสุดมาทุกครั้งที่เปิดแอป
+       วันไหนเจ้าของไลบรารีออกรุ่นใหม่ที่เปลี่ยนวิธีใช้ เช้าวันนั้นครูจะสแกนไม่ได้ทั้งโรงเรียนโดยไม่มีอะไรเตือนล่วงหน้า
+       (html5-qrcode หยุดออกรุ่นใหม่ตั้งแต่ เม.ย. 2566 · 2.3.8 คือรุ่นล่าสุดที่มี) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://www.youtube.com/iframe_api"></script>
@@ -1677,6 +1681,28 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     bottom:calc(92px + env(safe-area-inset-bottom))!important;
   }
 
+  /* ════════════════════════════════════════════════════════════
+     ของใหม่ของเบราว์เซอร์ที่หยิบมาใช้ได้เลย (16 ก.ย. 2569)
+     ทุกข้อเป็นแบบ "รองรับก็ได้ ไม่รองรับก็ไม่พัง" เครื่องเก่าจะข้ามไปเองเงียบๆ
+     ════════════════════════════════════════════════════════════ */
+
+  /* สลับแท็บแบบเบลนด์ภาพ — เบราว์เซอร์ทำให้เอง เราแค่บอกความเร็ว
+     สั้นไว้ที่ .18 วิ เพราะครูสลับแท็บถี่มากระหว่างสอน ช้ากว่านี้จะรู้สึกหน่วง */
+  @media (prefers-reduced-motion: no-preference) {
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; }
+  }
+
+  /* เลื่อนจนสุดในหน้าต่างซ้อน แล้วพื้นหลังไม่เลื่อนตาม (เดิมเลื่อนทะลุไปหน้าข้างหลัง) */
+  .fullpage-view, .swal2-container { overscroll-behavior: contain; }
+
+  /* ตัดบรรทัดให้สมดุล ไม่ให้เหลือคำเดียวโดดมาบรรทัดสุดท้าย */
+  .sc-sec .t, .section-title, .sc-subhead .ttl { text-wrap: balance; }
+  .u-empty, .u-empty-sm, .pa-note, .feat-desc { text-wrap: pretty; }
+
+  /* รายการยาวๆ (ประวัติแต้ม · รายชื่อทั้งชั้น) ให้เบราว์เซอร์ข้ามการคำนวณส่วนที่ยังเลื่อนไม่ถึง
+     บอกความสูงคร่าวๆ ไว้ด้วย แถบเลื่อนจะได้ไม่กระตุกตอนเลื่อนผ่าน */
+  #historyContainer > *, #allStuBody > * { content-visibility: auto; contain-intrinsic-size: auto 72px; }
+
   </style>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -1756,7 +1782,11 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       const attempt = (tryNo, askedPass) => {
         fetch(GAS_API_URL, {
           method: 'POST',
-          body: JSON.stringify({ func: funcName, args: args, reqId: reqId, adminPass: ADMIN_PASS || undefined })
+          body: JSON.stringify({ func: funcName, args: args, reqId: reqId, adminPass: ADMIN_PASS || undefined }),
+          // ตัดรอที่ 45 วินาที — เน็ตโรงเรียนหลุดกลางทางแล้วคำขอค้างเงียบตลอดไป ผู้ใช้เห็นแค่วงหมุนไม่จบ
+          // 45 วิเผื่อไว้เยอะมากเมื่อเทียบกับคำขอที่ช้าที่สุดเท่าที่เคยวัดได้จริง (~20 วิ)
+          // ตัดแล้วเข้าทางลองใหม่อัตโนมัติที่มีอยู่ ซึ่งใช้ reqId เดิม หลังบ้านจึงไม่ทำงานซ้ำ
+          signal: (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(45000) : undefined
         })
           .then(r => r.text())
           .then(txt => {
@@ -1787,6 +1817,17 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           });
       };
       attempt(1, false);
+    }
+
+    // ─── เปิดแอปให้ไว และยังเปิดดูได้ตอนเน็ตหลุด ───────────────
+    // เน็ตโรงเรียนหลุดบ่อย เดิมหลุดแล้วเปิดแอปไม่ขึ้นเลยแม้แต่หน้าจอ
+    // ตอนนี้ไฟล์หน้าเว็บกับไลบรารีถูกเก็บไว้ในเครื่อง เปิดได้ทันทีและยังดูข้อมูลที่จำไว้ล่าสุดได้
+    // ⚠️ คำตอบจากหลังบ้าน "ไม่ถูกเก็บ" เด็ดขาด (กันไว้ใน sw.js) คะแนนและแต้มต้องมาจากเซิร์ฟเวอร์เสมอ
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .catch(err => console.warn('ลงทะเบียนตัวช่วยออฟไลน์ไม่สำเร็จ (ไม่กระทบการใช้งานปกติ):', err));
+      });
     }
   </script>
 </head>
@@ -2555,17 +2596,29 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   }
 
   // ─── TABS ───────────────────────────────────────────────────
+  // ครอบการเปลี่ยนหน้าจอด้วย View Transitions — เบราว์เซอร์จับภาพก่อน/หลังแล้วเบลนด์ให้เอง
+  // แท็บจึงไม่กระโดดตัดภาพเหมือนเดิม โดยไม่ต้องเขียนแอนิเมชันเองสักบรรทัด
+  // เบราว์เซอร์ที่ยังไม่รองรับ (เช่น Safari รุ่นเก่า) จะเรียกตรงๆ เหมือนเดิม ไม่มีอะไรเสีย
+  // และถ้าเครื่องตั้ง "ลดการเคลื่อนไหว" ไว้ ก็ข้ามไปเลย — เป็นการตั้งค่าเพื่อคนที่เวียนหัวกับภาพเคลื่อนไหว
+  function withViewTransition_(fn) {
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || !document.startViewTransition) { fn(); return; }
+    try { document.startViewTransition(fn); } catch (e) { fn(); }
+  }
+
   // สลับแท็บของฝั่งนักเรียน (หน้าหลัก/ฉายา/การเรียน/บัตร)
   function switchStudentTab(name, btn) {
-    document.querySelectorAll('#studentSection .tab-panel').forEach(p => p.classList.remove('active'));
     const panel = document.getElementById('sTab-' + name);
     if (!panel) return;
-    panel.classList.add('active');
-    document.querySelectorAll('#studentSection .bottom-nav .nav-btn').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
-    markFabActive_('#studentSection', name === 'card');
-    window.scrollTo(0, 0);   // เปลี่ยนแท็บแล้วต้องเริ่มอ่านจากบนสุดเสมอ ไม่ใช่ค้างตำแหน่งของแท็บก่อนหน้า
-    if (name === 'companion') loadCompanionTab();
+    withViewTransition_(() => {
+      document.querySelectorAll('#studentSection .tab-panel').forEach(p => p.classList.remove('active'));
+      panel.classList.add('active');
+      document.querySelectorAll('#studentSection .bottom-nav .nav-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      markFabActive_('#studentSection', name === 'card');
+      window.scrollTo(0, 0);   // เปลี่ยนแท็บแล้วต้องเริ่มอ่านจากบนสุดเสมอ ไม่ใช่ค้างตำแหน่งของแท็บก่อนหน้า
+    });
+    if (name === 'companion') loadCompanionTab();   // ยิงคำขอนอกการเปลี่ยนภาพ ไม่ให้ภาพค้างรอเน็ต
   }
 
   // ปุ่มลอยกลางไม่ใช่ปุ่มบนแถบ จึงไม่ได้รับสถานะ active อัตโนมัติ
@@ -2602,17 +2655,19 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
   // สลับแท็บของฝั่งครู (ภาพรวม/สแกน/คะแนน/บันทึก/รายชื่อ)
   function switchTeacherTab(name, btn) {
-    document.querySelectorAll('#teacherSection .tab-panel').forEach(p => p.classList.remove('active'));
     const panel = document.getElementById('tTab-' + name);
     if (!panel) return;
-    panel.classList.add('active');
-    document.querySelectorAll('#teacherSection .bottom-nav .nav-btn').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
-    const strip = document.getElementById('scanSelectorStrip');
-    if (strip) strip.style.display = 'block';
-    markFabActive_('#teacherSection', name === 'scan');
-    window.scrollTo(0, 0);
-    if (name === 'overview') loadTeacherOverview();
+    withViewTransition_(() => {
+      document.querySelectorAll('#teacherSection .tab-panel').forEach(p => p.classList.remove('active'));
+      panel.classList.add('active');
+      document.querySelectorAll('#teacherSection .bottom-nav .nav-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      const strip = document.getElementById('scanSelectorStrip');
+      if (strip) strip.style.display = 'block';
+      markFabActive_('#teacherSection', name === 'scan');
+      window.scrollTo(0, 0);
+    });
+    if (name === 'overview') loadTeacherOverview();   // ยิงคำขอนอกการเปลี่ยนภาพ ไม่ให้ภาพค้างรอเน็ต
   }
 
   // ─── META CONFIG ────────────────────────────────────────────
@@ -4612,6 +4667,34 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     }).getStudentDashboard(currentLoggedStudentId);
   }
 
+  // ─── อุปกรณ์: กันจอดับ + สั่นตอบรับ ─────────────────────────
+  // ครูสแกนทั้งห้องด้วยมือเดียว ถือกล้องนิ่งๆ ไม่ได้แตะจอเลย จอจึงดับกลางทางแล้วต้องปลดล็อกใหม่ทุกครั้ง
+  // นักเรียนวิ่งก็เรื่องเดียวกัน จอดับแล้วเบราว์เซอร์เบรกการอ่าน GPS จนระยะทางขาดช่วง
+  // ใช้ได้เฉพาะเบราว์เซอร์ที่รองรับและต้องเปิดผ่าน https (ของเราเป็น https อยู่แล้ว) ถ้าไม่รองรับก็แค่ไม่มีอะไรเกิดขึ้น
+  let wakeLockSentinel_ = null;
+
+  async function keepScreenAwake_(on) {
+    try {
+      if (!on) {
+        if (wakeLockSentinel_) { await wakeLockSentinel_.release(); wakeLockSentinel_ = null; }
+        return;
+      }
+      if (!('wakeLock' in navigator) || wakeLockSentinel_) return;
+      wakeLockSentinel_ = await navigator.wakeLock.request('screen');
+      wakeLockSentinel_.addEventListener('release', () => { wakeLockSentinel_ = null; });
+    } catch (e) { wakeLockSentinel_ = null; /* ขอไม่ได้ก็ปล่อยให้จอดับตามปกติ ไม่ใช่เรื่องที่ต้องฟ้องผู้ใช้ */ }
+  }
+
+  // ⚠️ ระบบปล่อยล็อกให้เองทุกครั้งที่ผู้ใช้สลับแอปหรือปิดจอ กลับมาต้องขอใหม่ ไม่งั้นรอบต่อไปจอดับเหมือนเดิม
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    const scanning = !!document.getElementById('reader-modal') && !document.getElementById('reader-modal').classList.contains('hidden');
+    if (scanning || runWatchId !== null) keepScreenAwake_(true);
+  });
+
+  // สั่นสั้นๆ ตอบรับ — ครูจะได้ไม่ต้องละสายตาจากกล้องมาดูหน้าจอว่าสแกนติดหรือยัง
+  function buzz_(pattern) { try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) { /* เครื่องไม่มีมอเตอร์สั่น */ } }
+
   // ─── SCANNER ────────────────────────────────────────────────
   // ตั้งโหมดการสแกน (เช็คชื่อ/ลายเซ็น/คะแนนสอบ) ก่อนเริ่มกล้องสแกน QR
   function triggerModeSetup(mode) {
@@ -4626,6 +4709,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
   // เปิดกล้องและเริ่มสแกน QR code ด้วย html5-qrcode
   function startScanner() {
+    keepScreenAwake_(true);   // ถือกล้องสแกนทีละคนทั้งห้อง จอต้องไม่ดับคามือ
     if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
     html5QrCode.start(
       { facingMode: "environment" },
@@ -4640,6 +4724,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
   // ปิดกล้องสแกนและคืนทรัพยากรกล้อง
   function closeScanner() {
+    keepScreenAwake_(false);  // เลิกสแกนแล้วปล่อยให้จอดับได้ตามปกติ ไม่งั้นแบตหมดเร็วโดยไม่จำเป็น
     if (html5QrCode) {
       html5QrCode.stop()
         .then(()  => closeFullpageView_('reader-modal'))
@@ -4742,9 +4827,11 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     google.script.run
       .withSuccessHandler(res => {
         if (res.success) {
+          buzz_(60);                     // สั่นสั้น 1 ที = บันทึกแล้ว เรียกคนต่อไปได้เลยโดยไม่ต้องมองจอ
           Toast(res.message, 'success');
           setTimeout(() => { openFullpageView_('reader-modal'); startScanner(); }, 1200);
         } else {
+          buzz_([40, 70, 40]);           // สั่นสะดุด 2 ที = มีอะไรผิด ต้องมองจอ
           Swal.fire('แจ้งเตือน', res.message, 'warning').then(() => resumeScannerAfterCancel());
         }
       })
@@ -4758,9 +4845,11 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     google.script.run
       .withSuccessHandler(res => {
         if (res.success) {
+          buzz_(60);                     // สั่นสั้น 1 ที = บันทึกแล้ว เรียกคนต่อไปได้เลยโดยไม่ต้องมองจอ
           Toast(res.message, 'success');
           setTimeout(() => { openFullpageView_('reader-modal'); startScanner(); }, 1200);
         } else {
+          buzz_([40, 70, 40]);           // สั่นสะดุด 2 ที = มีอะไรผิด ต้องมองจอ
           Swal.fire('แจ้งเตือน', res.message, 'warning').then(() => resumeScannerAfterCancel());
         }
       })
@@ -4781,9 +4870,11 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     google.script.run
       .withSuccessHandler(res => {
         if (res.success) {
+          buzz_(60);                     // สั่นสั้น 1 ที = บันทึกแล้ว เรียกคนต่อไปได้เลยโดยไม่ต้องมองจอ
           Toast(res.message, 'success');
           setTimeout(() => { openFullpageView_('reader-modal'); startScanner(); }, 1200);
         } else {
+          buzz_([40, 70, 40]);           // สั่นสะดุด 2 ที = มีอะไรผิด ต้องมองจอ
           Swal.fire('แจ้งเตือน', res.message, 'warning').then(() => resumeScannerAfterCancel());
         }
       })
@@ -8116,6 +8207,7 @@ function beginRunSession_() {
 
 function startRunTracking_() {
   renderRunActiveView_();
+  keepScreenAwake_(true);   // จอดับระหว่างวิ่ง = เบราว์เซอร์เบรกการอ่าน GPS ระยะทางจะขาดช่วงโดยเด็กไม่รู้ตัว
   runWatchId = navigator.geolocation.watchPosition(onRunPosition_, onRunGeoError_, {
     enableHighAccuracy: true, maximumAge: 2000, timeout: 15000
   });
@@ -8288,6 +8380,8 @@ function confirmStopRun_() {
 }
 
 function stopRunTracking_(finalize) {
+  keepScreenAwake_(false);
+  if (finalize) buzz_([80, 60, 80]);   // จบรอบวิ่งแล้ว — เด็กอาจไม่ได้มองจออยู่ตอนนั้น
   if (runWatchId !== null) { navigator.geolocation.clearWatch(runWatchId); runWatchId = null; }
   if (runTickInterval) { clearInterval(runTickInterval); runTickInterval = null; }
   if (runSyncInterval) { clearInterval(runSyncInterval); runSyncInterval = null; }
