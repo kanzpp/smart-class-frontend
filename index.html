@@ -55,7 +55,12 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://www.youtube.com/iframe_api"></script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDaEqUTYzY-Tn0f35qN9Y18w7XlQ-UbUhw&libraries=geometry"></script>
+  <!-- แผนที่ตอนวิ่ง: Leaflet + แผ่นแผนที่ของ OpenStreetMap — ไม่ใช้กุญแจ API
+       เดิมใช้ Google Maps ซึ่งต้องฝังกุญแจไว้ในไฟล์นี้ และไฟล์นี้อยู่ในรีโปสาธารณะ
+       กุญแจที่หลุดออกไปมีคนเอาไปใช้แล้วบิลขึ้นกับบัญชีเจ้าของ · ตัวนี้ไม่มีกุญแจ จึงไม่มีอะไรให้หลุด
+       และเลิกโหลด libraries=geometry ด้วย เพราะไม่เคยถูกเรียกใช้เลย (ระยะทางคำนวณเองด้วย haversineMeters_) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
   <style>
 
@@ -1681,9 +1686,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   <script>
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxaUgRHgJQbIGs6rAnVFqv-PeREbeiyi3Ylk-ddIgIT8leh92rISh4bKsFjGeTm8k5x/exec";
 
-    // [Fix] ต้อง merge ใส่ window.google ที่มีอยู่แล้ว ไม่ใช่ทับทั้งก้อน — เพราะ Google Maps JS API (โหลดก่อนหน้านี้ใน <head>)
-    // ก็ใช้ window.google namespace เดียวกัน (window.google.maps) ถ้าเขียนทับ (window.google = {...}) จะลบ .maps ที่ Maps SDK เพิ่งตั้งไว้ทิ้งไปเงียบๆ
-    // ทำให้แผนที่วิ่งไม่ขึ้นเลยโดยไม่มี error ใดๆ ให้เห็น
+    // [Fix] ต้อง merge ใส่ window.google ที่มีอยู่แล้ว ไม่ใช่ทับทั้งก้อน
+    // เคยพลาดมาแล้วสมัยที่ยังใช้ Google Maps: การเขียนทับ (window.google = {...}) ลบ .maps ที่ SDK เพิ่งตั้งไว้ทิ้งไปเงียบๆ
+    // แผนที่วิ่งจึงไม่ขึ้นเลยโดยไม่มี error ใดๆ ให้เห็น — ตอนนี้ไม่ได้ใช้ Maps แล้ว แต่คงวิธีเขียนแบบนี้ไว้
+    // เผื่อวันหนึ่งมีสคริปต์อื่นของ Google มาใช้ namespace เดียวกันอีก
     window.google = window.google || {};
     window.google.script = {
       run: new Proxy({}, {
@@ -7941,7 +7947,7 @@ let runWatchId = null, runStartedAt = 0, runLastGoodPos = null, runLastSpeedKmh 
 let runValidMeters = 0, runTotalMeters = 0, runIdleSeconds = 0, runSteps = 0;
 let runMinSpeedKmh = 7, runMaxSpeedKmh = 22;
 let runTickInterval = null, runSyncInterval = null;
-// แผนที่เส้นทางวิ่งแบบ real-time (Google Maps) — สร้างครั้งแรกตอนได้พิกัดแรกที่แม่นพอ ไม่ใช่ตอนเปิดหน้าจอ
+// แผนที่เส้นทางวิ่งแบบ real-time (Leaflet + OpenStreetMap) — สร้างครั้งแรกตอนได้พิกัดแรกที่แม่นพอ ไม่ใช่ตอนเปิดหน้าจอ
 let runMap = null, runMarker = null, runPath = null, runPathCoords = [];
 const RUN_MAX_IDLE_SECONDS = 300; // 5 นาที
 const RUN_MIN_ACCURACY_M = 30;
@@ -8217,33 +8223,34 @@ function onRunPosition_(pos) {
   runLastGoodPos = { lat: latitude, lon: longitude, t: now, accuracy };
 }
 
-// วาด/อัปเดตเส้นทางวิ่งบน Google Maps แบบ real-time (สร้างแผนที่ครั้งแรกตอนได้พิกัดแรกที่แม่นพอ)
+// วาด/อัปเดตเส้นทางวิ่งบนแผนที่แบบ real-time (สร้างแผนที่ครั้งแรกตอนได้พิกัดแรกที่แม่นพอ)
+// ⚠️ ของเดิมมีบั๊กเงียบๆ: คอมเมนต์ถูกวางคร่อมกลางรายการตัวเลือกของเส้นทาง ทำให้ `map: runMap` กลายเป็นคอมเมนต์ไปด้วย
+//    เส้นทางที่วิ่งผ่านจึงไม่เคยถูกวาดลงแผนที่เลย มีแต่จุดตำแหน่งที่ขยับไปมา
 function updateRunMap_(lat, lng) {
-  if (typeof google === 'undefined' || !google.maps) return; // โหลด Maps API ไม่สำเร็จ (เน็ตช้า/คีย์มีปัญหา) ไม่ให้พังฟีเจอร์วิ่งหลัก แค่ไม่มีแผนที่
+  if (typeof L === 'undefined') return; // โหลดไลบรารีแผนที่ไม่สำเร็จ (เน็ตช้า) ไม่ให้พังฟีเจอร์วิ่งหลัก แค่ไม่มีแผนที่
   const mapContainer = document.getElementById('runMapContainer');
   if (!mapContainer) return; // ปิดหน้าไปแล้วระหว่างรอสัญญาณ
-  const currentLatLng = { lat, lng };
 
   if (!runMap) {
-    mapContainer.innerHTML = ''; // เอาข้อความ "กำลังรอสัญญาณ GPS..." ออก
-    runMap = new google.maps.Map(mapContainer, {
-      center: currentLatLng, zoom: 17,
-      disableDefaultUI: true, gestureHandling: 'greedy'
-    });
-    runMarker = new google.maps.Marker({
-      position: currentLatLng, map: runMap,
-      icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: '#0E6FD1', fillOpacity: 1, strokeWeight: 2, strokeColor: '#ffffff' }
-    });
-    runPathCoords = [currentLatLng];
-    runPath = new google.maps.Polyline({
-      path: runPathCoords, geodesic: true,
-      strokeColor: '#35B7F2'   // ค่าสีตรงๆ — Google Maps SDK อ่าน var() ของ CSS ไม่ได้, strokeOpacity: 1.0, strokeWeight: 4, map: runMap
-    });
+    mapContainer.innerHTML = '';             // เอาข้อความ "กำลังรอสัญญาณ GPS..." ออก
+    mapContainer.style.display = 'block';    // กล่องเดิมเป็น flex ไว้จัดข้อความให้อยู่กลาง แต่แผนที่ต้องการพื้นที่เต็มกล่อง
+    runMap = L.map(mapContainer, { zoomControl: false }).setView([lat, lng], 17);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'         // ⚠️ ห้ามเอาออก — เป็นเงื่อนไขการใช้แผ่นแผนที่ฟรีของ OpenStreetMap
+    }).addTo(runMap);
+    runMarker = L.circleMarker([lat, lng], {
+      radius: 7, color: '#ffffff', weight: 2, fillColor: '#0E6FD1', fillOpacity: 1  // ค่าสีตรงๆ ไลบรารีแผนที่อ่าน var() ของ CSS ไม่ได้
+    }).addTo(runMap);
+    runPathCoords = [[lat, lng]];
+    runPath = L.polyline(runPathCoords, { color: '#35B7F2', weight: 4, opacity: 1 }).addTo(runMap);
+    // กล่องแผนที่เพิ่งถูกเปลี่ยนจาก flex เป็น block ต้องให้ Leaflet วัดขนาดใหม่ ไม่งั้นแผ่นแผนที่จะโหลดมาไม่เต็มกล่อง
+    setTimeout(() => { if (runMap) runMap.invalidateSize(); }, 200);
   } else {
-    runMap.panTo(currentLatLng);
-    runMarker.setPosition(currentLatLng);
-    runPathCoords.push(currentLatLng);
-    runPath.setPath(runPathCoords);
+    runMap.panTo([lat, lng]);
+    runMarker.setLatLng([lat, lng]);
+    runPathCoords.push([lat, lng]);
+    runPath.setLatLngs(runPathCoords);
   }
 }
 
@@ -8288,7 +8295,9 @@ function stopRunTracking_(finalize) {
   stopStepCounter_();
 
   // เคลียร์สถานะแผนที่ ให้พร้อมสร้างใหม่ตอนวิ่งรอบถัดไป (DOM container เดิมจะถูกแทนที่อยู่แล้วตอน renderRunActiveView_ ครั้งหน้า)
-  if (runPath) runPath.setMap(null);
+  // ⚠️ ต้องเรียก remove() ของ Leaflet เสมอ ไม่ใช่แค่ตั้งตัวแปรเป็น null
+  //    ไม่งั้นกล่องเดิมยังถูกจองอยู่ แล้วรอบวิ่งถัดไปจะฟ้อง "Map container is already initialized" แล้วแผนที่ไม่ขึ้น
+  if (runMap) { try { runMap.remove(); } catch (e) { /* ปิดหน้าไปก่อนแล้ว ไม่ต้องทำอะไร */ } }
   runMap = null; runMarker = null; runPath = null; runPathCoords = [];
 
   if (!finalize) return;
