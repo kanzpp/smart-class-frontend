@@ -7,7 +7,8 @@
 
   โครงสร้างไฟล์:
     <head>
-      - ฟอนต์ / ไอคอน / ไลบรารีภายนอก (QR code, SweetAlert2, Chart.js)
+      - ฟอนต์ / ไอคอน / ไลบรารีที่ทุกหน้าใช้ (สร้าง QR, SweetAlert2)
+                  ไลบรารีหนักที่ใช้เฉพาะบางหน้า → LAZY_LIBS (โหลดตอนจะใช้)
       - <style>   CSS ทั้งหมด เรียงเป็น 2 ชั้น:
                     ชั้นเก่า (STUDIO) อยู่บน — ยังไม่ลบเพราะมีของที่ยังใช้อยู่
                     ชั้น BANK อยู่ล่างสุด เพื่อให้ทับชั้นเก่าได้ทุกจุด
@@ -48,23 +49,19 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Noto+Sans+Thai:wght@400;500;600;700&family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&family=Mitr:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <!-- ⚠️ ทุกตัวต้องปักเลขเวอร์ชันไว้เสมอ ห้ามเขียนแบบ "เอาตัวล่าสุด"
+  <!-- โหลดตั้งแต่เปิดแอป: เฉพาะของที่ทุกคนใช้ตั้งแต่หน้าแรก (สร้าง QR บัตรนักเรียน · กล่องข้อความ)
+       ⚠️ ทุกตัวต้องปักเลขเวอร์ชันไว้เสมอ ห้ามเขียนแบบ "เอาตัวล่าสุด"
        ตัวสแกน QR เคยเขียนไว้เป็น unpkg.com/html5-qrcode เฉยๆ = ดึงตัวล่าสุดมาทุกครั้งที่เปิดแอป
        วันไหนเจ้าของไลบรารีออกรุ่นใหม่ที่เปลี่ยนวิธีใช้ เช้าวันนั้นครูจะสแกนไม่ได้ทั้งโรงเรียนโดยไม่มีอะไรเตือนล่วงหน้า
-       (html5-qrcode หยุดออกรุ่นใหม่ตั้งแต่ เม.ย. 2566 · 2.3.8 คือรุ่นล่าสุดที่มี) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+
+       ไลบรารีหนักที่เหลือ (ตัวสแกน · สัตว์ 3 มิติ · แผนที่ · YouTube) ย้ายไปอยู่ใน LAZY_LIBS แล้ว
+       เดิมอยู่ตรงนี้ทั้งหมด = มือถือต้องโหลดและประมวลผล JS ~1.5 MB ให้เสร็จก่อนจะเริ่มแสดงหน้าจอ
+       นักเรียนที่แค่เปิดมาดูแต้ม ต้องรอตัวสแกนของครู (367 KB) กับสัตว์ 3 มิติ (683 KB) ทั้งที่ไม่ได้ใช้เลย
+       ⚠️ อย่าย้ายกลับมาไว้ตรงนี้ — เพิ่มไลบรารีใหม่ที่ใช้เฉพาะบางหน้า ให้ใส่ใน LAZY_LIBS
+
+       Chart.js 4.5.1 ถูกเอาออกเลย — ค้นทั้งไฟล์แล้วไม่มีโค้ดส่วนไหนเรียกใช้ มีแค่ชื่อในคอมเมนต์ (204 KB ที่โหลดมาเปล่าๆ ทุกครั้ง) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25/dist/sweetalert2.all.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="https://www.youtube.com/iframe_api"></script>
-  <!-- แผนที่ตอนวิ่ง: Leaflet + แผ่นแผนที่ของ OpenStreetMap — ไม่ใช้กุญแจ API
-       เดิมใช้ Google Maps ซึ่งต้องฝังกุญแจไว้ในไฟล์นี้ และไฟล์นี้อยู่ในรีโปสาธารณะ
-       กุญแจที่หลุดออกไปมีคนเอาไปใช้แล้วบิลขึ้นกับบัญชีเจ้าของ · ตัวนี้ไม่มีกุญแจ จึงไม่มีอะไรให้หลุด
-       และเลิกโหลด libraries=geometry ด้วย เพราะไม่เคยถูกเรียกใช้เลย (ระยะทางคำนวณเองด้วย haversineMeters_) -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
   <style>
 
@@ -1819,6 +1816,46 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       attempt(1, false);
     }
 
+    // ─── โหลดไลบรารีหนักเฉพาะตอนจะใช้ ──────────────────────────
+    // แอปธนาคารกับ Shopee เปิดไวเพราะไม่โหลดหน้าที่ยังไม่ได้เปิด เราใช้หลักเดียวกัน
+    // ⚠️ ทุกที่อยู่ต้องปักเลขเวอร์ชัน (ดูคอมเมนต์ใน <head>) · ไฟล์ในรายการเดียวกันโหลดทีละไฟล์ตามลำดับ
+    //    เพราะบางตัวพึ่งตัวก่อนหน้า เช่นตัวโหลดโมเดลต้องมี THREE อยู่แล้ว
+    const LAZY_LIBS = {
+      scanner: ['https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js'],
+      three:   ['https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js',
+                'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js'],
+      map:     ['https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',   // CSS ก่อน แผนที่จะได้ไม่วาดเพี้ยน
+                'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'],
+      youtube: ['https://www.youtube.com/iframe_api']
+    };
+    const _assetPromises = {};
+
+    // โหลดไฟล์เดียว — ขอซ้ำกี่ครั้งก็ได้ ได้คำสัญญาเดิมกลับไป ไม่โหลดซ้ำ
+    // ถ้าโหลดพลาด (เน็ตหลุด) ลืมคำสัญญานั้นทิ้ง รอบหน้าจะได้ลองใหม่ ไม่ติดค้างอยู่กับความล้มเหลวเดิม
+    function loadAsset_(url) {
+      if (_assetPromises[url]) return _assetPromises[url];
+      _assetPromises[url] = new Promise((resolve, reject) => {
+        const isCss = /\.css(\?|$)/.test(url);
+        const el = document.createElement(isCss ? 'link' : 'script');
+        if (isCss) { el.rel = 'stylesheet'; el.href = url; } else { el.src = url; el.async = false; }
+        el.onload = () => resolve();
+        el.onerror = () => { delete _assetPromises[url]; el.remove(); reject(new Error('โหลดไม่สำเร็จ: ' + url)); };
+        document.head.appendChild(el);
+      });
+      return _assetPromises[url];
+    }
+
+    function loadLib_(name) {
+      return (LAZY_LIBS[name] || []).reduce((p, url) => p.then(() => loadAsset_(url)), Promise.resolve());
+    }
+
+    // โหลดเตรียมไว้ตอนเครื่องว่าง — ไม่แย่งจังหวะกับการวาดหน้าแรก แต่พอกดใช้จริงก็พร้อมแล้ว
+    function preloadLibWhenIdle_(name) {
+      const run = () => loadLib_(name).catch(() => { /* โหลดไม่ได้ตอนนี้ ไว้โหลดตอนกดใช้จริงแทน */ });
+      if (window.requestIdleCallback) requestIdleCallback(run, { timeout: 4000 });
+      else setTimeout(run, 1500);
+    }
+
     // ─── เปิดแอปให้ไว และยังเปิดดูได้ตอนเน็ตหลุด ───────────────
     // เน็ตโรงเรียนหลุดบ่อย เดิมหลุดแล้วเปิดแอปไม่ขึ้นเลยแม้แต่หน้าจอ
     // ตอนนี้ไฟล์หน้าเว็บกับไลบรารีถูกเก็บไว้ในเครื่อง เปิดได้ทันทีและยังดูข้อมูลที่จำไว้ล่าสุดได้
@@ -2865,6 +2902,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       Swal.fire({ title: 'โหลดข้อมูลไม่สำเร็จ', text: 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง',
         icon: 'error', confirmButtonText: 'ลองใหม่' }).then(() => bootTeacher());
     }).getTeacherBootBundle_();
+
+    // ครูเปิดแอปมาเกือบทุกครั้งเพื่อสแกน — โหลดตัวสแกนเตรียมไว้ตอนเครื่องว่าง พอกดสแกนกล้องขึ้นทันที
+    // (ฝั่งนักเรียนไม่โหลดเลย เพราะไม่มีปุ่มสแกน)
+    preloadLibWhenIdle_('scanner');
   }
 
   // ─── คำเตือนสำรองข้อมูล ─────────────────────────────────────
@@ -4710,6 +4751,15 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // เปิดกล้องและเริ่มสแกน QR code ด้วย html5-qrcode
   function startScanner() {
     keepScreenAwake_(true);   // ถือกล้องสแกนทีละคนทั้งห้อง จอต้องไม่ดับคามือ
+    if (typeof Html5Qrcode === 'undefined') {
+      // ตัวสแกนไม่ได้โหลดมาตั้งแต่เปิดแอปแล้ว (นักเรียนไม่ได้ใช้) ฝั่งครูโหลดเตรียมไว้ตอนเครื่องว่าง
+      // ปกติจึงพร้อมก่อนครูกดสแกน ตรงนี้คือกรณีกดเร็วมากหรือเน็ตช้า — โหลดให้เสร็จแล้วค่อยเปิดกล้อง
+      loadLib_('scanner').then(startScanner).catch(() => {
+        closeFullpageView_('reader-modal');
+        Swal.fire('เปิดตัวสแกนไม่ได้', 'โหลดตัวสแกนไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองกดสแกนอีกครั้ง', 'error');
+      });
+      return;
+    }
     if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
     html5QrCode.start(
       { facingMode: "environment" },
@@ -7017,8 +7067,11 @@ const PET_TYPE_MODEL_PATH = {
 const CompanionScene = (() => {
   let renderer, scene, camera, creature, container;
   let currentType = null, bobT = 0, tapT = 0, baseScale = 1, baseY = 0;
-  const gltfLoader  = new THREE.GLTFLoader();
+  // ⚠️ ห้ามสร้างอะไรที่ใช้ THREE ตรงนี้ — ไลบรารี 3 มิติไม่ได้โหลดมาตั้งแต่เปิดแอปแล้ว (ดู LAZY_LIBS)
+  //    ของเดิม `new THREE.GLTFLoader()` ตรงนี้ทำให้ต้องโหลด 683 KB ก่อนหน้าจออื่นจะขึ้น
+  let gltfLoader = null;
   const modelCache  = {}; // petType -> โมเดล THREE.Group ที่โหลดสำเร็จแล้ว (โคลนใช้ซ้ำได้ ไม่ต้องยิง fetch ใหม่)
+  let pendingMount = null; // ขอแสดงระหว่างที่ไลบรารียังโหลดไม่เสร็จ — จำไว้แค่ครั้งล่าสุด
 
   function ensureRenderer() {
     if (renderer) return;
@@ -7066,6 +7119,7 @@ const CompanionScene = (() => {
   function loadType_(type) {
     if (modelCache[type]) { setCreature_(modelCache[type].clone(true)); return; }
     const path = PET_TYPE_MODEL_PATH[type] || PET_TYPE_MODEL_PATH.cat;
+    if (!gltfLoader) gltfLoader = new THREE.GLTFLoader();
     gltfLoader.load(path, gltf => {
       modelCache[type] = gltf.scene;
       if (currentType === type) setCreature_(gltf.scene.clone(true)); // กันเคสสลับชนิดไปแล้วก่อนโหลดเสร็จ
@@ -7089,19 +7143,34 @@ const CompanionScene = (() => {
     renderer.render(scene, camera);
   }
 
+  // ย้าย canvas เข้า container ใหม่ทุกครั้ง (เพราะ renderCompanion overwrite DOM ด้วย innerHTML)
+  // โหลด/สร้างโมเดลใหม่เฉพาะตอน petType เปลี่ยนจริงๆ เท่านั้น ไม่ต้องโหลดซ้ำทุกครั้งที่ข้อมูลอัปเดต
+  function mountNow_(el, type) {
+    ensureRenderer();
+    container = el;
+    el.innerHTML = '';
+    el.appendChild(renderer.domElement);
+    renderer.setSize(180, 180);
+    if (type !== currentType) {
+      currentType = type;
+      loadType_(type);
+    }
+  }
+
   return {
-    // ย้าย canvas เข้า container ใหม่ทุกครั้ง (เพราะ renderCompanion overwrite DOM ด้วย innerHTML)
-    // โหลด/สร้างโมเดลใหม่เฉพาะตอน petType เปลี่ยนจริงๆ เท่านั้น ไม่ต้องโหลดซ้ำทุกครั้งที่ข้อมูลอัปเดต
-    mount(el, type) {
-      ensureRenderer();
-      container = el;
-      el.innerHTML = '';
-      el.appendChild(renderer.domElement);
-      renderer.setSize(180, 180);
-      if (type !== currentType) {
-        currentType = type;
-        loadType_(type);
+    // ครั้งแรกที่เปิดหน้าคู่หู ไลบรารี 3 มิติยังไม่มา — โชว์อิโมจิของสัตว์ตัวนั้นไว้ก่อน แทนช่องว่างเปล่า
+    // พอโหลดเสร็จค่อยสลับเป็นตัว 3 มิติ · ถ้าระหว่างรอมีการวาดหน้าใหม่ ใช้กล่องล่าสุด ไม่ใช่กล่องที่ถูกทิ้งไปแล้ว
+    mount(el, type, placeholderEmoji) {
+      if (window.THREE && THREE.GLTFLoader) { mountNow_(el, type); return; }
+      pendingMount = { el, type };
+      if (!el.firstChild && placeholderEmoji) {
+        el.innerHTML = '<div style="font-size:4.2rem; line-height:180px; text-align:center;">' + placeholderEmoji + '</div>';
       }
+      loadLib_('three').then(() => {
+        const p = pendingMount;
+        pendingMount = null;
+        if (p && document.body.contains(p.el)) mountNow_(p.el, p.type);
+      }).catch(err => console.warn('โหลดตัวแสดงคู่หู 3 มิติไม่สำเร็จ ยังเห็นเป็นอิโมจิแทน:', err));
     },
     tap() { tapT = 1; },
   };
@@ -7201,7 +7270,7 @@ function renderCompanion(d, dialogue) {
 
   if (!isEgg) {
     const wrap = document.getElementById('petCanvasWrap');
-    if (wrap) CompanionScene.mount(wrap, d.petType);
+    if (wrap) CompanionScene.mount(wrap, d.petType, d.petEmoji);
   }
 }
 
@@ -7646,7 +7715,15 @@ function openCourseVideo(subjectCode, clsCode, chapterNum, topic) {
     });
   }
   if (window.YT && window.YT.Player) createPlayer();
-  else window.onYouTubeIframeAPIReady = createPlayer;
+  else {
+    // ตั้งตัวรับไว้ก่อน แล้วค่อยสั่งโหลด — YouTube จะเรียก onYouTubeIframeAPIReady เองเมื่อพร้อม
+    // (ไม่ได้โหลดมาตั้งแต่เปิดแอปแล้ว เพราะหน้าเรียนออนไลน์เป็นส่วนที่ใช้น้อย · ดู LAZY_LIBS)
+    window.onYouTubeIframeAPIReady = createPlayer;
+    loadLib_('youtube').catch(() => {
+      const t = document.getElementById('watchProgressText');
+      if (t) t.innerText = 'โหลดวิดีโอไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วเปิดหัวข้อนี้ใหม่อีกครั้ง';
+    });
+  }
 }
 function onYtStateChange_(e) {
   if (e.data === YT.PlayerState.PLAYING) {
@@ -8103,6 +8180,7 @@ function stopStepCounter_() {
 
 function openRunModal() {
   openFullpageView_('runModal');
+  preloadLibWhenIdle_('map');   // เริ่มโหลดแผนที่ตั้งแต่เปิดหน้าวิ่ง จะได้พร้อมก่อน GPS จับพิกัดแรกได้
   document.getElementById('runModalBody').innerHTML = courseLoadingHtml_();
   google.script.run.withSuccessHandler(status => renderRunModalByStatus_(status))
     .withFailureHandler(err => {
@@ -8319,7 +8397,12 @@ function onRunPosition_(pos) {
 // ⚠️ ของเดิมมีบั๊กเงียบๆ: คอมเมนต์ถูกวางคร่อมกลางรายการตัวเลือกของเส้นทาง ทำให้ `map: runMap` กลายเป็นคอมเมนต์ไปด้วย
 //    เส้นทางที่วิ่งผ่านจึงไม่เคยถูกวาดลงแผนที่เลย มีแต่จุดตำแหน่งที่ขยับไปมา
 function updateRunMap_(lat, lng) {
-  if (typeof L === 'undefined') return; // โหลดไลบรารีแผนที่ไม่สำเร็จ (เน็ตช้า) ไม่ให้พังฟีเจอร์วิ่งหลัก แค่ไม่มีแผนที่
+  if (typeof L === 'undefined') {
+    // ไลบรารีแผนที่ยังไม่มา (เริ่มโหลดตั้งแต่เปิดหน้าวิ่งแล้ว) — ขอซ้ำได้ไม่โหลดซ้ำ แล้วรอพิกัดรอบหน้าค่อยวาด
+    // โหลดไม่สำเร็จก็ไม่ให้พังฟีเจอร์วิ่งหลัก ระยะทาง/ก้าว/แต้มยังนับปกติ แค่ไม่มีแผนที่
+    loadLib_('map').catch(() => {});
+    return;
+  }
   const mapContainer = document.getElementById('runMapContainer');
   if (!mapContainer) return; // ปิดหน้าไปแล้วระหว่างรอสัญญาณ
 
