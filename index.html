@@ -2985,10 +2985,11 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     if (b.term) renderTermChip_(b.term);
     fillQuickCtx_();          // ต้องหลัง populateSelects() เพราะอ่านบริบทจากช่องในแท็บสแกน
     renderBackupWarn_(b.backup);
-    paintTodayLine_('tTodayLine', null);
-    // วันนี้เป็นวันหยุดหรือวันเรียนพิเศษไหม — ยิงแยกแบบไม่บล็อก
-    google.script.run.withSuccessHandler(c => paintTodayLine_('tTodayLine', c && c.todayType))
-      .withFailureHandler(() => {}).getSchoolCalendar();
+    // วันนี้หยุด/เรียนพิเศษไหม — มากับก้อนรวมแล้ว (todayType)
+    // เดิมยิง getSchoolCalendar แยก และฟังก์ชันนี้ถูกเรียก 2 รอบต่อการเปิดแอป (ข้อมูลที่จำไว้ + ข้อมูลสด)
+    // = 3 คำขอแย่งคิวกันทุกครั้งที่ครูเปิดแอป · Perf_Log จับได้ว่าคำขอปฏิทินรอนาน 10-13 วินาที
+    // ข้อมูลที่จำไว้รุ่นก่อนไม่มีช่องนี้ → วาดเป็นวันปกติไปก่อน ก้อนสดที่ตามมาจะวาดทับให้ถูกเอง
+    paintTodayLine_('tTodayLine', b.todayType || null);
   }
 
   // ชิปบอกว่าตอนนี้กำลังทำงานอยู่ในเทอมไหน และห้องไหนถูกปิดเทอมไปแล้ว
