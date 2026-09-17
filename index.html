@@ -1700,6 +1700,56 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
      บอกความสูงคร่าวๆ ไว้ด้วย แถบเลื่อนจะได้ไม่กระตุกตอนเลื่อนผ่าน */
   #historyContainer > *, #allStuBody > * { content-visibility: auto; contain-intrinsic-size: auto 72px; }
 
+  /* ════════════════════════════════════════════════════════════
+     โครงหน้าระหว่างโหลด (skeleton) — 17 ก.ย. 2569
+     แอปธนาคาร/Shopee ไม่ขึ้นคำว่า "กำลังโหลด" แต่ขึ้นโครงของหน้าที่กำลังจะมาแทน
+     ผู้ใช้เห็นทันทีว่าหน้าตาจะเป็นยังไง ตาไม่ต้องกระโดดตอนข้อมูลมา และรู้สึกเร็วกว่าทั้งที่ข้อมูลมาเร็วเท่าเดิม
+     ⚠️ ใช้กับ "การอ่านข้อมูล" เท่านั้น — การบันทึก/หักแต้ม ยังต้องเป็นกล่อง "กำลังบันทึก..." ที่รอให้เซิร์ฟเวอร์ยืนยัน
+     ⚠️ สีต้องเป็นสีกลางเท่านั้น ห้ามใช้สีประจำวันหรือสีความหมาย (--mint/--gold/--rose/--violet)
+        โครงหน้าที่ติดสีจะอ่านเหมือนข้อมูลจริง เช่นแถบเขียวเหมือน "ผ่านแล้ว"
+     ════════════════════════════════════════════════════════════ */
+  body { --sk: rgba(15,40,70,.08); --sk-shine: rgba(255,255,255,.7); }
+  body.dark-mode { --sk: rgba(255,255,255,.07); --sk-shine: rgba(255,255,255,.07); }
+
+  .sk { display:block; position:relative; overflow:hidden; background:var(--sk); border-radius:7px; }
+  .sk::after {
+    content:''; position:absolute; inset:0; transform:translateX(-100%);
+    background:linear-gradient(90deg, transparent, var(--sk-shine), transparent);
+    animation:sk-shine 1.4s ease-in-out infinite;
+  }
+  @keyframes sk-shine { to { transform:translateX(100%); } }
+  @media (prefers-reduced-motion: reduce) { .sk::after { display:none; } }
+
+  /* บนหัวจอไล่สี ใช้ขาวโปร่ง — กฎของหัวจอไล่สีคือของที่วางบนนั้นต้องเป็นสีกลางเท่านั้น */
+  .sc-head .sk, .sc-subhead .sk, .fullpage-head .sk { --sk: rgba(255,255,255,.24); --sk-shine: rgba(255,255,255,.4); }
+
+  /* แถวรายการ — ขนาดเท่า .sc-alert เป๊ะ (ไอคอน 36px · padding 12/13 · มุม 14) ข้อมูลมาแล้วหน้าจอจึงไม่กระตุก */
+  .sk-row {
+    display:flex; align-items:center; gap:11px; background:var(--surface); border-radius:14px;
+    padding:12px 13px; margin-bottom:8px; box-shadow:var(--shadow-sm);
+  }
+  .sk-ic { width:36px; height:36px; border-radius:12px; flex:none; }
+  .sk-av { width:36px; height:36px; border-radius:50%; flex:none; }
+  .sk-tx { flex:1; min-width:0; display:flex; flex-direction:column; gap:7px; }
+  .sk-l1 { height:11px; width:62%; }
+  .sk-l2 { height:9px;  width:38%; }
+  /* ความยาวไม่เท่ากันทุกแถว — ถ้าเท่ากันหมดจะดูเป็นลายตาราง ไม่เหมือนรายการจริง */
+  .sk-row:nth-of-type(3n+2) .sk-l1 { width:48%; }
+  .sk-row:nth-of-type(3n)   .sk-l1 { width:74%; }
+  .sk-row:nth-of-type(2n)   .sk-l2 { width:52%; }
+
+  .sk-card {
+    background:var(--surface); border-radius:14px; padding:16px; margin-bottom:10px;
+    box-shadow:var(--shadow-sm); display:flex; flex-direction:column; gap:10px;
+  }
+  .sk-line { height:10px; }
+  .sk-in { display:inline-block; vertical-align:middle; height:.85em; }
+
+  .sr-only {
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+    clip:rect(0,0,0,0); white-space:nowrap; border:0;
+  }
+
   </style>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -1921,7 +1971,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <div class="sc-avatar" id="sAvatar">·</div>
           <div class="sc-id">
             <div class="sc-hi" id="sGreeting">สวัสดี</div>
-            <div class="sc-nm" id="sNameDisplay">—</div>
+            <div class="sc-nm" id="sNameDisplay"><span class="sk sk-in" style="width:118px"></span></div>
             <div class="sc-today" id="sTodayLine"></div>
           </div>
           <div class="hero-icon-row">
@@ -1936,7 +1986,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
         <div class="sc-amount">
           <div class="cap"><i class="fa-solid fa-star"></i> แต้มสะสมพิเศษ</div>
-          <div class="big" id="stdPointsDisplay">0<span>แต้ม</span></div>
+          <!-- เดิมขึ้น "0 แต้ม" ระหว่างรอข้อมูล — เด็กที่เปิดแอปเครื่องใหม่ (ยังไม่มีข้อมูลที่จำไว้) จะเห็นว่าแต้มหายหมด
+               ทั้งที่ข้อมูลแค่ยังมาไม่ถึง · ตัวเลขที่ยังไม่รู้ ต้องไม่แสดงเป็นตัวเลข -->
+          <div class="big" id="stdPointsDisplay"><span class="sk sk-in" style="width:132px;height:2.3rem;margin-left:0;opacity:1"></span><span class="sr-only">กำลังโหลดแต้ม</span></div>
         </div>
 
         <div class="sc-chips">
@@ -1963,7 +2015,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
       <div class="sc-pad">
         <div class="sc-sec"><span class="t">ต้องทำ</span><span class="more" id="sTodoCount"></span></div>
-        <div id="sTodoList"><div class="sc-empty">กำลังตรวจสอบ...</div></div>
+        <div id="sTodoList"><div aria-busy="true"><span class="sr-only">กำลังโหลด</span><div class="sk-row"><span class="sk sk-ic"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div><div class="sk-row"><span class="sk sk-ic"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div></div></div>
       </div>
 
       <div class="sc-pad">
@@ -2069,10 +2121,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   </div>
 
   <div id="companionContainer">
-    <div style="text-align:center;color:var(--slate);padding:40px 0;">
-      <div style="font-size:48px;margin-bottom:8px;">🥚</div>
-      กำลังโหลดคู่หู...
-    </div>
+    <!-- โครงหน้าเดียวกับ skCompanion_() — ต้องมี aria-busy ไม่งั้น hasRealContent_ จะเข้าใจว่ามีข้อมูลแล้ว -->
+    <div aria-busy="true" class="sk-card" style="align-items:center;padding:24px 16px"><span class="sr-only">กำลังโหลด</span><span class="sk" style="width:150px;height:150px;border-radius:50%"></span><span class="sk sk-line" style="width:58%;height:14px;margin-top:6px"></span><span class="sk sk-line" style="width:88%;margin-top:10px"></span><span class="sk sk-line" style="width:88%"></span><span class="sk sk-line" style="width:88%"></span></div>
   </div>
 </div>
     </div>
@@ -2131,7 +2181,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <div class="sc-avatar"><i class="fa-solid fa-chalkboard-user" style="font-size:0.95rem"></i></div>
           <div class="sc-id">
             <div class="sc-hi">ศูนย์ควบคุม</div>
-            <div class="sc-nm" id="teacherTermChip">กำลังโหลด...</div>
+            <div class="sc-nm" id="teacherTermChip"><span class="sk sk-in" style="width:132px"></span><span class="sr-only">กำลังโหลด</span></div>
             <div class="sc-today" id="tTodayLine"></div>
           </div>
           <div class="hero-icon-row">
@@ -2179,7 +2229,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         <!-- คำเตือนสำรองข้อมูล อยู่เหนือทุกอย่างเพราะร้ายแรงที่สุด
              เจ้าของไม่มีสมุดจดคะแนนสำรอง ชีตคือต้นฉบับเดียวของทั้งโรงเรียน -->
         <div id="tBackupWarn" style="display:none;"></div>
-        <div id="overviewContainer"><div class="sc-empty">กำลังโหลด...</div></div>
+        <div id="overviewContainer"><div aria-busy="true"><span class="sr-only">กำลังโหลด</span><div class="sk-row"><span class="sk sk-ic"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div><div class="sk-row"><span class="sk sk-ic"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div><div class="sk-row"><span class="sk sk-ic"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div></div></div>
       </div>
 
       <div class="sc-pad">
@@ -2345,7 +2395,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         <div class="section-title"><i class="fa-solid fa-address-book"></i> รายชื่อนักเรียน</div>
         <!-- จำนวนนักเรียนแยกตามชั้น — เดิมเป็นแถบค้างอยู่บนสุดของทุกแท็บ กินพื้นที่จอตลอดเวลา
              ทั้งที่เป็นข้อมูลทะเบียนที่แทบไม่เปลี่ยน และเกี่ยวข้องกับแท็บนี้แท็บเดียว จึงย้ายมาไว้ที่นี่ -->
-        <div id="teacherStatsLine" style="font-size:0.8rem; color:var(--slate); margin-bottom:8px;">กำลังโหลด...</div>
+        <div id="teacherStatsLine" style="font-size:0.8rem; color:var(--slate); margin-bottom:8px;"><span class="sk sk-in" style="width:150px"></span><span class="sr-only">กำลังโหลด</span></div>
         <div class="teacher-stat-grid" id="teacherStatGrid" style="margin-bottom:14px;"></div>
         <div class="filter-bar" style="margin-bottom:12px;">
           <select id="stuFilterClass" class="field"></select>
@@ -2890,7 +2940,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     var cached = loadBootCache_('teacher');
     if (cached) { try { renderTeacherBoot_(cached); showStaleBadge_(true); } catch (e) { console.error('วาดจากข้อมูลที่จำไว้ไม่สำเร็จ:', e); } }
     else document.getElementById('overviewContainer').innerHTML =
-      '<div class="u-empty">กำลังโหลด...</div>';
+      skRows_(3);
 
     google.script.run.withSuccessHandler(b => {
       saveBootCache_('teacher', b);
@@ -2956,6 +3006,61 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     if (h < 12) return 'สวัสดีตอนเช้า';
     if (h < 17) return 'สวัสดีตอนบ่าย';
     return 'สวัสดีตอนเย็น';
+  }
+
+  // ─── โครงหน้าระหว่างโหลด (skeleton) ────────────────────────
+  // ใช้แทนคำว่า "กำลังโหลด..." ในจุดที่ "อ่านข้อมูล" — เลือกรูปทรงให้ตรงกับของที่กำลังจะมาแทน
+  // ⚠️ อย่าใช้กับการบันทึก/หักแต้ม/ตรวจก่อนทำ — ที่นั่นผู้ใช้ต้องรอเซิร์ฟเวอร์ยืนยัน กล่อง "กำลังบันทึก..." ถูกแล้ว
+  // aria-busy + ข้อความซ่อน: คนที่ใช้โปรแกรมอ่านหน้าจอยังได้ยินว่ากำลังโหลด (โครงหน้าเป็นแค่ภาพ)
+  const SK_SR_ = '<span class="sr-only">กำลังโหลด</span>';
+
+  // แถวรายการ — shape 'avatar' = วงกลม (รายชื่อคน) · ค่าอื่น = สี่เหลี่ยมมน (แจ้งเตือน/ประวัติ)
+  function skRows_(n, shape) {
+    const lead = shape === 'avatar' ? 'sk-av' : 'sk-ic';
+    let h = '';
+    for (let i = 0; i < (n || 3); i++) {
+      h += '<div class="sk-row"><span class="sk ' + lead + '"></span>' +
+           '<span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div>';
+    }
+    return '<div aria-busy="true">' + SK_SR_ + h + '</div>';
+  }
+
+  // การ์ดเนื้อหา — หัวข้อสั้น + เนื้อความ 2 บรรทัด (หน้าตั้งค่า · รายงาน · เนื้อหาบทเรียน)
+  function skCards_(n) {
+    let h = '';
+    for (let i = 0; i < (n || 2); i++) {
+      h += '<div class="sk-card"><span class="sk sk-line" style="width:42%;height:13px"></span>' +
+           '<span class="sk sk-line" style="width:92%"></span><span class="sk sk-line" style="width:68%"></span></div>';
+    }
+    return '<div aria-busy="true">' + SK_SR_ + h + '</div>';
+  }
+
+  // หน้าคู่หู — วงกลมตัวสัตว์ + ฟองคำพูด + แถบค่าสถานะ 3 แถบ
+  function skCompanion_() {
+    return '<div aria-busy="true" class="sk-card" style="align-items:center;padding:24px 16px">' + SK_SR_ +
+      '<span class="sk" style="width:150px;height:150px;border-radius:50%"></span>' +
+      '<span class="sk sk-line" style="width:58%;height:14px;margin-top:6px"></span>' +
+      '<span class="sk sk-line" style="width:88%;margin-top:10px"></span>' +
+      '<span class="sk sk-line" style="width:88%"></span><span class="sk sk-line" style="width:88%"></span></div>';
+  }
+
+  // หน้าที่เปิดซ้ำบ่อย (ภาพรวมครู · คู่หู) — ถ้ามีของจริงแสดงอยู่แล้ว ให้คงไว้ระหว่างดึงของใหม่
+  // แบบแอปธนาคารที่กลับมาหน้าเดิมแล้วยังเห็นยอดเดิมทันที ไม่ใช่ล้างเป็นโครงหน้าทุกครั้งที่สลับแท็บ
+  // ⚠️ ห้ามใช้กับรายการที่เปลี่ยนตามตัวกรอง (ชั้น/วันที่) — ของเก่าที่ค้างอยู่จะเป็นของคนละชั้น ครูอ่านผิดได้
+  function hasRealContent_(el) {
+    return !!el && el.children.length > 0 && !el.querySelector('[aria-busy="true"]');
+  }
+
+  // แถวตาราง — ใส่ใน <tbody> ได้ตรงๆ
+  function skTableRows_(rows, cols) {
+    const widths = ['60%', '85%', '40%', '70%'];
+    let h = '';
+    for (let r = 0; r < rows; r++) {
+      h += '<tr aria-busy="true">';
+      for (let c = 0; c < cols; c++) h += '<td><span class="sk sk-line" style="width:' + widths[(r + c) % widths.length] + '"></span></td>';
+      h += '</tr>';
+    }
+    return h;
   }
 
   function alertRow_(tone, icon, title, sub, onclick) {
@@ -3200,7 +3305,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
   function loadBulkScore_() {
     const body = document.getElementById('bulkScoreBody');
-    body.innerHTML = '<div class="sc-empty">กำลังโหลดรายชื่อ...</div>';
+    body.innerHTML = skRows_(6, 'avatar');
     google.script.run.withSuccessHandler(r => {
       if (!r || !r.ok) { body.innerHTML = courseErrorHtml_('loadBulkScore_()'); return; }
       bulkState.rows = r.rows;
@@ -3384,7 +3489,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   }
   function repReload_() {
     const body = document.getElementById('reportBody');
-    body.innerHTML = '<div class="sc-empty">กำลังโหลด...</div>';
+    body.innerHTML = skCards_(2);
     google.script.run.withSuccessHandler(r => { if (r && r.ok) renderReport_(r); else body.innerHTML = courseErrorHtml_('repReload_()'); })
       .withFailureHandler(() => { body.innerHTML = courseErrorHtml_('repReload_()'); })
       .getTermReport(document.getElementById('repSubj').value, document.getElementById('repCls').value);
@@ -3396,7 +3501,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   function openChangeLog_() {
     openFullpageView_('changeLogModal');
     const body = document.getElementById('changeLogBody');
-    body.innerHTML = '<div class="sc-empty">กำลังโหลด...</div>';
+    body.innerHTML = skRows_(5);
     google.script.run.withSuccessHandler(list => {
       if (!list || !list.length) {
         body.innerHTML = '<div class="sc-empty">ยังไม่มีการแก้ย้อนหลัง</div>';
@@ -3577,7 +3682,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // รวมมาไว้ที่เดียวให้ครูดูแลได้จากหน้าเว็บ โดยไม่ต้องเปิด Apps Script
   function renderAdminCare_() {
     const body = document.getElementById('adminBody');
-    body.innerHTML = '<div class="sc-empty">กำลังโหลด...</div>';
+    body.innerHTML = skCards_(3);
 
     let got = 0, data = {};
     const done = () => { if (++got === 3) paintCare_(data); };
@@ -4167,7 +4272,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
   function loadCalendar_() {
     const body = document.getElementById('calBody');
-    body.innerHTML = '<div class="sc-empty">กำลังโหลด...</div>';
+    body.innerHTML = skRows_(4);
     google.script.run.withSuccessHandler(r => renderCalendar_(r))
       .withFailureHandler(err => { console.error('getSchoolCalendar failed:', err); body.innerHTML = courseErrorHtml_('loadCalendar_()'); })
       .getSchoolCalendar();
@@ -4944,7 +5049,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // ตอนครูเข้าระบบข้อมูลนี้มากับก้อนรวมอยู่แล้ว จึงเรียกตัววาดตรงๆ ได้เลย ไม่ต้องยิงคำขอซ้ำ
   function loadTeacherOverview() {
     const cont = document.getElementById('overviewContainer');
-    cont.innerHTML = '<div class="u-empty">กำลังโหลด...</div>';
+    if (!hasRealContent_(cont)) cont.innerHTML = skRows_(3);   // กลับมาแท็บนี้ซ้ำ = เห็นของเดิมทันที แล้วค่อยอัปเดต
     google.script.run.withSuccessHandler(ov => renderTeacherOverview_(ov))
       .withFailureHandler(err => {
         console.error('getTeacherOverview failed:', err);
@@ -5021,7 +5126,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     const c = document.getElementById('vSubClass').value;
     if (!s || !c) return;
     setScoreTableMode_(true);
-    document.getElementById('scoreTableBody').innerHTML = '<tr><td colspan="3">กำลังดึงคะแนน...</td></tr>';
+    document.getElementById('scoreTableBody').innerHTML = skTableRows_(6, 3);
     google.script.run.withSuccessHandler(res => {
       if (!res.success || res.data.length === 0) {
         scoreViewState.data = null;
@@ -5289,7 +5394,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       dateTo:   document.getElementById('histDateTo').value
     };
     const cont = document.getElementById('historyContainer');
-    cont.innerHTML = '<div class="u-empty">กำลังโหลด...</div>';
+    cont.innerHTML = skRows_(6);
 
     google.script.run.withSuccessHandler(list => {
       if (!list || list.length === 0) {
@@ -5329,7 +5434,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     const nameFilter = (document.getElementById('stuFilterName').value || '').trim().toLowerCase();
 
     const cont = document.getElementById('allStuBody');
-    cont.innerHTML = '<div class="u-empty-sm">กำลังโหลด...</div>';
+    cont.innerHTML = skRows_(6, 'avatar');
     const results = {};
     let pending = 2;
     const done = () => {
@@ -5426,7 +5531,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
     if (!isEdit) { build(null, ''); return; }
     // โหมดแก้ไข: ต้องดึงค่าปัจจุบันมาเติมในฟอร์มก่อน ไม่งั้นครูต้องพิมพ์ใหม่ทั้งหมดเสี่ยงพิมพ์ผิด
-    Swal.fire({ title: 'กำลังโหลด...', didOpen: () => Swal.showLoading() });
+    Swal.fire({ html: skCards_(2), showConfirmButton: false });   // โครงของฟอร์มระหว่างดึงค่าปัจจุบัน
     const got = {};
     let pending = 2;
     const ready = () => {
@@ -5529,7 +5634,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
   function loadAttendanceLog() {
     const cont = document.getElementById('attendanceContainer');
-    cont.innerHTML = '<div class="u-empty">กำลังโหลด...</div>';
+    cont.innerHTML = skRows_(6, 'avatar');
     const filters = {
       cls:      document.getElementById('attClass').value,
       subject:  document.getElementById('attSubject').value,
@@ -5670,7 +5775,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // ปิดแล้วแค่ซ่อนหน้าจอ ข้อมูลเดิมยังอยู่ครบและกลับมาเห็นทันทีที่เปิดใหม่ (ตามนโยบายสำรองข้อมูล)
   function renderAdminFeatures_() {
     const body = document.getElementById('adminBody');
-    body.innerHTML = '<div class="u-empty">กำลังโหลด...</div>';
+    body.innerHTML = skCards_(4);
 
     google.script.run.withSuccessHandler(res => {
       const rows = (res.features || []).map(f => {
@@ -5782,7 +5887,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // (ให้คะแนน สแกน แลกแต้ม ส่งงาน) นักเรียนยังเปิดดูย้อนหลังได้ตามปกติ
   function renderAdminTerm_() {
     const body = document.getElementById('adminBody');
-    body.innerHTML = '<div class="u-empty">กำลังโหลด...</div>';
+    body.innerHTML = skCards_(3);
     google.script.run.withSuccessHandler(st => {
       const auto = st.autoDetected || {};
       const clsRows = st.classes.map(c => `
@@ -5988,7 +6093,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
   // คลังคะแนนที่เก็บไว้ — ดูย้อนหลังและกู้กลับได้
   function showTermArchives_() {
-    Swal.fire({ title: 'กำลังโหลด...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    Swal.fire({ html: skRows_(4), showConfirmButton: false, allowOutsideClick: false });
     google.script.run.withSuccessHandler(list => {
       if (!list || !list.length) { Swal.fire('ยังไม่มีคลัง', 'ยังไม่เคยเก็บคะแนนเทอมไหนเข้าคลัง', 'info'); return; }
       const rows = list.map(a => `
@@ -6301,7 +6406,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // ─── ELECTIVE ENROLLMENT OVERVIEW (ครู) ──────────────────────
   // ภาพรวมว่าแต่ละสาขาวิชาเลือกมีนักเรียนกี่คน ใครบ้าง — ยุบเป็น accordion เริ่มต้น (11 สาขา ถ้าเปิดหมดจะยาวเกินไป)
   function openElectiveOverviewModal() {
-    Swal.fire({ title: 'กำลังโหลด...', didOpen: () => Swal.showLoading() });
+    Swal.fire({ html: skCards_(3), showConfirmButton: false });
     google.script.run.withSuccessHandler(ov => {
       const unassignedRow = ov.unassignedCount > 0
         ? `<div class="card card-pad" style="margin-bottom:10px; background:rgba(255,77,109,0.08); text-align:left;">
@@ -6396,7 +6501,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // เปิด modal แสดงข้อมูลโปรไฟล์/ผลการเรียนของนักเรียนคนใดคนหนึ่ง
   // ดึงข้อมูลนักเรียนสำหรับบัตรประจำตัว 3 ทาง (แดชบอร์ด/คู่หู/วิ่ง) พร้อมกัน แล้วค่อยวาดครั้งเดียวเมื่อครบ
   function viewStudentProfile(stdId) {
-    Swal.fire({ title: 'กำลังโหลด...', didOpen: () => Swal.showLoading() });
+    Swal.fire({ html: skCompanion_(), showConfirmButton: false });   // หน้าโปรไฟล์มีรูปวงกลม + แถบค่า รูปทรงเดียวกับหน้าคู่หู
     const results = {};
     let pending = 4;
     const done = () => { if (--pending === 0) renderStudentProfile_(stdId, results); };
@@ -7036,7 +7141,8 @@ function showSpinResult(res) {
 // โหลดข้อมูลคู่หูของนักเรียนมาแสดงในแท็บฉายา/คู่หู
 function loadCompanionTab() {
   const cont = document.getElementById('companionContainer');
-  cont.innerHTML = `<div style="text-align:center;color:var(--slate);padding:40px 0;"><div style="font-size:48px;margin-bottom:8px;">🥚</div>กำลังโหลด...</div>`;
+  // เปิดแท็บคู่หูซ้ำ = เห็นตัวเดิมทันที แล้วค่อยอัปเดต · เปิดครั้งแรกค่อยขึ้นโครงหน้า
+  if (!hasRealContent_(cont)) cont.innerHTML = skCompanion_();
 
   google.script.run
     .withSuccessHandler(d => {
@@ -7443,7 +7549,8 @@ function coursePush_(renderFn) { courseNavStack.push(renderFn); }
 
 // สปินเนอร์กำลังโหลด (ใช้ตรงกันทุกระดับของโมดูลเรียนออนไลน์ ให้เห็นชัดว่า "กำลังทำงานอยู่" ไม่ใช่ค้าง)
 function courseLoadingHtml_() {
-  return '<div style="text-align:center; padding:36px 0; color:var(--slate);"><i class="fa-solid fa-spinner fa-spin" style="font-size:1.6rem; margin-bottom:8px; display:block;"></i>กำลังโหลด...</div>';
+  // ใช้ร่วม 5 จุด: รายวิชา · บทเรียน · แบบฝึกวิชาเลือก · หน้าวิ่ง · ประวัติวิ่ง — เดิมเป็นวงหมุน
+  return skCards_(3);
 }
 function courseErrorHtml_(retryFnCall) {
   return `<div style="text-align:center; padding:24px; color:var(--coral);">
@@ -8025,7 +8132,7 @@ function openSubmissionReviewModal() {
 }
 function loadPendingSubmissions_(subj, cls) {
   const body = document.getElementById('reviewModalBody');
-  body.innerHTML = '<div class="u-empty">กำลังโหลด...</div>';
+  body.innerHTML = skCards_(3);
   google.script.run.withSuccessHandler(list => {
     if (!list || list.length === 0) {
       body.innerHTML = '<div class="u-empty">ไม่มีงานรอตรวจครับ 🎉</div>';
@@ -8072,7 +8179,7 @@ function openExamControlModal() {
   const ch   = document.getElementById('activeChapterInput').value;
   openFullpageView_('examCtrlModal');
   const body = document.getElementById('examCtrlModalBody');
-  body.innerHTML = '<div class="u-empty">กำลังโหลด...</div>';
+  body.innerHTML = skRows_(4);
   google.script.run.withSuccessHandler(cfg => {
     if (!cfg.hasConfig) {
       body.innerHTML = `<div style="text-align:center; padding:16px; color:var(--slate);">
@@ -8738,7 +8845,7 @@ function refreshRunSummary_() {
       </div>
     </div>
     <div class="sc-pad pa-wrap" id="parentBody">
-      <div class="sc-empty">กำลังโหลด...</div>
+      <div aria-busy="true"><span class="sr-only">กำลังโหลด</span><div class="sk-card"><span class="sk sk-line" style="width:42%;height:13px"></span><span class="sk sk-line" style="width:92%"></span><span class="sk sk-line" style="width:68%"></span></div><div class="sk-card"><span class="sk sk-line" style="width:42%;height:13px"></span><span class="sk sk-line" style="width:92%"></span><span class="sk sk-line" style="width:68%"></span></div></div>
     </div>
   </div>
 </div>
