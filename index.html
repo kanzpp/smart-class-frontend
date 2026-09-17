@@ -1791,7 +1791,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     // ถ้าเป็นการแลกคะแนน แล้วเด็กกดซ้ำเพราะคิดว่าไม่ติด จะเสียแต้มสองเท่า
     //
     // ทางแก้: ติดรหัสประจำคำขอไปด้วย แล้วลองใหม่เองด้วยรหัสเดิมเมื่อคำตอบหาย
-    // ฝั่งหลังบ้านจำผลของรหัสนั้นไว้ 2 นาที ถ้าเจอรหัสซ้ำจะคืนผลเดิมโดยไม่ทำงานซ้ำ
+    // ฝั่งหลังบ้านจำผลของรหัสนั้นไว้ 5 นาที ถ้าเจอรหัสซ้ำจะคืนผลเดิมโดยไม่ทำงานซ้ำ
+    // และถ้ารอบแรกยังทำงานไม่เสร็จ จะตอบ pending ให้หน้าเว็บรอถามใหม่ (ไม่ทำงานซ้ำเช่นกัน)
     // จึงปลอดภัยแม้เป็นรายการที่หักแต้ม
     function newRequestId_() {
       return 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
@@ -1825,14 +1826,18 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     function executeGasCall(funcName, args, onSuccess, onFail) {
       const reqId = newRequestId_();
       const MAX_TRY = 3;
+      // หลังบ้านตอบ "pending" = รอบก่อนของคำขอนี้ยังทำงานอยู่ → รอแล้วถามผลใหม่ด้วยรหัสเดิม ห้ามนับเป็นความล้มเหลว
+      // ถามทุก 3 วิ ได้สูงสุด 40 ครั้ง (~2 นาที) — หลังบ้านจำผลไว้ 5 นาที จึงยังได้ผลจริงกลับมาแน่นอน
+      const PENDING_POLL_MS = 3000, MAX_PENDING_POLLS = 40;
 
-      const attempt = (tryNo, askedPass) => {
+      const attempt = (tryNo, askedPass, pendingPolls) => {
+        pendingPolls = pendingPolls || 0;
         fetch(GAS_API_URL, {
           method: 'POST',
           body: JSON.stringify({ func: funcName, args: args, reqId: reqId, adminPass: ADMIN_PASS || undefined }),
           // ตัดรอที่ 45 วินาที — เน็ตโรงเรียนหลุดกลางทางแล้วคำขอค้างเงียบตลอดไป ผู้ใช้เห็นแค่วงหมุนไม่จบ
-          // 45 วิเผื่อไว้เยอะมากเมื่อเทียบกับคำขอที่ช้าที่สุดเท่าที่เคยวัดได้จริง (~20 วิ)
-          // ตัดแล้วเข้าทางลองใหม่อัตโนมัติที่มีอยู่ ซึ่งใช้ reqId เดิม หลังบ้านจึงไม่ทำงานซ้ำ
+          // ⚠️ ตัดรอ ≠ งานหยุด: ฝั่ง Apps Script อาจยังทำงานอยู่ (วัดจริงเคยรอ 60 วิแล้วได้คำตอบว่าง ทั้งที่งานเสร็จใน 7.6 วิ)
+          //    รอบที่ส่งตามไปใช้ reqId เดิม หลังบ้านจะคืนผลเดิม หรือตอบ pending ถ้ายังไม่เสร็จ — ไม่ทำงานซ้ำทั้งสองกรณี
           signal: (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(45000) : undefined
         })
           .then(r => r.text())
@@ -1841,6 +1846,14 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
             if (!txt || !txt.trim()) throw new Error('คำตอบว่างเปล่า');
             const d = JSON.parse(txt);
             if (d.status === 'success') { if (onSuccess) onSuccess(d.response); return; }
+            if (d.status === 'pending') {
+              if (pendingPolls < MAX_PENDING_POLLS) {
+                setTimeout(() => attempt(tryNo, askedPass, pendingPolls + 1), PENDING_POLL_MS);
+                return;
+              }
+              if (onFail) onFail('เซิร์ฟเวอร์ยังทำงานไม่เสร็จ ข้อมูลอาจบันทึกแล้ว');
+              return;
+            }
             // หลังบ้านขอรหัสผ่านครูก่อนลงมือ — ถามแล้วยิงใหม่ให้เอง ครูไม่ต้องกดคำสั่งซ้ำ
             // ตรงนี้ยังไม่มีอะไรถูกเขียน คำสั่งถูกปฏิเสธตั้งแต่หน้าประตู
             if (d.needAdminPass && !askedPass) {
@@ -1857,7 +1870,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           .catch(err => {
             if (tryNo < MAX_TRY) {
               console.warn('ลองใหม่ครั้งที่ ' + (tryNo + 1) + ' สำหรับ ' + funcName + ':', err.message || err);
-              setTimeout(() => attempt(tryNo + 1, askedPass), 1200 * tryNo);   // ถอยห่างขึ้นเรื่อยๆ
+              setTimeout(() => attempt(tryNo + 1, askedPass, pendingPolls), 1200 * tryNo);   // ถอยห่างขึ้นเรื่อยๆ
               return;
             }
             if (onFail) onFail(String(err)); else console.error('GAS Network Error:', funcName, err);
@@ -4977,64 +4990,105 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     }
   }
 
-  // ส่งคำสั่งหักแต้มพิเศษไปที่ backend พร้อมเหตุผล (แยกจาก executeBackendScan เพราะเรียกคนละฟังก์ชันฝั่ง server)
-  function executeDeduction(stdId, amount, reason) {
+  // ─── บันทึกจากหน้าสแกน (ลายเซ็น/คะแนนสอบ · ให้แต้ม · หักแต้ม) ────────
+  // ครูเล่าจากการใช้จริง (17 ก.ย. 2569): สแกนติดเร็ว แต่ "กำลังบันทึก..." นานมาก บางครั้งขึ้น error
+  // ทั้งที่ข้อมูลเข้าชีตไปแล้ว → ครูสแกนซ้ำ → ลายเซ็นบวกสองครั้ง (เจอจริง 1 คู่ในข้อมูล 16 ก.ย. 09:18)
+  // แก้ 3 ชั้น:
+  //   1. ระหว่างรอ บอกเวลาที่ผ่านไปและบอกว่า "อย่าเพิ่งสแกนซ้ำ" (showSaving_)
+  //   2. คำตอบช้า → หน้าเว็บรอถามผลต่อด้วยรหัสคำขอเดิม ไม่ขึ้น error (ดู pending ใน executeGasCall)
+  //   3. ครูสแกนคนเดิมซ้ำภายใน 3 นาที → หลังบ้านถามก่อน ปุ่มหลักคือ "ไม่ต้องบันทึกซ้ำ"
+  // ⚠️ ข้อความ error ต้องบอกว่า "ข้อมูลอาจเข้าแล้ว" เสมอ — ห้ามกลับไปขึ้นแค่ 'ผิดพลาด' เฉยๆ
+  //    ครูจะเข้าใจว่าไม่เข้า แล้วบันทึกซ้ำ
+
+  function showSaving_() {
     Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    const started = Date.now();
+    const timer = setInterval(() => {
+      if (!Swal.isVisible() || !Swal.isLoading()) { clearInterval(timer); return; }
+      const sec = Math.round((Date.now() - started) / 1000);
+      if (sec < 6) return;
+      // แก้ข้อความตรงๆ ไม่ใช้ Swal.update — update จะวาดปุ่มใหม่แล้ววงหมุนหาย
+      const t = Swal.getTitle(), h = Swal.getHtmlContainer();
+      if (t) t.textContent = 'กำลังบันทึก... ' + sec + ' วินาที';
+      if (h) {
+        h.style.display = 'block';
+        h.innerHTML = 'เน็ตหรือเซิร์ฟเวอร์ช้าอยู่ ระบบกำลังรอผลให้<br><b>อย่าเพิ่งสแกนซ้ำ</b>';
+      }
+    }, 1000);
+  }
+
+  // ผลที่กลับมาจากหลังบ้าน — ใช้ร่วมทั้ง 3 ทาง · retry = ส่งซ้ำแบบยืนยันว่าตั้งใจ (confirmRepeat)
+  function handleScanSaveResult_(res, retry) {
+    if (res && res.success) {
+      buzz_(60);                     // สั่นสั้น 1 ที = บันทึกแล้ว เรียกคนต่อไปได้เลยโดยไม่ต้องมองจอ
+      Toast(res.message, 'success');
+      setTimeout(() => { openFullpageView_('reader-modal'); startScanner(); }, 1200);
+      return;
+    }
+    buzz_([40, 70, 40]);             // สั่นสะดุด 2 ที = มีอะไรผิด ต้องมองจอ
+    if (res && res.needConfirmRepeat) {
+      Swal.fire({
+        icon: 'info',
+        title: 'บันทึกไปแล้ว',
+        html: res.message + '<br><br><span style="font-size:.85rem;color:var(--ink-2)">' +
+              'ถ้าก่อนหน้านี้ขึ้น error หรือรอนาน — <b>ข้อมูลเข้าระบบแล้ว ไม่ต้องบันทึกซ้ำ</b></span>',
+        showCancelButton: true,
+        confirmButtonText: 'ไม่ต้องบันทึกซ้ำ',           // ปุ่มหลัก = ทางที่ปลอดภัย
+        cancelButtonText: 'ตั้งใจบันทึกเพิ่มอีกครั้ง',
+        focusConfirm: true
+      }).then(r => {
+        if (r.dismiss === Swal.DismissReason.cancel) retry();
+        else resumeScannerAfterCancel();
+      });
+      return;
+    }
+    Swal.fire('แจ้งเตือน', (res && res.message) || 'บันทึกไม่สำเร็จ', 'warning').then(() => resumeScannerAfterCancel());
+  }
+
+  // ไม่ได้คำตอบเลย (เน็ตหลุด/รอเกินกำหนด) — ไม่รู้ว่าเข้าหรือไม่ จึงต้องพูดตรงๆ ว่าอาจเข้าแล้ว
+  function handleScanSaveError_() {
+    buzz_([40, 70, 40]);
+    Swal.fire({
+      icon: 'warning',
+      title: 'ยังไม่ได้รับคำตอบจากเซิร์ฟเวอร์',
+      html: 'เน็ตช้าหรือหลุดระหว่างบันทึก — <b>ข้อมูลอาจเข้าระบบแล้ว</b><br><br>' +
+            '<span style="font-size:.85rem;color:var(--ink-2)">สแกนนักเรียนคนเดิมได้เลย ถ้าบันทึกเข้าไปแล้ว ระบบจะบอกก่อน ไม่บันทึกซ้ำให้</span>',
+      confirmButtonText: 'สแกนต่อ'
+    }).then(() => resumeScannerAfterCancel());
+  }
+
+  // ส่งคำสั่งหักแต้มพิเศษไปที่ backend พร้อมเหตุผล (แยกจาก executeBackendScan เพราะเรียกคนละฟังก์ชันฝั่ง server)
+  function executeDeduction(stdId, amount, reason, confirmRepeat) {
+    showSaving_();
     google.script.run
-      .withSuccessHandler(res => {
-        if (res.success) {
-          buzz_(60);                     // สั่นสั้น 1 ที = บันทึกแล้ว เรียกคนต่อไปได้เลยโดยไม่ต้องมองจอ
-          Toast(res.message, 'success');
-          setTimeout(() => { openFullpageView_('reader-modal'); startScanner(); }, 1200);
-        } else {
-          buzz_([40, 70, 40]);           // สั่นสะดุด 2 ที = มีอะไรผิด ต้องมองจอ
-          Swal.fire('แจ้งเตือน', res.message, 'warning').then(() => resumeScannerAfterCancel());
-        }
-      })
-      .withFailureHandler(err => Swal.fire('ผิดพลาด', err.toString(), 'error').then(() => resumeScannerAfterCancel()))
-      .deductStudentPoints(currentTeacherUsername, stdId, amount, reason);
+      .withSuccessHandler(res => handleScanSaveResult_(res, () => executeDeduction(stdId, amount, reason, true)))
+      .withFailureHandler(handleScanSaveError_)
+      .deductStudentPoints(currentTeacherUsername, stdId, amount, reason, !!confirmRepeat);
   }
 
   // ส่งคำสั่งให้แต้มพิเศษไปที่ backend พร้อมเหตุผล (คู่กับ executeDeduction)
-  function executeAward(stdId, amount, reason) {
-    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  function executeAward(stdId, amount, reason, confirmRepeat) {
+    showSaving_();
     google.script.run
-      .withSuccessHandler(res => {
-        if (res.success) {
-          buzz_(60);                     // สั่นสั้น 1 ที = บันทึกแล้ว เรียกคนต่อไปได้เลยโดยไม่ต้องมองจอ
-          Toast(res.message, 'success');
-          setTimeout(() => { openFullpageView_('reader-modal'); startScanner(); }, 1200);
-        } else {
-          buzz_([40, 70, 40]);           // สั่นสะดุด 2 ที = มีอะไรผิด ต้องมองจอ
-          Swal.fire('แจ้งเตือน', res.message, 'warning').then(() => resumeScannerAfterCancel());
-        }
-      })
-      .withFailureHandler(err => Swal.fire('ผิดพลาด', err.toString(), 'error').then(() => resumeScannerAfterCancel()))
-      .awardStudentPoints(currentTeacherUsername, stdId, amount, reason);
+      .withSuccessHandler(res => handleScanSaveResult_(res, () => executeAward(stdId, amount, reason, true)))
+      .withFailureHandler(handleScanSaveError_)
+      .awardStudentPoints(currentTeacherUsername, stdId, amount, reason, !!confirmRepeat);
   }
 
   // ส่งผลการสแกน (รหัสนักเรียน, ประเภทการสแกน, คะแนน) ไปบันทึกที่ backend
-  function executeBackendScan(stdId, actionType, scoreVal) {
-    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  function executeBackendScan(stdId, actionType, scoreVal, confirmRepeat) {
+    showSaving_();
     const payload = {
       studentId: stdId,
       subject:   document.getElementById('activeSubjSelect').value,
       cls:       document.getElementById('activeClassSelect').value,
       chapter:   parseInt(document.getElementById('activeChapterInput').value) || 1,
-      action: actionType, scoreValue: scoreVal, status: 'present'
+      action: actionType, scoreValue: scoreVal, status: 'present',
+      confirmRepeat: !!confirmRepeat
     };
     google.script.run
-      .withSuccessHandler(res => {
-        if (res.success) {
-          buzz_(60);                     // สั่นสั้น 1 ที = บันทึกแล้ว เรียกคนต่อไปได้เลยโดยไม่ต้องมองจอ
-          Toast(res.message, 'success');
-          setTimeout(() => { openFullpageView_('reader-modal'); startScanner(); }, 1200);
-        } else {
-          buzz_([40, 70, 40]);           // สั่นสะดุด 2 ที = มีอะไรผิด ต้องมองจอ
-          Swal.fire('แจ้งเตือน', res.message, 'warning').then(() => resumeScannerAfterCancel());
-        }
-      })
-      .withFailureHandler(err => Swal.fire('ผิดพลาด', err.toString(), 'error').then(() => resumeScannerAfterCancel()))
+      .withSuccessHandler(res => handleScanSaveResult_(res, () => executeBackendScan(stdId, actionType, scoreVal, true)))
+      .withFailureHandler(handleScanSaveError_)
       .processScanData(payload);
   }
 
