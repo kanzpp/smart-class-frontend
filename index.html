@@ -1754,6 +1754,11 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
      แผงจัดการแต้มพิเศษรายคน (หน้าข้อมูลนักเรียนของครู) — 22 ก.ย. 2569
      สถานะ "พัก" ใช้สีเข้มกลาง (--ink) ไม่ใช้สีความหมาย — พักไม่ใช่ได้ ไม่ใช่เสีย และไม่ใช่รอดำเนินการ
      ════════════════════════════════════════════════════════════ */
+  /* ตัวเลขแต้มบนหัวจอนักเรียนตอนถูกพัก — แทนด้วยข้อความ ไม่โชว์ตัวเลข (ดู paintStudentPoints_)
+     ⚠️ ต้องเจาะจงกว่า .sc-amount .big span ซึ่งย่อทุก span ในช่องตัวเลขเหลือ .95rem */
+  .sc-amount .big .pts-closed { font-size:1.9rem; opacity:1; margin-left:0; letter-spacing:0; }
+  .sc-amount .big .pts-closed i { font-size:.8em; margin-right:6px; opacity:.85; }
+  .bz-seen { font-size:.72rem; color:var(--ink-3); margin-top:4px; }
   .bz-panel { background:var(--surface-2); border-radius:12px; padding:12px; margin-bottom:14px; text-align:left; }
   .bz-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
   .bz-num { font-family:'Kanit',sans-serif; font-size:1.5rem; font-weight:600; color:var(--gold); font-variant-numeric:tabular-nums; line-height:1.2; }
@@ -4491,6 +4496,23 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
   // ชิปบนหัวจอนักเรียน: บอกสถานะให้เห็นตรงแต้มเลย ไม่ต้องรอกดแล้วโดนปฏิเสธ
   // พักรายคนมาก่อนสวิตช์ระดับชั้นเสมอ (ตรงกับลำดับของหลังบ้าน)
+  // ตัวเลขแต้มบนหัวจอนักเรียน — ทุกจุดที่จะเขียนยอดแต้มต้องผ่านตัวนี้ (ตอนเข้าแอป · ตอนอัปเดตหลังทำรายการ)
+  // ถูกพักรายคน = ไม่โชว์ตัวเลข ขึ้น "ปิดยอดแล้ว" แทน (เจ้าของสั่ง 22 ก.ย. 2569)
+  // "ปิดยอด" เป็นคำของธนาคาร (สรุปยอดบัญชีแล้ว) เข้ากับชุดหน้าตา Bank
+  // คะแนนเก็บสรุปแล้ว ตัวเลขที่เหลือไม่มีความหมายกับเด็กอีก ถ้ายังโชว์ เด็กจะสงสัยว่าทำไมแลกไม่ได้
+  // ⚠️ แต้มไม่ได้หายไปไหน (ไม่ล้างแต้มค้าง) — ครูยังเห็นยอดจริงในหน้าข้อมูลนักเรียน
+  function paintStudentPoints_(bal) {
+    const el = document.getElementById('stdPointsDisplay');
+    if (!el) return;
+    if (STUDENT_BONUS_FREEZE) {
+      el.innerHTML = '<span class="pts-closed"><i class="fa-solid fa-lock"></i>ปิดยอดแล้ว</span>';
+      el.title = 'ครูสรุปคะแนนเก็บของคุณแล้ว จึงปิดยอดแต้มพิเศษไว้';
+      return;
+    }
+    el.innerHTML = `${bal} <small>แต้ม</small>`;
+    el.title = '';
+  }
+
   function renderBonusStatusChip_(cls) {
     const chip = document.getElementById('sBonusStatusChip');
     if (!chip) return;
@@ -4498,8 +4520,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     const redeemOff = !featOnFor_('FEAT_BONUS_REDEEM', cls, null);
     let text = '', tip = '';
     if (STUDENT_BONUS_FREEZE) {
-      text = '🔒 พักแต้มพิเศษ';
-      tip = 'คะแนนเก็บสรุปแล้ว — ครูพักแต้มพิเศษของคุณไว้' + (STUDENT_BONUS_FREEZE.since ? ' ตั้งแต่ ' + thaiShortDate_(STUDENT_BONUS_FREEZE.since) : '');
+      text = '✓ คะแนนเก็บสรุปแล้ว';   // ตัวใหญ่บอก "ปิดยอดแล้ว" ไปแล้ว ชิปจึงบอกเหตุผลแทน ไม่พูดซ้ำ
+      tip = 'ครูพักแต้มพิเศษของคุณไว้ — รับหรือแลกแต้มเพิ่มไม่ได้' + (STUDENT_BONUS_FREEZE.since ? ' ตั้งแต่ ' + thaiShortDate_(STUDENT_BONUS_FREEZE.since) : '');
     } else if (earnOff && redeemOff) { text = '⏸ งดรับ-แลกแต้มชั่วคราว'; tip = 'ครูปิดการรับและแลกแต้มของชั้นนี้ไว้ชั่วคราว'; }
     else if (redeemOff) { text = '⏸ งดแลกแต้มชั่วคราว'; tip = 'คะแนนเก็บสรุปแล้ว รอสอบปลายภาค'; }
     else if (earnOff)   { text = '⏸ งดรับแต้มชั่วคราว'; tip = 'ครูปิดการรับแต้มพิเศษของชั้นนี้ไว้ชั่วคราว'; }
@@ -4699,8 +4721,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // วาดหน้าจอนักเรียนจากข้อมูลก้อนเดียว ใช้ได้ทั้งข้อมูลที่จำไว้และข้อมูลสด
   function renderStudentBoot_(bundle, stdId) {
       // แต้มพิเศษ
-      document.getElementById('stdPointsDisplay').innerHTML = `${bundle.pointsBalance} <small>แต้ม</small>`;
       STUDENT_BONUS_FREEZE = bundle.bonusFreeze || null;   // ครูพักแต้มพิเศษของเด็กคนนี้ไว้ไหม (วาดชิปหลังได้ค่า meta ด้านล่าง)
+      paintStudentPoints_(bundle.pointsBalance);            // ต้องหลังรู้สถานะพัก — พักแล้วไม่โชว์ตัวเลข
 
       // แจ้งเตือนแต้มจากครู (ใช้ list ที่มากับ bundle แล้ว ไม่ต้องยิงซ้ำ)
       checkManualPointNotices(stdId, bundle.manualNotices);
@@ -6783,7 +6805,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       <div class="u-label">แต้มพิเศษ</div>
       <div class="bz-panel">
         <div class="bz-top">
-          <div class="bz-num">${bal} <small>แต้ม</small></div>
+          <div>
+            <div class="bz-num">${bal} <small>แต้ม</small></div>
+            ${frz ? '<div class="bz-seen">นักเรียนไม่เห็นตัวเลขนี้ เห็นเป็น 🔒 ปิดยอดแล้ว</div>' : ''}
+          </div>
           <span class="bz-status ${frz ? 'is-frozen' : 'is-ok'}">${frz ? '🔒 พักแต้มพิเศษ' : '✅ ใช้งานได้'}</span>
         </div>
         ${note}
@@ -6972,7 +6997,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // โหลดยอดแต้มคงเหลือของนักเรียนที่ล็อกอินอยู่มาอัปเดตหน้าจอ
   function refreshPointsBalance() {
     google.script.run.withSuccessHandler(bal => {
-      document.getElementById('stdPointsDisplay').innerHTML = `${bal} <small>แต้ม</small>`;
+      paintStudentPoints_(bal);
     }).withFailureHandler(err => {
       // ยอดแต้มที่ค้างอยู่บนจอเป็นค่าเก่า ต้องบอกให้รู้ ไม่ให้เข้าใจผิดว่าแต้มที่เพิ่งได้/เพิ่งใช้ไปไม่เข้าระบบ
       console.error('getStudentPointsBalance (refresh) failed:', err);
