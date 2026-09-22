@@ -1750,6 +1750,35 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     clip:rect(0,0,0,0); white-space:nowrap; border:0;
   }
 
+  /* ════════════════════════════════════════════════════════════
+     แผงจัดการแต้มพิเศษรายคน (หน้าข้อมูลนักเรียนของครู) — 22 ก.ย. 2569
+     สถานะ "พัก" ใช้สีเข้มกลาง (--ink) ไม่ใช้สีความหมาย — พักไม่ใช่ได้ ไม่ใช่เสีย และไม่ใช่รอดำเนินการ
+     ════════════════════════════════════════════════════════════ */
+  .bz-panel { background:var(--surface-2); border-radius:12px; padding:12px; margin-bottom:14px; text-align:left; }
+  .bz-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .bz-num { font-family:'Kanit',sans-serif; font-size:1.5rem; font-weight:600; color:var(--gold); font-variant-numeric:tabular-nums; line-height:1.2; }
+  .bz-num small { font-size:.8rem; color:var(--ink-2); font-weight:400; }
+  .bz-status { font-size:.72rem; font-weight:700; padding:4px 10px; border-radius:999px; white-space:nowrap; }
+  .bz-status.is-ok { background:var(--mint-dim); color:var(--mint); }
+  .bz-status.is-frozen { background:var(--ink); color:var(--surface); }
+  .bz-note { font-size:.74rem; color:var(--ink-2); margin-top:6px; line-height:1.5; }
+  .bz-acts { display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-top:10px; }
+  .bz-btn {
+    font:inherit; font-size:.74rem; font-weight:600; padding:8px 2px; border-radius:10px; cursor:pointer;
+    border:1px solid var(--line); background:var(--surface); color:var(--ink);
+  }
+  .bz-btn:disabled { opacity:.38; cursor:not-allowed; }
+  .bz-btn.is-freeze { background:var(--ink); color:var(--surface); border-color:var(--ink); }
+  .bz-btn.is-unfreeze { background:var(--mint); color:#fff; border-color:var(--mint); }
+  .bz-hint { font-size:.7rem; color:var(--ink-3); margin-top:7px; text-align:center; }
+  .bz-badge { font-size:.66rem; font-weight:700; padding:1px 7px; border-radius:6px; background:var(--ink); color:var(--surface); white-space:nowrap; }
+  .bz-pick-head { text-align:left; font-size:.84rem; margin-bottom:6px; }
+  .bz-pick-list { max-height:46vh; overflow:auto; text-align:left; border:1px solid var(--line); border-radius:10px; padding:2px 10px; }
+  .bz-pick { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line-soft); font-size:.86rem; cursor:pointer; }
+  .bz-pick:last-child { border-bottom:none; }
+  .bz-pick small { color:var(--ink-3); margin-left:auto; white-space:nowrap; }
+  .bz-pick em { font-style:normal; font-size:.68rem; font-weight:700; color:var(--ink-2); white-space:nowrap; }
+
   </style>
 
   <!-- ═══════════════════════════════════════════════════════════
@@ -2008,6 +2037,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <span class="sc-chip" id="sClassDisplay">ชั้นเรียน</span>
           <span class="sc-chip">ต่อเนื่อง <b id="csStreakCount">—</b> วัน</span>
           <span class="sc-chip">เช็คอินแล้ว <b id="csCheckinCount">—</b> วัน</span>
+          <!-- สถานะแต้มพิเศษ — ขึ้นเฉพาะตอนถูกพักรายคน หรือชั้นนี้ปิดรับ/แลกแต้มอยู่ (ดู renderBonusStatusChip_) -->
+          <span class="sc-chip" id="sBonusStatusChip" style="display:none;"></span>
         </div>
       </div>
 
@@ -2416,6 +2447,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <button class="btn btn-teal btn-sm" onclick="loadStudentList()"><i class="fa-solid fa-magnifying-glass"></i> เช็ค</button>
           <button class="btn btn-ghost btn-sm" id="electiveOverviewBtn" onclick="openElectiveOverviewModal()"><i class="fa-solid fa-shuffle"></i> ภาพรวมสาขาวิชาเลือก</button>
           <button class="btn btn-amber btn-sm" onclick="openStudentEditor_()"><i class="fa-solid fa-user-plus"></i> เพิ่มนักเรียน</button>
+          <button class="btn btn-ghost btn-sm" onclick="openBulkBonusFreeze_()"><i class="fa-solid fa-lock"></i> พักแต้มหลายคน</button>
         </div>
         <div id="allStuBody"><div class="u-empty-sm">เลือกชั้นแล้วกด "เช็ค"</div></div>
       </div>
@@ -4453,7 +4485,36 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     FEAT_BONUS_REDEEM: { title: 'การแลกแต้มปิดการใช้งานชั่วคราว', text: 'คะแนนเก็บสรุปแล้ว รอสอบปลายภาค' },
     FEAT_BONUS_EARN:   { title: 'ระบบให้แต้มพิเศษปิดการใช้งานชั่วคราว', text: 'ตอนนี้ยังรับหรือปรับแต้มพิเศษไม่ได้' }
   };
+  // ─── พักแต้มพิเศษรายคน (22 ก.ย. 2569) ───────────────────────
+  // ครูพักแต้มของเด็กบางคนที่แลกจบแล้วได้ — ของเด็กที่เข้าระบบอยู่มากับก้อนรวมเข้าระบบ
+  let STUDENT_BONUS_FREEZE = null;
+
+  // ชิปบนหัวจอนักเรียน: บอกสถานะให้เห็นตรงแต้มเลย ไม่ต้องรอกดแล้วโดนปฏิเสธ
+  // พักรายคนมาก่อนสวิตช์ระดับชั้นเสมอ (ตรงกับลำดับของหลังบ้าน)
+  function renderBonusStatusChip_(cls) {
+    const chip = document.getElementById('sBonusStatusChip');
+    if (!chip) return;
+    const earnOff = !featOnFor_('FEAT_BONUS_EARN', cls, null);
+    const redeemOff = !featOnFor_('FEAT_BONUS_REDEEM', cls, null);
+    let text = '', tip = '';
+    if (STUDENT_BONUS_FREEZE) {
+      text = '🔒 พักแต้มพิเศษ';
+      tip = 'คะแนนเก็บสรุปแล้ว — ครูพักแต้มพิเศษของคุณไว้' + (STUDENT_BONUS_FREEZE.since ? ' ตั้งแต่ ' + thaiShortDate_(STUDENT_BONUS_FREEZE.since) : '');
+    } else if (earnOff && redeemOff) { text = '⏸ งดรับ-แลกแต้มชั่วคราว'; tip = 'ครูปิดการรับและแลกแต้มของชั้นนี้ไว้ชั่วคราว'; }
+    else if (redeemOff) { text = '⏸ งดแลกแต้มชั่วคราว'; tip = 'คะแนนเก็บสรุปแล้ว รอสอบปลายภาค'; }
+    else if (earnOff)   { text = '⏸ งดรับแต้มชั่วคราว'; tip = 'ครูปิดการรับแต้มพิเศษของชั้นนี้ไว้ชั่วคราว'; }
+    chip.textContent = text;
+    chip.title = tip;
+    chip.style.display = text ? '' : 'none';
+  }
+
   function guardFreeze_(key, cls, subject) {
+    // นักเรียนที่ถูกพักรายคน — ตอบทันทีโดยไม่ต้องยิงไปหลังบ้าน (หลังบ้านก็กันซ้ำอีกชั้นเสมอ)
+    if (STUDENT_BONUS_FREEZE && currentLoggedStudentId && FREEZE_KEYS.indexOf(key) > -1) {
+      Swal.fire({ icon: 'info', title: 'แต้มพิเศษของคุณพักไว้',
+                  text: 'คะแนนเก็บสรุปแล้ว จึงรับหรือแลกแต้มเพิ่มไม่ได้ — ถ้าสงสัยสอบถามครู', confirmButtonText: 'เข้าใจแล้ว' });
+      return false;
+    }
     if (featOnFor_(key, cls, subject)) return true;
     const m = FREEZE_MSG[key] || { title: 'ปิดการใช้งานชั่วคราว', text: '' };
     Swal.fire({ icon: 'info', title: m.title, text: m.text, confirmButtonText: 'เข้าใจแล้ว' });
@@ -4462,6 +4523,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // ผลจากหลังบ้านที่บอกว่าปิดอยู่ (featureOff) → แสดงแบบเดียวกับที่หน้าเว็บตรวจเอง
   function showFeatureOffResult_(res) {
     if (!res || !res.featureOff) return false;
+    if (res.studentFrozen) {   // พักรายคน — ข้อความจากหลังบ้านบอกชื่อและเหตุผลแล้ว
+      Swal.fire({ icon: 'info', title: 'แต้มพิเศษพักไว้', text: res.message || '', confirmButtonText: 'เข้าใจแล้ว' });
+      return true;
+    }
     const m = FREEZE_MSG[res.feature];
     Swal.fire({ icon: 'info', title: m ? m.title : 'ปิดการใช้งานชั่วคราว',
                 text: m ? m.text : (res.message || ''), confirmButtonText: 'เข้าใจแล้ว' });
@@ -4635,6 +4700,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   function renderStudentBoot_(bundle, stdId) {
       // แต้มพิเศษ
       document.getElementById('stdPointsDisplay').innerHTML = `${bundle.pointsBalance} <small>แต้ม</small>`;
+      STUDENT_BONUS_FREEZE = bundle.bonusFreeze || null;   // ครูพักแต้มพิเศษของเด็กคนนี้ไว้ไหม (วาดชิปหลังได้ค่า meta ด้านล่าง)
 
       // แจ้งเตือนแต้มจากครู (ใช้ list ที่มากับ bundle แล้ว ไม่ต้องยิงซ้ำ)
       checkManualPointNotices(stdId, bundle.manualNotices);
@@ -4745,6 +4811,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
       // [Perf] ค่า meta มากับก้อนรวมแล้ว ไม่ต้องยิงเพิ่ม
       if (bundle.meta) { metaData = bundle.meta; populateSelects(); applyFeatureFlags_(); }
+      renderBonusStatusChip_(d.cls);   // ต้องหลังได้ meta — สถานะระดับชั้นอ่านจากสวิตช์ใน meta
       // ส่วนความคืบหน้าสาขาวิชาเลือกอ่าน 4 ชีต ใช้เวลาราว 2 วินาที จึงโหลดต่อทีหลังแบบไม่บล็อก
       // นักเรียนได้เห็นแดชบอร์ดก่อน แล้วการ์ดนี้ค่อยเติมเข้ามาเอง
       loadHomeElectiveCard_(stdId);
@@ -5499,9 +5566,11 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         return;
       }
       const electives = results.electives || {};
+      const freezeMap = results.bonusFreeze || {};
       let filtered = results.list;
       if (clsFilter && clsFilter !== 'ALL') filtered = filtered.filter(s => s.cls === clsFilter);
       if (nameFilter) filtered = filtered.filter(s => s.name.toLowerCase().includes(nameFilter) || String(s.id).includes(nameFilter));
+      studentListCache_ = { list: filtered, freeze: freezeMap };   // ปุ่ม "พักแต้มหลายคน" ใช้รายชื่อชุดที่กรองอยู่นี้
 
       // [UI] เดิมเป็นตาราง 5 คอลัมน์ ซึ่งกว้าง 417px บนจอมือถือ 375px — ต้องเลื่อนขวาถึงจะเห็นปุ่มจัดการ
       // เปลี่ยนเป็นการ์ดต่อคน วางชื่อไว้บรรทัดบน รายละเอียดไว้บรรทัดล่าง จึงพอดีจอไม่ต้องเลื่อน
@@ -5518,7 +5587,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
             <div class="prow-top">
               <div class="u-grow">
                 <div class="prow-name" title="${s.name}">${shortName_(s.name)}</div>
-                <div class="prow-meta"><span>${s.id}</span><span>·</span><span>${s.clsLabel}</span><span>·</span>${elective}</div>
+                <div class="prow-meta"><span>${s.id}</span><span>·</span><span>${s.clsLabel}</span><span>·</span>${elective}${freezeMap[s.id] ? '<span class="bz-badge"><i class="fa-solid fa-lock"></i> พักแต้ม</span>' : ''}</div>
               </div>
               <div class="prow-acts">
                 <button title="ดูโปรไฟล์" onclick="viewStudentProfile('${s.id}')"><i class="fa-solid fa-eye"></i></button>
@@ -5532,7 +5601,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
     // [Perf] เดิมยิง 2 คำขอพร้อมกัน (รายชื่อ + สาขาวิชาเลือก) รวมเป็นคำขอเดียว
     pending = 1;
-    google.script.run.withSuccessHandler(b => { results.list = b.students; results.electives = b.electives; done(); })
+    google.script.run.withSuccessHandler(b => { results.list = b.students; results.electives = b.electives; results.bonusFreeze = b.bonusFreeze; done(); })
       .withFailureHandler(err => { console.error('getStudentListBundle_ failed:', err); done(); })
       .getStudentListBundle_();
   }
@@ -6557,25 +6626,14 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // ดึงข้อมูลนักเรียนสำหรับบัตรประจำตัว 3 ทาง (แดชบอร์ด/คู่หู/วิ่ง) พร้อมกัน แล้วค่อยวาดครั้งเดียวเมื่อครบ
   function viewStudentProfile(stdId) {
     Swal.fire({ html: skCompanion_(), showConfirmButton: false });   // หน้าโปรไฟล์มีรูปวงกลม + แถบค่า รูปทรงเดียวกับหน้าคู่หู
-    const results = {};
-    let pending = 4;
-    const done = () => { if (--pending === 0) renderStudentProfile_(stdId, results); };
-
-    google.script.run.withSuccessHandler(d => { results.dash = d; done(); })
-      .withFailureHandler(err => { console.error('getStudentDashboard (profile) failed:', err); results.dash = null; done(); })
-      .getStudentDashboard(stdId);
-
-    google.script.run.withSuccessHandler(c => { results.companion = c; done(); })
-      .withFailureHandler(err => { console.error('getCompanionData (profile) failed:', err); results.companion = null; done(); })
-      .getCompanionData(stdId);
-
-    google.script.run.withSuccessHandler(r => { results.running = r; done(); })
-      .withFailureHandler(err => { console.error('getRunningPointsBalance (profile) failed:', err); results.running = null; done(); })
-      .getRunningPointsBalance(stdId);
-
-    google.script.run.withSuccessHandler(e => { results.elective = e; done(); })
-      .withFailureHandler(err => { console.error('getElectiveProgress (profile) failed:', err); results.elective = null; done(); })
-      .getElectiveProgress(stdId);
+    // [Perf] เดิมยิงแยก 4 คำขอ (แดชบอร์ด · คู่หู · วิ่ง · วิชาเลือก) — แต่ละคำขอเสียค่าเริ่มต้นราว 2 วินาที
+    // และยิงพร้อมกันยังแย่งคิวกันเอง รวมเป็นคำขอเดียวแล้ว พร้อมสถานะพักแต้มสำหรับแผงจัดการแต้ม
+    google.script.run.withSuccessHandler(b => renderStudentProfile_(stdId, b || {}))
+      .withFailureHandler(err => {
+        console.error('getStudentProfileBundle_ failed:', err);
+        Swal.fire('โหลดข้อมูลไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่อีกครั้ง', 'error');
+      })
+      .getStudentProfileBundle_(stdId);
   }
 
   // วาดบัตรประจำตัวนักเรียน (Swal) จากผลลัพธ์ทั้ง 3 ทาง — เรียกเมื่อ viewStudentProfile โหลดครบแล้วเท่านั้น
@@ -6587,6 +6645,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
     const ci = d.checkinStats || { checkinCount: 0, consecutiveDays: 0 };
     const pd = d.potentialData || {};
+    const bal = (results.pointsBalance !== null && results.pointsBalance !== undefined) ? results.pointsBalance : (d.pointsBalance || 0);
+    const bonusHtml = bonusPanelHtml_(stdId, d, bal, results.bonusFreeze || null);
 
     const gradeHtml = Object.values(d.subjects || {}).map(sub => {
       const gc = parseFloat(sub.grade) >= 3 ? 'var(--blue)' : parseFloat(sub.grade) <= 1.5 ? 'var(--rose)' : 'var(--gold)';
@@ -6663,7 +6723,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
               <div class="u-label-sm">เช็คอิน</div>
             </div>
             <div class="u-stat">
-              <div style="font-size:1.2rem; font-weight:900; color:var(--gold);">${d.pointsBalance || 0}</div>
+              <div style="font-size:1.2rem; font-weight:900; color:var(--gold);">${bal}</div>
               <div class="u-label-sm">แต้มสะสม</div>
             </div>
             <div class="u-stat">
@@ -6676,6 +6736,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
             </div>
           </div>
           ${nickHtml ? `<div style="margin-bottom:12px; flex-wrap:wrap; display:flex; gap:4px;">${nickHtml}</div>` : ''}
+          ${bonusHtml}
           <div class="u-label">คู่หู &amp; การวิ่ง</div>
           ${companionHtml}${runHtml}
           ${gradeHtml ? `<div class="u-label">ผลการเรียน</div>${gradeHtml}` : ''}
@@ -6685,6 +6746,211 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       showCloseButton: true,
       width: 'min(92vw, 420px)',
       padding: '1.5rem'
+    });
+  }
+
+  // ─── จัดการแต้มพิเศษรายคน (หน้าข้อมูลนักเรียนของครู) · 22 ก.ย. 2569 ─────
+  // เพิ่ม · ลด · รีเซ็ต · พัก/ปลดพัก — ทำเสร็จแล้วเปิดหน้าข้อมูลนักเรียนคนเดิมใหม่ให้เห็นยอดล่าสุดทันที
+  // ⚠️ คนที่ถูกพัก ปุ่มเพิ่ม/ลด/รีเซ็ตถูกปิด ต้องปลดพักก่อน — พัก = แต้มห้ามขยับทุกทาง รวมทั้งทางของครู
+  //    (หลังบ้านก็ปฏิเสธซ้ำอีกชั้น ปุ่มที่ปิดไว้เป็นแค่การบอกให้รู้ก่อนกด)
+
+  function escHtml_(v) {
+    return String(v === null || v === undefined ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  // "2026-09-22" → "22 ก.ย. 2569"
+  function thaiShortDate_(key) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(key || ''));
+    if (!m) return String(key || '');
+    const MON = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    return parseInt(m[3], 10) + ' ' + MON[parseInt(m[2], 10) - 1] + ' ' + (parseInt(m[1], 10) + 543);
+  }
+
+  function bonusPanelHtml_(stdId, d, bal, frz) {
+    const earnOff = !featOnFor_('FEAT_BONUS_EARN', d.cls, null);
+    const redeemOff = !featOnFor_('FEAT_BONUS_REDEEM', d.cls, null);
+    const lockAdjust = !!frz || earnOff;   // ปรับแต้มไม่ได้: ถูกพักรายคน หรือชั้นนี้ปิดรับแต้มอยู่ (หลังบ้านปฏิเสธเหมือนกัน)
+    const id = escHtml_(stdId);
+    const note = frz
+      ? `<div class="bz-note">พักตั้งแต่ ${escHtml_(thaiShortDate_(frz.since))}${frz.by ? ' · โดย ' + escHtml_(frz.by) : ''}${frz.note ? '<br>' + escHtml_(frz.note) : ''}</div>`
+      : (earnOff || redeemOff)
+        ? `<div class="bz-note">ชั้นนี้${earnOff && redeemOff ? 'ปิดรับและแลกแต้ม' : earnOff ? 'ปิดรับแต้ม' : 'ปิดแลกแต้ม'}อยู่ (สวิตช์ระดับชั้น ที่หน้าตั้งค่า → ฟีเจอร์)</div>`
+        : '';
+    const hint = frz ? 'ปลดพักก่อน จึงจะเพิ่ม ลด หรือรีเซ็ตแต้มได้'
+               : earnOff ? 'เปิดสวิตช์ "รับแต้มพิเศษ" ของชั้นนี้ก่อน จึงจะปรับแต้มได้' : '';
+    const dis = lockAdjust ? 'disabled' : '';
+    return `
+      <div class="u-label">แต้มพิเศษ</div>
+      <div class="bz-panel">
+        <div class="bz-top">
+          <div class="bz-num">${bal} <small>แต้ม</small></div>
+          <span class="bz-status ${frz ? 'is-frozen' : 'is-ok'}">${frz ? '🔒 พักแต้มพิเศษ' : '✅ ใช้งานได้'}</span>
+        </div>
+        ${note}
+        <div class="bz-acts">
+          <button class="bz-btn" ${dis} onclick="profileBonusAdjust_('${id}', 'award')"><i class="fa-solid fa-plus"></i> เพิ่ม</button>
+          <button class="bz-btn" ${dis} onclick="profileBonusAdjust_('${id}', 'deduct')"><i class="fa-solid fa-minus"></i> ลด</button>
+          <button class="bz-btn" ${dis} onclick="profileBonusReset_('${id}', ${Number(bal) || 0})"><i class="fa-solid fa-rotate-left"></i> รีเซ็ต</button>
+          <button class="bz-btn ${frz ? 'is-unfreeze' : 'is-freeze'}" onclick="profileBonusFreeze_('${id}', ${frz ? 'false' : 'true'})">${frz ? '<i class="fa-solid fa-lock-open"></i> ปลดพัก' : '<i class="fa-solid fa-lock"></i> พักแต้ม'}</button>
+        </div>
+        ${hint ? `<div class="bz-hint">${hint}</div>` : ''}
+      </div>`;
+  }
+
+  // ผลของการกระทำในแผงแต้ม — สำเร็จแล้วเปิดหน้าข้อมูลคนเดิมใหม่ · ไม่ได้คำตอบ = บอกว่าอาจเข้าแล้ว ให้ตรวจก่อนทำซ้ำ
+  function afterBonusAction_(stdId, res, retry) {
+    if (res && res.success) {
+      buzz_(60);
+      Toast(res.message, 'success');
+      viewStudentProfile(stdId);
+      if (document.querySelector('#allStuBody .prow')) loadStudentList();   // สถานะในรายชื่อเปลี่ยนตาม
+      return;
+    }
+    if (res && res.needConfirmRepeat && retry) {
+      Swal.fire({
+        icon: 'info', title: 'ทำไปแล้ว',
+        html: escHtml_(res.message) + '<br><br><span style="font-size:.85rem;color:var(--ink-2)">ถ้าก่อนหน้านี้ขึ้น error หรือรอนาน — <b>ข้อมูลเข้าระบบแล้ว ไม่ต้องทำซ้ำ</b></span>',
+        showCancelButton: true, confirmButtonText: 'ไม่ต้องทำซ้ำ', cancelButtonText: 'ตั้งใจทำอีกครั้ง', focusConfirm: true
+      }).then(r => { if (r.dismiss === Swal.DismissReason.cancel) retry(); else viewStudentProfile(stdId); });
+      return;
+    }
+    Swal.fire({ icon: 'warning', title: 'ทำไม่สำเร็จ', text: (res && res.message) || '', confirmButtonText: 'ตกลง' })
+      .then(() => viewStudentProfile(stdId));
+  }
+  function bonusActionLost_(stdId) {
+    Swal.fire({ icon: 'warning', title: 'ยังไม่ได้รับคำตอบจากเซิร์ฟเวอร์',
+                html: 'เน็ตช้าหรือหลุดระหว่างทำรายการ — <b>ข้อมูลอาจเข้าระบบแล้ว</b><br>เปิดข้อมูลนักเรียนใหม่เพื่อตรวจยอดก่อนทำซ้ำ',
+                confirmButtonText: 'เปิดข้อมูลนักเรียนใหม่' }).then(() => viewStudentProfile(stdId));
+  }
+
+  function profileBonusAdjust_(stdId, kind) {
+    const isAward = kind === 'award';
+    Swal.fire({
+      title: isAward ? 'เพิ่มแต้มพิเศษ' : 'ลดแต้มพิเศษ',
+      html: `<div style="text-align:left;">
+               <label class="field-label">จำนวนแต้ม</label>
+               <input id="bzAmt" type="number" min="1" value="${isAward ? 5 : 1}" class="swal2-input" style="margin:0 0 12px;">
+               <label class="field-label">เหตุผล (จำเป็น — นักเรียนเห็นในประวัติแต้ม)</label>
+               <textarea id="bzWhy" class="swal2-textarea" style="margin:0;"></textarea>
+             </div>`,
+      showCancelButton: true, confirmButtonText: isAward ? 'เพิ่มแต้ม' : 'ลดแต้ม', cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: isAward ? 'var(--blue)' : 'var(--rose)',
+      preConfirm: () => {
+        const amt = parseInt(document.getElementById('bzAmt').value, 10);
+        const why = document.getElementById('bzWhy').value.trim();
+        if (!amt || amt <= 0) return Swal.showValidationMessage('ระบุจำนวนแต้ม (มากกว่า 0)');
+        if (!why) return Swal.showValidationMessage('กรุณาระบุเหตุผล');
+        return { amt, why };
+      }
+    }).then(r => {
+      if (!r.isConfirmed) { viewStudentProfile(stdId); return; }
+      const send = (confirmRepeat) => {
+        showSaving_();
+        google.script.run
+          .withSuccessHandler(res => afterBonusAction_(stdId, res, () => send(true)))
+          .withFailureHandler(() => bonusActionLost_(stdId))
+          [isAward ? 'awardStudentPoints' : 'deductStudentPoints'](currentTeacherUsername, stdId, r.value.amt, r.value.why, !!confirmRepeat);
+      };
+      send(false);
+    });
+  }
+
+  // รีเซ็ตเป็น 0 — ไม่ลบประวัติ หลังบ้านลงรายการปรับยอดให้ (กดซ้ำก็ปลอดภัย เพราะรอบสองจะเจอว่าเป็น 0 แล้ว)
+  function profileBonusReset_(stdId, bal) {
+    Swal.fire({
+      icon: 'warning', title: 'รีเซ็ตแต้มพิเศษเป็น 0?',
+      html: `แต้มตอนนี้ <b>${bal}</b> แต้ม → เหลือ <b>0</b><br>
+             <span style="font-size:.82rem;color:var(--ink-2)">ประวัติเดิมไม่หาย ระบบลงรายการปรับยอดให้ ย้อนดูได้ในประวัติแต้ม</span>
+             <textarea id="bzWhy" class="swal2-textarea" style="margin:12px 0 0;" placeholder="เหตุผล (จำเป็น)"></textarea>`,
+      showCancelButton: true, confirmButtonText: 'รีเซ็ตเป็น 0', cancelButtonText: 'ยกเลิก', confirmButtonColor: 'var(--rose)',
+      preConfirm: () => {
+        const why = document.getElementById('bzWhy').value.trim();
+        if (!why) return Swal.showValidationMessage('กรุณาระบุเหตุผล');
+        return why;
+      }
+    }).then(r => {
+      if (!r.isConfirmed) { viewStudentProfile(stdId); return; }
+      showSaving_();
+      google.script.run
+        .withSuccessHandler(res => afterBonusAction_(stdId, res, null))
+        .withFailureHandler(() => bonusActionLost_(stdId))
+        .resetStudentBonusPoints(stdId, r.value);
+    });
+  }
+
+  function profileBonusFreeze_(stdId, frozen) {
+    Swal.fire({
+      icon: 'question',
+      title: frozen ? 'พักแต้มพิเศษของนักเรียนคนนี้?' : 'ปลดพักแต้มพิเศษ?',
+      html: frozen
+        ? `<div style="text-align:left; font-size:.9rem; line-height:1.6;">
+             ระหว่างพัก <b>ทำไม่ได้</b>: รับแต้ม · แลกแต้มเป็นคะแนนเก็บ · ใช้คูปอง · แลกแต้มวิ่ง · ครูเพิ่ม/ลด/รีเซ็ต<br>
+             <b>ยังทำได้</b>: เช็คอินและสแกนงาน (บันทึกตามปกติ แค่ไม่ได้แต้ม)<br>
+             <span style="color:var(--ink-2); font-size:.82rem;">นักเรียนจะเห็นป้าย "พักแต้มพิเศษ" ตรงแต้มของตัวเอง</span>
+           </div>
+           <textarea id="bzWhy" class="swal2-textarea" style="margin:12px 0 0;" placeholder="หมายเหตุ เช่น แลกครั้งสุดท้ายแล้ว (ไม่บังคับ)"></textarea>`
+        : 'นักเรียนจะกลับมารับและแลกแต้มได้ตามปกติ',
+      showCancelButton: true, confirmButtonText: frozen ? 'พักแต้ม' : 'ปลดพัก', cancelButtonText: 'ยกเลิก',
+      preConfirm: () => { const el = document.getElementById('bzWhy'); return el ? el.value.trim() : ''; }
+    }).then(r => {
+      if (!r.isConfirmed) { viewStudentProfile(stdId); return; }
+      showSaving_();
+      google.script.run
+        .withSuccessHandler(res => afterBonusAction_(stdId, res, null))
+        .withFailureHandler(() => bonusActionLost_(stdId))
+        .setStudentBonusFreeze([stdId], frozen, r.value || '');
+    });
+  }
+
+  // พัก/ปลดพักทีละหลายคน — ใช้รายชื่อที่กรองอยู่ในแท็บ นร. ตอนนี้ (เลือกชั้นแล้วกด "เช็ค" ก่อน)
+  let studentListCache_ = null;
+  function openBulkBonusFreeze_() {
+    const c = studentListCache_;
+    if (!c || !c.list || !c.list.length) {
+      Swal.fire({ icon: 'info', title: 'ยังไม่มีรายชื่อ', text: 'เลือกชั้นแล้วกด "เช็ค" ก่อน แล้วค่อยกดปุ่มนี้อีกครั้ง', confirmButtonText: 'เข้าใจแล้ว' });
+      return;
+    }
+    const frz = c.freeze || {};
+    const rows = c.list.map(st => `
+      <label class="bz-pick"><input type="checkbox" value="${escHtml_(st.id)}">
+        <span>${escHtml_(shortName_(st.name))}</span>${frz[st.id] ? '<em>🔒 พักอยู่</em>' : ''}<small>${escHtml_(st.clsLabel)}</small>
+      </label>`).join('');
+    let picked = null;
+    const pick = () => {
+      const ids = [...document.querySelectorAll('.bz-pick input:checked')].map(x => x.value);
+      if (!ids.length) { Swal.showValidationMessage('ยังไม่ได้เลือกนักเรียน'); return false; }
+      picked = { ids, note: (document.getElementById('bzWhy') || {}).value || '' };
+      return true;
+    };
+    Swal.fire({
+      title: 'พัก / ปลดพักแต้มพิเศษ',
+      html: `<div class="bz-pick-head"><label><input type="checkbox" id="bzAll"> เลือกทั้งหมด (${c.list.length} คน)</label></div>
+             <div class="bz-pick-list">${rows}</div>
+             <textarea id="bzWhy" class="swal2-textarea" style="margin:10px 0 0;" placeholder="หมายเหตุ เช่น แลกครั้งสุดท้ายแล้ว (ไม่บังคับ)"></textarea>`,
+      showCancelButton: true, showDenyButton: true,
+      confirmButtonText: '🔒 พักที่เลือก', denyButtonText: '🔓 ปลดพักที่เลือก', cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: 'var(--ink)', denyButtonColor: 'var(--mint)',
+      width: 'min(92vw, 440px)',
+      didOpen: () => {
+        const all = document.getElementById('bzAll');
+        all.onchange = () => document.querySelectorAll('.bz-pick input').forEach(x => { x.checked = all.checked; });
+      },
+      preConfirm: pick, preDeny: pick
+    }).then(r => {
+      if (!(r.isConfirmed || r.isDenied) || !picked) return;
+      const freeze = r.isConfirmed;
+      showSaving_();
+      google.script.run
+        .withSuccessHandler(res => {
+          Swal.fire({ icon: res && res.success ? 'success' : 'warning', title: res && res.success ? 'เรียบร้อย' : 'ทำไม่สำเร็จ',
+                      text: (res && res.message) || '', confirmButtonText: 'ตกลง' });
+          loadStudentList();
+        })
+        .withFailureHandler(() => {
+          Swal.fire({ icon: 'warning', title: 'ยังไม่ได้รับคำตอบจากเซิร์ฟเวอร์',
+                      text: 'สถานะอาจเปลี่ยนแล้ว — กด "เช็ค" เพื่อดูรายชื่อล่าสุดก่อนทำซ้ำ', confirmButtonText: 'ตกลง' });
+        })
+        .setStudentBonusFreeze(picked.ids, freeze, picked.note);
     });
   }
 
