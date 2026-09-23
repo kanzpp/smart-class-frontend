@@ -1583,6 +1583,12 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     display:grid; grid-template-columns:30px 1fr 78px 64px; gap:9px;
     padding:0 12px 7px; font-size:.68rem; color:var(--ink-3); font-weight:600;
   }
+  /* คำอธิบายเหนือตาราง (ใช้ตอนเลือกกรอกปลายภาค) — ใช้สีหลักของวัน ไม่ใช่สีความหมาย */
+  .bulk-note {
+    border-radius:10px; padding:10px 12px; font-size:.78rem; line-height:1.6;
+    background:var(--blue-dim); border-left:3px solid var(--blue); color:var(--ink-2);
+  }
+  .bulk-note b { color:var(--ink); font-weight:600; }
   .bulk-head span:nth-child(3), .bulk-head span:nth-child(4) { text-align:center; }
   .bulk-bar {
     position:sticky; bottom:0; z-index:5; background:var(--surface);
@@ -2386,6 +2392,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <label class="field-label" style="margin-bottom:8px; display:block;">เลือกบทเรียน</label>
           <div id="scoreChapterGrid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:8px;"></div>
         </div>
+
+        <!-- เด็กในห้องที่ยังไม่มีแถวในชีตคะแนน — ถ้าไม่ฟ้อง ครูจะไม่มีทางเห็นว่าขาดใครไป -->
+        <div id="scoreMissingBox" style="display:none; margin-bottom:12px;"></div>
 
         <div id="scoreSummaryCard" class="card card-pad" style="margin-bottom:12px; display:none;"></div>
 
@@ -3370,7 +3379,11 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
   function renderBulkScore_(r) {
     const body = document.getElementById('bulkScoreBody');
-    const isSig = bulkState.field === 'sig';
+    // 3 ช่องที่กรอกได้: ลายเซ็น · คะแนนสอบท้ายบท (ผูกกับบท) · ปลายภาค (ทั้งเทอม ไม่ผูกกับบท)
+    const fld = bulkState.field;
+    const isSig = fld === 'sig', isFinal = fld === 'final';
+    const fldLabel = isSig ? 'ลายเซ็น' : isFinal ? 'ปลายภาค' : 'คะแนนสอบ';
+    const valOf = (st) => isSig ? st.sig : isFinal ? (st.final || 0) : st.test;
     const subjOpts = metaData.subjects.map(x => '<option value="' + x.code + '"' + (x.code === bulkState.subject ? ' selected' : '') + '>' + x.label + '</option>').join('');
     const clsOpts  = metaData.classes.map(x => '<option value="' + x.code + '"' + (x.code === bulkState.cls ? ' selected' : '') + '>' + x.label + '</option>').join('');
     const chOpts   = Array.from({ length: r.chapters }, (_, i) => i + 1)
@@ -3386,19 +3399,22 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       '<div class="filter-bar" style="margin-bottom:12px;">' +
         '<select id="bulkSubj" class="field" onchange="bulkChangeCtx_()">' + subjOpts + '</select>' +
         '<select id="bulkCls" class="field" onchange="bulkChangeCtx_()">' + clsOpts + '</select>' +
-        '<select id="bulkCh" class="field" onchange="bulkChangeCtx_()">' + chOpts + '</select>' +
+        '<select id="bulkCh" class="field" onchange="bulkChangeCtx_()"' + (isFinal ? ' disabled title="ปลายภาคเป็นคะแนนของทั้งเทอม ไม่ผูกกับบท"' : '') + '>' + chOpts + '</select>' +
       '</div>' +
       '<div style="display:flex; gap:6px; margin-bottom:14px;">' +
         '<button class="btn btn-sm ' + (isSig ? 'btn-teal' : 'btn-ghost') + '" style="flex:1" onclick="bulkSetField_(\'sig\')"><i class="fa-solid fa-signature"></i> ลายเซ็น</button>' +
-        '<button class="btn btn-sm ' + (isSig ? 'btn-ghost' : 'btn-teal') + '" style="flex:1" onclick="bulkSetField_(\'test\')"><i class="fa-solid fa-file-pen"></i> คะแนนสอบ</button>' +
+        '<button class="btn btn-sm ' + (fld === 'test' ? 'btn-teal' : 'btn-ghost') + '" style="flex:1" onclick="bulkSetField_(\'test\')"><i class="fa-solid fa-file-pen"></i> สอบท้ายบท</button>' +
+        '<button class="btn btn-sm ' + (isFinal ? 'btn-teal' : 'btn-ghost') + '" style="flex:1" onclick="bulkSetField_(\'final\')"><i class="fa-solid fa-award"></i> ปลายภาค</button>' +
       '</div>' +
-      '<div class="bulk-head"><span>#</span><span>ชื่อ-สกุล</span><span>' + (isSig ? 'ลายเซ็น' : 'คะแนนสอบ') + '</span><span>เดิม</span></div>' +
+      (isFinal ? '<div class="bulk-note" style="margin-bottom:12px;"><i class="fa-solid fa-circle-info"></i> คะแนนปลายภาคเต็ม <b>30</b> เป็นของทั้งเทอม ไม่ผูกกับบท และแต้มพิเศษช่วยเติมไม่ได้</div>' : '') +
+      '<div id="bulkMissingBox" style="margin-bottom:12px;"></div>' +
+      '<div class="bulk-head"><span>#</span><span>ชื่อ-สกุล</span><span>' + fldLabel + '</span><span>เดิม</span></div>' +
       '<div id="bulkRows">' + r.rows.map((st, i) => {
-        const cur = isSig ? st.sig : st.test;
+        const cur = valOf(st);
         return '<div class="bulk-row" id="brow-' + st.id + '">' +
           '<span class="bulk-no">' + (i + 1) + '</span>' +
           '<span class="bulk-name" title="' + st.name + '">' + shortName_(st.name) + '</span>' +
-          '<input type="number" inputmode="decimal" step="0.5" min="0" data-id="' + st.id + '" data-old="' + cur + '" ' +
+          '<input type="number" inputmode="decimal" step="0.5" min="0"' + (isFinal ? ' max="30"' : '') + ' data-id="' + st.id + '" data-old="' + cur + '" ' +
             'value="' + (cur || '') + '" onkeydown="bulkKey_(event, ' + i + ')" oninput="bulkTouch_(this)">' +
           '<span class="bulk-old"><span class="bulk-oldlb">เดิม</span>' + (cur || '—') + '</span>' +
         '</div>';
@@ -3409,12 +3425,48 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         '<button class="btn btn-teal btn-sm" onclick="saveBulk_()"><i class="fa-solid fa-check"></i> บันทึกทั้งห้อง</button>' +
       '</div>';
     bulkUpdateCount_();
+    renderMissingRows_('bulkMissingBox', bulkState.subject, bulkState.cls, r.missing, loadBulkScore_);
+  }
+
+  // ── เด็กในห้องที่ยังไม่มีแถวในชีตคะแนน ──────────────────────
+  // แถวในชีตเกิดตอนได้คะแนนครั้งแรกเท่านั้น เด็กที่ยังไม่เคยได้คะแนนจึงหายไปจากทุกหน้าที่อ่านจากชีต
+  // (ตารางคะแนน · กรอกทั้งห้อง · ใบรายงาน) ครูจะกรอกคะแนนทั้งห้องโดยไม่รู้ว่าขาดใคร
+  function renderMissingRows_(boxId, subject, cls, missing, onDone) {
+    const box = document.getElementById(boxId);
+    if (!box) return;
+    if (!missing || !missing.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    box.style.display = 'block';
+    box.innerHTML =
+      '<div class="bulk-note" style="background:var(--gold-dim); border-left-color:var(--gold);">' +
+        '<i class="fa-solid fa-user-plus"></i> มีนักเรียน <b>' + missing.length + ' คน</b> ในห้องนี้ที่ยังไม่มีแถวในชีตคะแนน ' +
+        'จึงไม่ขึ้นในตารางและใบรายงาน<br>' +
+        '<span style="color:var(--ink-3)">' + missing.map(m => escHtml_(m.name)).join(' · ') + '</span><br>' +
+        '<button class="btn btn-ghost btn-sm" style="margin-top:8px;" ' +
+          'onclick="addMissingScoreRows_(\'' + subject + '\',\'' + cls + '\')">' +
+          '<i class="fa-solid fa-plus"></i> เพิ่มเข้าชีตคะแนน (คะแนนเริ่มที่ 0)</button>' +
+      '</div>';
+    missingRowsReload_ = onDone;
+  }
+  var missingRowsReload_ = null;
+
+  function addMissingScoreRows_(subject, cls) {
+    Swal.fire({ title: 'กำลังเพิ่ม...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    google.script.run.withSuccessHandler(r => {
+      if (r && r.success) {
+        Swal.close(); Toast(r.message, 'success');
+        if (typeof missingRowsReload_ === 'function') missingRowsReload_();
+      } else Swal.fire('ไม่สำเร็จ', (r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+    }).withFailureHandler(err => {
+      console.error('syncScoreRoster failed:', err);
+      Swal.fire('ไม่สำเร็จ', 'เชื่อมต่อไม่ได้ กรุณาลองใหม่', 'error');
+    }).syncScoreRoster(subject, cls);
   }
 
   function bulkChangeCtx_() {
     bulkState.subject = document.getElementById('bulkSubj').value;
     bulkState.cls     = document.getElementById('bulkCls').value;
-    bulkState.chapter = parseInt(document.getElementById('bulkCh').value) || 1;
+    const chEl = document.getElementById('bulkCh');      // ตอนกรอกปลายภาค ช่องบทถูกปิดไว้
+    if (chEl) bulkState.chapter = parseInt(chEl.value) || 1;
     loadBulkScore_();
   }
   function bulkSetField_(f) { bulkState.field = f; loadBulkScore_(); }
@@ -3451,7 +3503,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     if (!vals.length) return Toast('ยังไม่ได้กรอกอะไรที่ต่างจากเดิม', 'warning');
     Swal.fire({
       title: 'บันทึก ' + vals.length + ' คน?',
-      text: 'บทที่ ' + bulkState.chapter + ' · ' + (bulkState.field === 'sig' ? 'ลายเซ็น' : 'คะแนนสอบ'),
+      text: bulkState.field === 'final'
+        ? 'คะแนนปลายภาค (เต็ม 30) ของ ' + ((metaData.classes || []).find(c => c.code === bulkState.cls) || {}).label
+        : 'บทที่ ' + bulkState.chapter + ' · ' + (bulkState.field === 'sig' ? 'ลายเซ็น' : 'คะแนนสอบ'),
       icon: 'question', showCancelButton: true, confirmButtonText: 'บันทึก', cancelButtonText: 'ยกเลิก'
     }).then(res => {
       if (!res.isConfirmed) return;
@@ -5278,6 +5332,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         document.getElementById('scoreTableBody').innerHTML = '<tr><td colspan="3">ไม่มีข้อมูล</td></tr>';
         document.getElementById('scoreSummaryCard').style.display = 'none';
         document.getElementById('scoreChapterPicker').style.display = 'none';
+        renderMissingRows_('scoreMissingBox', s, c, res && res.missing, viewClassScores);
         return;
       }
       scoreViewState.subj = s;
@@ -5285,6 +5340,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       scoreViewState.data = res.data;
       scoreViewState.overrides = res.gradeOverrides || [];   // มากับคำขอเดียวกัน ไม่ต้องยิงซ้ำ
       scoreViewState.termLocked = !!res.termLocked;
+      renderMissingRows_('scoreMissingBox', s, c, res.missing, viewClassScores);
       scoreViewState.totalChapters = res.totalChapters;
       scoreViewState.chapter = Math.min(scoreViewState.chapter, res.totalChapters);
       renderScoreView_();
