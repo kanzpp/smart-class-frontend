@@ -1087,6 +1087,10 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   }
   .eot-gate.ready { background:var(--mint-dim); border-left-color:var(--mint); }
   .eot-gate b { color:var(--ink); font-weight:600; }
+  /* เช็คลิสต์ความพร้อมก่อนปิดเทอม — ไอคอนบอกสถานะ ข้อความบอกว่าต้องทำอะไรต่อ */
+  .rdy-row { display:flex; gap:10px; align-items:flex-start; font-size:.8rem; line-height:1.6; padding:8px 0; border-bottom:1px solid var(--line); }
+  .rdy-row:last-child { border-bottom:0; padding-bottom:0; }
+  .rdy-row i { margin-top:3px; flex:none; }
   .eot-ch { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:12px 0; }
   .eot-ch label { font-size:.72rem; color:var(--ink-2); display:block; margin-bottom:4px; }
   .eot-ch input { width:100%; text-align:center; padding:9px 4px; border:1px solid var(--line); border-radius:10px;
@@ -4116,10 +4120,17 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   function loadEndOfTerm_() {
     const body = document.getElementById('eotBody');
     body.innerHTML = '<div class="sc-empty">กำลังตรวจสถานะ... (ไม่ได้เขียนอะไร)</div>';
-    // ค่าเริ่มต้นของจำนวนบท = จำนวนบทเต็มปีของแต่ละชั้น ครูแก้ได้
-    (metaData.classes || []).forEach(c => { if (!eotChapters[c.code]) eotChapters[c.code] = c.code === 'M1' ? 9 : 11; });
+    // ⚠️ ห้ามเติมค่าตั้งต้นเองจากหน้าเว็บ — หลังบ้านเป็นคนคิดให้จากหลักสูตรลบบทที่สอนไปแล้ว
+    // (ของเดิมเติมเป็นบททั้งปี 9/11 ซึ่งทำให้คะแนนเก็บเทอมใหม่เต็มได้แค่ราว 31 จาก 70)
     google.script.run.withSuccessHandler(r => {
       if (!r || !r.ok) { body.innerHTML = courseErrorHtml_('loadEndOfTerm_()'); return; }
+      // ครั้งแรกที่เปิดหน้านี้ ยังไม่มีเลขในช่อง → ใส่ค่าที่หลังบ้านแนะนำแล้ววาดใหม่รอบเดียว
+      const sug = r.suggestChapters || {};
+      let filled = false;
+      (metaData.classes || []).forEach(c => {
+        if (!eotChapters[c.code] && sug[c.code] && sug[c.code].suggest) { eotChapters[c.code] = sug[c.code].suggest; filled = true; }
+      });
+      if (filled) { loadEndOfTerm_(); return; }
       renderEndOfTerm_(r);
     }).withFailureHandler(err => {
       console.error('previewEndOfTerm failed:', err);
@@ -4143,16 +4154,48 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           ' แต่ข้อมูลที่ค้างอยู่เป็นของปี ' + r.year + ' เทอม ' + r.term +
         '</div>';
 
-    const chInputs = (metaData.classes || []).map(c =>
-      '<div><label>' + c.label + '</label>' +
-        '<input type="number" min="1" max="20" value="' + (eotChapters[c.code] || '') + '" ' +
-        'onchange="eotChapters[\'' + c.code + '\']=parseInt(this.value)||0; loadEndOfTerm_();"></div>').join('');
+    // ค่าตั้งต้นมาจากหลังบ้าน = บททั้งปี − บทที่เทอมนี้สอนไป (ดู cSuggestNextTermChapters_)
+    // ⚠️ เดิมเติมเป็นจำนวนบททั้งปี ซึ่งทำให้คะแนนเก็บของเทอมใหม่เต็มได้แค่ราว 31 จาก 70
+    const sg = r.suggestChapters || {};
+    const chInputs = (metaData.classes || []).map(c => {
+      const s = sg[c.code] || {};
+      const val = eotChapters[c.code] || 0;
+      // สอน N บท แต่ตั้งช่องไว้ M ช่อง → คะแนนเก็บเต็มได้แค่ N/M × 70
+      const warn = (val && s.suggest && val > s.suggest)
+        ? '<div style="font-size:.68rem; color:var(--rose); line-height:1.5; margin-top:4px;">ตั้ง ' + val +
+          ' บท แต่เทอมใหม่สอน ' + s.suggest + ' บท → คะแนนเก็บเต็มได้แค่ <b>' +
+          (s.suggest / val * 70).toFixed(1) + '</b> จาก 70</div>'
+        : '';
+      const hint = s.fromCurriculum
+        ? '<div style="font-size:.66rem; color:var(--ink-3); margin-top:3px;">ทั้งปี ' + s.yearTotal + ' · เทอมนี้ ' + s.now + ' → แนะนำ ' + s.suggest + '</div>'
+        : '';
+      return '<div><label>' + c.label + '</label>' +
+        '<input type="number" min="1" max="20" value="' + (val || '') + '" ' +
+        'onchange="eotChapters[\'' + c.code + '\']=parseInt(this.value)||0; loadEndOfTerm_();">' + hint + warn + '</div>';
+    }).join('');
+
+    // เช็คลิสต์ความพร้อม — ตอบคำถามเดียวว่า "กดตอนนี้แล้วมีอะไรตกหล่นไหม"
+    const rdy = (r.readiness || []).map(x => {
+      const icon = x.info ? '<i class="fa-solid fa-circle-info" style="color:var(--ink-3)"></i>'
+        : x.ok ? '<i class="fa-solid fa-circle-check" style="color:var(--mint)"></i>'
+        : x.warn ? '<i class="fa-solid fa-triangle-exclamation" style="color:var(--gold)"></i>'
+        : '<i class="fa-solid fa-circle-xmark" style="color:var(--rose)"></i>';
+      return '<div class="rdy-row">' + icon +
+        '<span><b>' + escHtml_(x.title) + '</b><br>' +
+        '<span style="color:var(--ink-2)">' + escHtml_(x.detail).replace(/\n/g, '<br>') + '</span></span></div>';
+    }).join('');
 
     document.getElementById('eotBody').innerHTML =
       gate +
+      (rdy ? '<div class="card card-pad" style="margin-bottom:14px;">' +
+        '<div class="sc-sec" style="margin-bottom:6px;"><span class="t">ตรวจความพร้อมก่อนปิดเทอม</span></div>' +
+        rdy + '</div>' : '') +
       '<div class="card card-pad" style="margin-bottom:14px;">' +
         '<div class="sc-sec" style="margin-bottom:6px;"><span class="t">จำนวนบทของเทอมใหม่</span></div>' +
-        '<div style="font-size:0.76rem; color:var(--ink-2); line-height:1.6;">ขยายหลังล้างคะแนนแล้วเท่านั้น จึงปลอดภัยเสมอ เว้นว่างไว้ถ้ายังไม่อยากขยาย</div>' +
+        '<div style="font-size:0.76rem; color:var(--ink-2); line-height:1.6;">' +
+          'ใส่ <b>จำนวนบทที่จะสอนในเทอมใหม่</b> ไม่ใช่จำนวนบททั้งปี — คะแนนเก็บ 70 หารด้วยจำนวนช่องบทในชีต ' +
+          'ถ้าตั้งไว้มากกว่าที่สอนจริง เด็กจะทำคะแนนเก็บเต็มไม่ได้เลยทั้งห้อง' +
+        '</div>' +
         '<div class="eot-ch">' + chInputs + '</div>' +
       '</div>' +
       '<div class="card card-pad" style="margin-bottom:14px;">' +
