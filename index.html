@@ -1277,6 +1277,13 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   .sc-sec .more { font-size:.75rem; color:var(--blue); font-weight:600; background:none; border:none; cursor:pointer; font-family:inherit; }
 
   /* ── 3. แถวแจ้งเตือน ────────────────────────────────────── */
+  /* แถบเทอม 2 พร้อมแล้วแต่ยังไม่เปิดบันทึก — สีเขียว (ความหมาย "ได้/พร้อม" = --mint) */
+  .term-banner {
+    margin:14px 16px 0; padding:10px 14px; border-radius:14px;
+    background:color-mix(in srgb, var(--mint) 14%, var(--surface)); border:1px solid var(--mint);
+    color:var(--ink); font-size:.82rem; font-weight:600; line-height:1.45;
+  }
+  .term-banner small { display:block; font-weight:400; font-size:.72rem; color:var(--ink-2); margin-top:2px; }
   .sc-alert {
     display:flex; align-items:center; gap:11px; background:var(--surface); border-radius:14px;
     padding:12px 13px; margin-bottom:8px; box-shadow:var(--shadow-sm);
@@ -2072,6 +2079,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         </button>
       </div>
 
+      <div id="sTermBanner" class="term-banner" style="display:none;" role="status"></div>
+
       <div class="sc-pad">
         <div class="sc-sec"><span class="t">ต้องทำ</span><span class="more" id="sTodoCount"></span></div>
         <div id="sTodoList"><div aria-busy="true"><span class="sr-only">กำลังโหลด</span><div class="sk-row"><span class="sk sk-ic"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div><div class="sk-row"><span class="sk sk-ic"></span><span class="sk-tx"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></span></div></div></div>
@@ -2282,6 +2291,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <select id="qcCh"   class="sc-ctx-sel" onchange="onQuickCtxChange_('ch')"></select>
         </div>
       </div>
+
+      <!-- แถบ "เทอม 2 พร้อมแล้ว" — ขึ้นเฉพาะช่วงที่แสดงเทอมใหม่แต่ยังบันทึกไม่ได้ (ไม่มีปุ่มปิด) -->
+      <div id="tTermBanner" class="term-banner" style="display:none;" role="status"></div>
 
       <div class="sc-pad">
         <div class="sc-sec"><span class="t">ต้องรู้วันนี้</span><span class="more" id="tAlertCount"></span></div>
@@ -2950,7 +2962,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // ─── จำข้อมูลล่าสุดไว้ในเครื่อง เพื่อให้เปิดแอปครั้งถัดไปเห็นทันที ───────────
   // เก็บเฉพาะข้อมูลที่ใช้วาดหน้าจอตอนเปิดแอป ไม่ใช่ข้อมูลลับ และอยู่ในเครื่องผู้ใช้เองเท่านั้น
   // มีเลขรุ่นกำกับ เผื่อโครงสร้างข้อมูลเปลี่ยนในอนาคตจะได้ไม่เอาของเก่าคนละแบบมาวาด
-  var BOOT_CACHE_VERSION = 2;  // 2 = meta มี features (สวิตช์เปิด/ปิดฟีเจอร์) เพิ่มเข้ามา
+  var BOOT_CACHE_VERSION = 3;  // 3 = term มี writeBlocked/writeOpensAt (แถบเทอม 2) · 2 = meta มี features (สวิตช์เปิด/ปิดฟีเจอร์)
   var BOOT_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // เกิน 1 วันถือว่าเก่าเกินจะเอามาโชว์
 
   function saveBootCache_(key, data) {
@@ -3041,11 +3053,24 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       </button>`;
   }
 
+  // แถบแจ้งเทอม 2 — ใช้ทั้งหน้าครู (tTermBanner) และนักเรียน (sTermBanner)
+  // ตัดสินจากวันที่ฝั่งเครื่องด้วย เพราะข้อมูลที่จำไว้อาจค้างจากก่อนวันเปิด (ขึ้นแถบเกินวันไม่ได้)
+  function renderTermBanner_(boxId, t) {
+    const box = document.getElementById(boxId);
+    if (!box) return;
+    const opensAt = t && t.writeBlocked && t.writeOpensAt ? Date.parse(t.writeOpensAt) : NaN;
+    if (!t || !t.writeBlocked || !(Date.now() < opensAt)) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    box.style.display = '';
+    box.innerHTML = '🟢 เทอม ' + t.term + ' พร้อมแล้ว · เริ่มใช้งาน ' + (t.writeOpensLabel || '') +
+      '<small>ดูข้อมูลได้แล้ว · บันทึก สแกน และแลกแต้ม เปิดใช้วันที่ ' + (t.writeOpensLabel || '') + '</small>';
+  }
+
   function renderTeacherBoot_(b) {
     if (b.meta) { metaData = b.meta; populateSelects(); applyFeatureFlags_(); }
     if (b.overview) renderTeacherOverview_(b.overview);
     if (b.stats) renderTeacherStats_(b.stats);
     if (b.term) renderTermChip_(b.term);
+    renderTermBanner_('tTermBanner', b.term);
     fillQuickCtx_();          // ต้องหลัง populateSelects() เพราะอ่านบริบทจากช่องในแท็บสแกน
     renderBackupWarn_(b.backup);
     // วันนี้หยุด/เรียนพิเศษไหม — มากับก้อนรวมแล้ว (todayType)
@@ -4849,6 +4874,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       if (meSub) meSub.innerText = d.clsLabel + ' · รหัส ' + stdId;
       const gTerm = document.getElementById('sGradeTerm');
       if (gTerm && bundle.term) gTerm.innerText = 'ปีการศึกษา ' + bundle.term.year + ' เทอม ' + bundle.term.term;
+      renderTermBanner_('sTermBanner', bundle.term);
 
       renderStudentTodo_(d);
       renderHomeGrade_(d);
