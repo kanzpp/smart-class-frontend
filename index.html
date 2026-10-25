@@ -2732,7 +2732,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         return `<div style="text-align:left; border-bottom:1px solid var(--mist); padding:10px 0;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <b style="color:${color};">${isAward ? '+' : ''}${n.points} แต้ม</b>
-            <span style="font-size:0.72rem; color:var(--slate);">${new Date(n.ts).toLocaleDateString('th-TH')}</span>
+            <span style="font-size:0.72rem; color:var(--slate);">${n.cur === false ? 'เทอม ' + n.term + '/' + n.year + ' · ' : ''}${new Date(n.ts).toLocaleDateString('th-TH')}</span>
           </div>
           <div style="font-size:0.85rem; margin-top:2px;">${n.reason}</div>
           <div style="font-size:0.72rem; color:var(--slate);">โดย ${n.teacher}</div>
@@ -2962,7 +2962,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
   // ─── จำข้อมูลล่าสุดไว้ในเครื่อง เพื่อให้เปิดแอปครั้งถัดไปเห็นทันที ───────────
   // เก็บเฉพาะข้อมูลที่ใช้วาดหน้าจอตอนเปิดแอป ไม่ใช่ข้อมูลลับ และอยู่ในเครื่องผู้ใช้เองเท่านั้น
   // มีเลขรุ่นกำกับ เผื่อโครงสร้างข้อมูลเปลี่ยนในอนาคตจะได้ไม่เอาของเก่าคนละแบบมาวาด
-  var BOOT_CACHE_VERSION = 3;  // 3 = term มี writeBlocked/writeOpensAt (แถบเทอม 2) · 2 = meta มี features (สวิตช์เปิด/ปิดฟีเจอร์)
+  var BOOT_CACHE_VERSION = 4;  // 4 = manualNotices มี cur/fresh/term · บทมี chNo/chName · 3 = term มี writeBlocked/writeOpensAt (แถบเทอม 2) · 2 = meta มี features (สวิตช์เปิด/ปิดฟีเจอร์)
   var BOOT_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // เกิน 1 วันถือว่าเก่าเกินจะเอามาโชว์
 
   function saveBootCache_(key, data) {
@@ -3191,7 +3191,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       const list = (subj[code].chapters || []).filter(c => (c.test || 0) === 0 && (c.sig || 0) > 0);
       if (list.length) rows.push(alertRow_('blue', 'fa-file-pen',
         'ยังไม่มีคะแนนสอบ ' + list.length + ' บท',
-        (subj[code].label || code) + ' · บทที่ ' + list.map(c => c.ch).join(', '), "goStudentTab_('grades')"));
+        (subj[code].label || code) + ' · บทที่ ' + list.map(c => chNoOf_(c)).join(', '), "goStudentTab_('grades')"));
     });
 
     box.innerHTML = rows.length ? rows.join('')
@@ -3212,13 +3212,14 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     const chs = (sj.chapters || []).filter(c => (c.sig || 0) > 0 || (c.test || 0) > 0);
     let weak = null;
     chs.forEach(c => { if (!weak || Number(c.total) < Number(weak.total)) weak = c; });
-    const gradeCls = total >= 70 ? 'g-hi' : total >= 50 ? 'g-mid' : 'g-lo';
+    const pending  = gradePending_(sj);
+    const gradeCls = pending ? '' : total >= 70 ? 'g-hi' : total >= 50 ? 'g-mid' : 'g-lo';
 
     box.innerHTML = `
       <div class="card card-pad">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
           <span style="font-family:'Kanit',sans-serif; font-weight:500; font-size:0.95rem;">${sj.label || codes[0]}</span>
-          <span class="grade-badge ${gradeCls}">เกรด ${sj.grade ?? '—'}</span>
+          <span class="grade-badge ${gradeCls}"${pending ? ' style="background:var(--surface-2); color:var(--ink-3);"' : ''}>${pending ? 'ยังไม่มีเกรด' : 'เกรด ' + (sj.grade ?? '—')}</span>
         </div>
         <div class="grade-summary-card" style="box-shadow:none; margin:11px 0 8px;">
           <div class="progress-bar"><div class="fill" style="width:${Math.min(100, total)}%"></div></div>
@@ -3228,7 +3229,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
           <span>ปลายภาค <b style="color:var(--ink)">${finalEx || 'ยังไม่สอบ'}</b>${finalEx ? ' / 30' : ''}</span>
         </div>
         ${weak ? `<div style="margin-top:11px; padding:8px 10px; border-radius:10px; background:var(--gold-dim); font-size:0.74rem; color:var(--gold); display:flex; align-items:center; gap:7px;">
-          <i class="fa-solid fa-triangle-exclamation"></i> บทที่ ${weak.ch} ได้ ${weak.total}/20 ต่ำสุดใน ${chs.length} บทที่เรียนไปแล้ว
+          <i class="fa-solid fa-triangle-exclamation"></i> บทที่ ${chNoOf_(weak)} ได้ ${weak.total}/20 ต่ำสุดใน ${chs.length} บทที่เรียนไปแล้ว
         </div>` : ''}
       </div>`;
   }
@@ -3238,14 +3239,24 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     const box = document.getElementById('sMeNotices');
     if (!box) return;
     if (!list || !list.length) { box.innerHTML = '<div class="sc-empty">ยังไม่มีรายการ</div>'; return; }
-    box.innerHTML = list.slice(0, 30).map(n => {
+    const row = n => {
       const plus = Number(n.points) > 0;
       return `<div class="sc-alert" style="cursor:default;">
         <span class="ic ${plus ? 'ic-mint' : 'ic-rose'}"><i class="fa-solid ${plus ? 'fa-circle-plus' : 'fa-circle-minus'}"></i></span>
         <span class="tx"><span class="t1">${plus ? '+' : ''}${n.points} แต้ม — ${n.reason || 'ไม่ระบุเหตุผล'}</span>
         <span class="t2">โดย ${n.teacher || 'ครู'}${n.ts ? ' · ' + new Date(n.ts).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : ''}</span></span>
       </div>`;
-    }).join('');
+    };
+    // แยกเทอมนี้ / เทอมก่อน — ยอดแต้มคิดเฉพาะเทอมนี้ ถ้าปนกันเด็กจะงงว่าทำไมมีรายการแต่ยอดเป็น 0
+    // หลังบ้านรุ่นเก่าไม่ส่ง cur มา → ถือว่าเป็นเทอมนี้ทั้งหมด (เหมือนที่เคยเป็น)
+    const mine = list.filter(n => n.cur !== false).slice(0, 30);
+    const prev = list.filter(n => n.cur === false).slice(0, 10);
+    let h = mine.length ? mine.map(row).join('') : '<div class="sc-empty">เทอมนี้ยังไม่มีรายการ</div>';
+    if (prev.length) {
+      h += '<div style="font-size:0.74rem; color:var(--ink-3); margin:14px 2px 6px;">เทอมก่อน <span style="opacity:.7;">(ไม่นับในยอดแต้มเทอมนี้)</span></div>' +
+           '<div style="opacity:.62;">' + prev.map(row).join('') + '</div>';
+    }
+    box.innerHTML = h;
   }
 
   // ─── หน้าแรกแบบแอปธนาคาร: ตัวช่วยฝั่งครู ─────────────────────
@@ -4777,8 +4788,12 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       if (!list || list.length === 0) return;
       const seenKey  = 'manualPtsSeen_' + stdId;
       const lastSeen = parseInt(localStorage.getItem(seenKey) || '0');
-      const unseen   = list.filter(n => n.ts > lastSeen).sort((a, b) => a.ts - b.ts);
-      if (unseen.length === 0) return;
+      // เด้งเฉพาะรายการ "เทอมนี้" และ "ใหม่จริง" (ภายใน 7 วัน) — หลังบ้านบอกมาใน n.fresh
+      // เครื่องที่ไม่เคยเปิด (เครื่องใหม่/เครื่องโรงเรียน) จะได้ไม่เจอของเก่าย้อนหลังเด้งรวดทีเดียวหลายอัน
+      // ถ้าหลังบ้านยังเป็นรุ่นเก่า (ไม่มี fresh) ใช้อายุ 7 วันอย่างเดียวแทน ไม่เด้งของเก่าเหมือนกัน
+      const isFresh  = n => (n.fresh !== undefined) ? !!n.fresh : (Date.now() - n.ts) <= 7 * 24 * 3600 * 1000;
+      const unseen   = list.filter(n => n.ts > lastSeen && isFresh(n)).sort((a, b) => a.ts - b.ts);
+      if (unseen.length === 0) { try { localStorage.setItem(seenKey, String(list[0].ts)); } catch (e) { /* จำไม่ได้ก็แค่ไม่จำ */ } return; }
 
       const dot = document.getElementById('studentNotifDot');
       if (dot) dot.classList.add('show');
@@ -4913,16 +4928,17 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
       if (sm) {
         const pd       = d.potentialData || {};
         const mySigs   = pd.myTotalSigs  || 0;
-        const maxSigs  = pd.maxClassSigs  || 1;
+        const maxSigs  = pd.maxClassSigs  || 0;   // 0 = ทั้งห้องยังไม่มีลายเซ็นเลย (ไม่ใช่ "สูงสุด 1")
         const myTest   = pd.myTotalTest   || 0;
         const maxTest  = pd.maxTotalTest  || 1;
-        const sigPct   = Math.min(100, Math.round((mySigs / maxSigs) * 100));
+        const sigPct   = maxSigs > 0 ? Math.min(100, Math.round((mySigs / maxSigs) * 100)) : 0;
+        const sigCap   = maxSigs > 0 ? `(${mySigs} / สูงสุดในชั้น ${maxSigs})` : '(ยังไม่มีข้อมูลเทอมนี้)';
         const testPct  = Math.min(100, Math.round((myTest / maxTest) * 100));
 
         sm.innerHTML = `
           <div class="meter-row">
             <div class="meter-head" style="color:var(--slate);">
-              <span>✍️ ลายเซ็นสะสม <small style="color:var(--ink); opacity:0.6;">(${mySigs} / สูงสุดในชั้น ${maxSigs})</small></span>
+              <span>✍️ ลายเซ็นสะสม <small style="color:var(--ink); opacity:0.6;">${sigCap}</small></span>
               <b style="color:var(--teal2);">${sigPct}%</b>
             </div>
             <div style="background:var(--cloud); height:12px; border-radius:6px; overflow:hidden; border:1px solid var(--mist);">
@@ -4963,6 +4979,15 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
 
   }
 
+  // "ยังไม่มีเกรด" = ยังไม่มีคะแนนรวมเลย (ยังไม่มีคะแนนเก็บและยังไม่สอบปลายภาค) ไม่ใช่ได้เกรด 0 จริง
+  // เกรด 0 จริงจะมีคะแนนรวม > 0 (หรือเกรดที่ครูแก้) ค้างอยู่ จึงยังแสดง 0 ตามจริง · ใช้แค่แดชบอร์ดนักเรียน (ใบรายงาน table.rep ไม่เกี่ยว)
+  function gradePending_(sub) {
+    return !sub || (!(parseFloat(sub.grade) > 0) && !(parseFloat(sub.total100) > 0));
+  }
+  // เลขบทที่แสดงให้นักเรียนเห็น (ตามหลักสูตร เช่น เทอม 2 ม.1 = บท 6-9) · ช่องในชีตยังเป็น ch = 1..N เหมือนเดิม
+  function chNoOf_(c) { return (c && c.chNo !== undefined && c.chNo !== null) ? c.chNo : c.ch; }
+  function chLabelOf_(c) { return 'บทที่ ' + chNoOf_(c) + (c && c.chName ? ' ' + c.chName : ''); }
+
   // วาดการ์ดผลการเรียนของนักเรียน (ใช้ทั้งตอน boot และตอน refresh หลังแลกแต้มเป็นคะแนนเก็บ)
   function renderGradeCards(d) {
     const gc = document.getElementById('gradeCardsContainer');
@@ -4974,7 +4999,8 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     Object.keys(d.subjects).forEach(k => {
       const sub        = d.subjects[k];
       const total100   = parseFloat(sub.total100) || 0;
-      const gradeColor = sub.grade >= 3 ? 'var(--teal2)' : sub.grade <= 1.5 ? 'var(--coral)' : 'var(--amber2)';
+      const pending    = gradePending_(sub);
+      const gradeColor = pending ? 'var(--slate)' : sub.grade >= 3 ? 'var(--teal2)' : sub.grade <= 1.5 ? 'var(--coral)' : 'var(--amber2)';
       const scorePct   = Math.min(100, Math.round((total100 / 100) * 100));
       const finalExamDisplay = (sub.finalExam !== undefined && sub.finalExam !== null && sub.finalExam !== '') ? sub.finalExam : '—';
 
@@ -4983,7 +5009,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         chHtml += `
           <div class="score-row">
             <div class="label">
-              บทที่ ${ch.ch}
+              ${chLabelOf_(ch)}
               <span style="font-size:0.72rem; color:var(--slate);">
                 (✍️ ${ch.sig} ลาย &nbsp;/&nbsp; 📊 ${ch.workScore} คะแนนงาน &nbsp;/&nbsp; 🎯 ${ch.test} คะแนนสอบ)
               </span>
@@ -4996,7 +5022,7 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
         <div class="grade-summary-card">
           <div class="gsc-head">
             <div class="subj-name"><i class="fa-solid fa-book" style="opacity:0.7; margin-right:6px;"></i>${sub.label}</div>
-            <div class="grade-big" style="background:${gradeColor}; color:#fff;">เกรด ${sub.grade}</div>
+            <div class="grade-big" style="background:${gradeColor}; color:#fff;">${pending ? 'ยังไม่มีเกรด' : 'เกรด ' + sub.grade}</div>
           </div>
           <div class="gsc-body">
             ${chHtml}
@@ -6796,6 +6822,12 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     const bonusHtml = bonusPanelHtml_(stdId, d, bal, results.bonusFreeze || null);
 
     const gradeHtml = Object.values(d.subjects || {}).map(sub => {
+      if (gradePending_(sub)) {
+        return `<div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #F5FAFF; font-size:0.83rem;">
+          <span style="color:var(--ink-2);">${sub.label}</span>
+          <span style="font-weight:700; color:var(--slate);">ยังไม่มีเกรด</span>
+        </div>`;
+      }
       const gc = parseFloat(sub.grade) >= 3 ? 'var(--blue)' : parseFloat(sub.grade) <= 1.5 ? 'var(--rose)' : 'var(--gold)';
       return `<div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #F5FAFF; font-size:0.83rem;">
         <span style="color:var(--ink-2);">${sub.label}</span>
@@ -7180,7 +7212,9 @@ html, body { font-family: 'Sarabun', sans-serif; background: var(--cloud); color
     const actualCh = subj ? subj.chapters.length : (metaData.settings.TOTAL_CHAPTERS || 3);
     let opts = '';
     for (let i = 1; i <= actualCh; i++) {
-      opts += `<option value="${i}">บทเรียนที่ ${i} (สูงสุด 20 คะแนน)</option>`;
+      // ค่าที่ส่งไปหลังบ้านคือลำดับช่องในชีต (i) เหมือนเดิม — เปลี่ยนแค่เลขบทที่เด็กเห็นให้ตรงหนังสือ
+      const c = subj && subj.chapters ? subj.chapters[i - 1] : null;
+      opts += `<option value="${i}">${c ? chLabelOf_(c) : 'บทเรียนที่ ' + i} (สูงสุด 20 คะแนน)</option>`;
     }
     return opts;
   }
